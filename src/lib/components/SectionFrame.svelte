@@ -9,6 +9,7 @@
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
+  import ChromeIcon from "./icons/ChromeIcon.svelte";
 
   let {
     rowId,
@@ -44,7 +45,7 @@
       {#if canPair}
         <button
           type="button"
-          class="section-frame__action"
+          class="section-frame__action section-frame__action--text"
           title="Pair"
           onclick={() => onPairRequest(rowId)}
         >
@@ -54,7 +55,7 @@
       {#if canUnpair}
         <button
           type="button"
-          class="section-frame__action"
+          class="section-frame__action section-frame__action--text"
           title="Unpair"
           onclick={() => unpairSection(rowId, section.id)}
         >
@@ -65,26 +66,29 @@
         type="button"
         class="section-frame__action"
         aria-pressed={section.hidden}
-        title="Hide from print"
+        aria-label={section.hidden ? "Show section" : "Hide section"}
+        title={section.hidden ? "Show section" : "Hide section"}
         onclick={() => toggleSectionHidden(rowId, section.id)}
       >
-        {section.hidden ? "Hidden" : "Visible"}
+        <ChromeIcon key={section.hidden ? "eye-off" : "eye"} />
       </button>
       <button
         type="button"
         class="section-frame__action"
-        title="Duplicate"
+        aria-label="Duplicate section"
+        title="Duplicate section"
         onclick={() => duplicateSection(rowId, section.id)}
       >
-        Duplicate
+        <ChromeIcon key="copy" />
       </button>
       <button
         type="button"
         class="section-frame__action"
-        title="Delete"
+        aria-label="Delete section"
+        title="Delete section"
         onclick={() => removeSection(rowId, section.id)}
       >
-        Delete
+        <ChromeIcon key="trash" />
       </button>
     </div>
   </div>
@@ -133,11 +137,22 @@
   }
 
   .section-frame__action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .section-frame__action--text {
+    width: auto;
+    height: auto;
     font-size: var(--font-size-label);
     padding: 4px var(--space-2);
-    cursor: pointer;
   }
 </style>
