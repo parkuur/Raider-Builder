@@ -9,11 +9,11 @@ test("save then load round-trips the document unchanged", async ({ page }) => {
   await page.locator('input[type="date"]').fill("2026-05-01");
 
   await page.getByRole("button", { name: "+ Add your first section" }).click();
-  await page.getByRole("button", { name: "Section", exact: true }).click();
+  await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.locator(".section-frame__title").nth(0).fill("First Section");
 
   await page.getByRole("button", { name: "+ Add Section" }).last().click();
-  await page.getByRole("button", { name: "Section", exact: true }).click();
+  await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.locator(".section-frame__title").nth(1).fill("Second Section");
 
   const downloadPromise = page.waitForEvent("download");

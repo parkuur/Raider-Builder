@@ -5,7 +5,7 @@ test("print media hides editing chrome but keeps document content", async ({
 }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "+ Add your first section" }).click();
-  await page.getByRole("button", { name: "Section", exact: true }).click();
+  await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.locator(".document-header__title").fill("Printable Rider");
   await page.locator(".section-frame__title").first().fill("Printable Section");
 

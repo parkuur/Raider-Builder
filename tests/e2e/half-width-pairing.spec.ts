@@ -6,7 +6,9 @@ test.describe("half-width pairing UI", () => {
     await page
       .getByRole("button", { name: "+ Add your first section" })
       .click();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
     await expect(page.locator(".pair-slot")).toHaveCount(0);
   });
 

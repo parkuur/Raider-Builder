@@ -31,6 +31,8 @@ export interface SectionRegistryEntry<T extends SectionType = SectionType> {
   type: T;
   label: string;
   half: boolean;
+  /** Whether this type is offered in the "Add Section" menu. Defaults to true. */
+  addable?: boolean;
   defaultData: () => SectionDataMap[T];
   component: Component<SectionComponentProps<T>>;
 }
@@ -42,6 +44,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "placeholder",
     label: "Section",
     half: false,
+    addable: false,
     defaultData: () => ({ note: "" }),
     component: PlaceholderSection,
   },
