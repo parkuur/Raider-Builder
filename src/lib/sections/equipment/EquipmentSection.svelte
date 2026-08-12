@@ -7,6 +7,8 @@
     updateEquipmentItem,
   } from "../../model/equipment";
   import { setEquipmentData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
 
   let {
     rowId,
@@ -34,6 +36,9 @@
             ),
           )}
       />
+      {#if list.items.length === 0}
+        <SectionEmptyHint text="No items yet — add one below." />
+      {/if}
       {#each list.items as item (item.id)}
         <div class="equipment-section__item">
           <input
@@ -58,17 +63,13 @@
                 }),
               )}
           />
-          <button
-            type="button"
-            class="equipment-section__item-remove no-print"
-            aria-label="Remove item"
+          <RemoveButton
+            label="Remove item"
             onclick={() =>
               commit(
                 removeEquipmentItem(section.data, listIndex as 0 | 1, item.id),
               )}
-          >
-            ×
-          </button>
+          />
         </div>
       {/each}
       <button
@@ -130,16 +131,6 @@
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
-    padding: 4px;
-  }
-
-  .equipment-section__item-remove {
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: var(--font-size-body);
-    line-height: 1;
     padding: 4px;
   }
 

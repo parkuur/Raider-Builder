@@ -15,6 +15,8 @@
   } from "../../model/quicklook";
   import { setQuickLookData } from "../../state/document.svelte";
   import type { IconKey } from "../../model/icon-keys";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
 
   let {
     rowId,
@@ -28,6 +30,9 @@
 </script>
 
 <div class="quicklook-section">
+  {#if section.data.topics.length === 0}
+    <SectionEmptyHint text="No topics yet — add a row or table topic above." />
+  {/if}
   {#each section.data.topics as topic, index (topic.id)}
     <div class="quicklook-section__topic">
       <QuickLookTopicHeader
@@ -91,15 +96,11 @@
                   }),
                 )}
             />
-            <button
-              type="button"
-              class="quicklook-section__line-remove no-print"
-              aria-label="Remove line"
+            <RemoveButton
+              label="Remove line"
               onclick={() =>
                 commit(removeQuickLookLine(section.data, topic.id, line.id))}
-            >
-              ×
-            </button>
+            />
           </div>
         {/each}
         <button
@@ -191,16 +192,6 @@
     color: var(--color-text);
     font-size: var(--font-size-body);
     padding: 4px var(--space-2);
-  }
-
-  .quicklook-section__line-remove {
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: var(--font-size-body);
-    line-height: 1;
-    padding: 4px;
   }
 
   .quicklook-section__add-line {

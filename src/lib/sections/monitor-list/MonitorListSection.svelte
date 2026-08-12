@@ -10,6 +10,7 @@
   } from "../../model/monitor-list";
   import { numberRows } from "../../model/row-list";
   import { setMonitorListData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
 
   let {
     rowId,
@@ -27,6 +28,9 @@
   }
 </script>
 
+{#if section.data.rows.length === 0}
+  <SectionEmptyHint text="No monitor mixes yet — add one below." />
+{/if}
 <table class="monitor-list">
   <thead>
     <tr>

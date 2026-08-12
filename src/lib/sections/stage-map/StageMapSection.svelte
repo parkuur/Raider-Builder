@@ -13,6 +13,7 @@
   } from "../../model/stage-map";
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
 
   let {
     rowId,
@@ -65,6 +66,9 @@
   {/each}
 </div>
 
+{#if section.data.items.length === 0}
+  <SectionEmptyHint text="No items placed yet — choose a category above." />
+{/if}
 <div
   class="stage-map__canvas"
   bind:this={canvasEl}
@@ -106,7 +110,7 @@
         ×
       </button>
       <input
-        class="stage-map__label no-print"
+        class="stage-map__label"
         value={item.label}
         oninput={(e) =>
           commit(
@@ -145,6 +149,7 @@
     position: relative;
     width: 100%;
     border: 1px solid var(--color-border);
+    break-inside: avoid;
     background-image:
       repeating-linear-gradient(
         0deg,

@@ -84,8 +84,33 @@ test.describe("Stage Map section", () => {
     ).toBeHidden();
     await expect(page.locator(".stage-map__resize-handle")).toBeHidden();
     await expect(page.locator(".stage-map__depth-handle")).toBeHidden();
-    await expect(page.locator(".stage-map__label")).toBeHidden();
     await expect(page.locator(".stage-map__canvas")).toBeVisible();
     await expect(page.locator('[data-category="riser"]')).toBeVisible();
+
+    // Item labels must stay visible in print — the direct regression test
+    // for the bug where `.stage-map__label` carried `no-print` and labels
+    // vanished from the printed output entirely, leaving only the
+    // category abbreviation.
+    await expect(page.locator(".stage-map__label")).toBeVisible();
+  });
+
+  test("item label text prints with a borderless, plain-text appearance", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.locator(".stage-map__label").fill("Lead Vox");
+
+    await page.emulateMedia({ media: "print" });
+
+    await expect(page.locator(".stage-map__label")).toHaveValue("Lead Vox");
+    const borderColor = await page
+      .locator(".stage-map__label")
+      .evaluate((el) => getComputedStyle(el).borderColor);
+    expect(borderColor).toMatch(/^rgba\(0, 0, 0, 0\)$|transparent$/);
   });
 });

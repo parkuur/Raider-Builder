@@ -47,7 +47,7 @@ test.describe("Equipment section", () => {
 
     await lists
       .nth(0)
-      .locator(".equipment-section__item-remove")
+      .getByRole("button", { name: "Remove item" })
       .nth(1)
       .click();
     await expect(lists.nth(0).locator(".equipment-section__item")).toHaveCount(
@@ -81,7 +81,7 @@ test.describe("Equipment section", () => {
       page.getByRole("button", { name: "+ Add item" }).first(),
     ).toBeHidden();
     await expect(
-      page.locator(".equipment-section__item-remove").first(),
+      page.getByRole("button", { name: "Remove item" }).first(),
     ).toBeHidden();
     await expect(
       page.locator(".equipment-section__title").first(),

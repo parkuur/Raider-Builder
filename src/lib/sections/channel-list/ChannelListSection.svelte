@@ -10,6 +10,7 @@
   } from "../../model/channel-list";
   import { numberRows } from "../../model/row-list";
   import { setChannelListData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
 
   let {
     rowId,
@@ -27,6 +28,9 @@
   }
 </script>
 
+{#if section.data.rows.length === 0}
+  <SectionEmptyHint text="No channels yet — add one below." />
+{/if}
 <table class="channel-list">
   <thead>
     <tr>

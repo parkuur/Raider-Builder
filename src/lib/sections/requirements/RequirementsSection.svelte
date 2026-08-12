@@ -7,6 +7,7 @@
     updateRequirementGroup,
   } from "../../model/requirements";
   import { setRequirementsData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
 
   let {
     rowId,
@@ -20,6 +21,9 @@
 </script>
 
 <div class="requirements-section">
+  {#if section.data.groups.length === 0}
+    <SectionEmptyHint text="No requirements yet — add one below." />
+  {/if}
   {#each section.data.groups as group, index (group.id)}
     <div class="requirements-section__group">
       <div class="requirements-section__group-head">

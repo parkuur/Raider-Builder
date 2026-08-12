@@ -75,7 +75,7 @@ test.describe("Quick Look section", () => {
       "Load-in",
     );
 
-    await line.locator(".quicklook-section__line-remove").click();
+    await line.getByRole("button", { name: "Remove line" }).click();
     await expect(tableTopic.locator(".quicklook-section__line")).toHaveCount(0);
   });
 
@@ -98,7 +98,9 @@ test.describe("Quick Look section", () => {
     await expect(
       page.getByRole("button", { name: "+ Add Row Topic" }),
     ).toBeHidden();
-    await expect(page.locator(".quicklook-topic-header__remove")).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "Remove topic" }),
+    ).toBeHidden();
     await expect(page.locator(".icon-picker__select")).toBeHidden();
     await expect(page.locator(".quicklook-topic-header__title")).toBeVisible();
     await expect(page.locator(".quicklook-section__value")).toBeVisible();
