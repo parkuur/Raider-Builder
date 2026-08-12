@@ -157,6 +157,14 @@ E2e testing gets its own standing requirement, separate from unit testing:
   branched from `main`. Stories within an epic are commits on that branch, not separate branches.
   When the epic's stories are done, open a PR from the epic branch back to `main` for review before
   merging.
+- **Commit each story as soon as it's done — do not batch work across stories and split it into
+  commits afterward.** Finish a story, run the relevant local checks (§10) against it, commit it,
+  then move to the next story. Reconstructing a clean per-story history after the fact (e.g. by
+  writing files in one pass then editing them back down to intermediate states just to split the
+  diff into commits) is wasted work and wasted usage — the history should be a byproduct of the
+  order work actually happened in, not a reenactment of it. This applies inside a single working
+  session as much as across sessions: don't treat "the epic branch" as one big change to commit at
+  the end.
 - No direct pushes to `main` without review, even solo; open a PR against yourself if you want a
   reviewable diff and history. There is no CI gate (see below), so these practices are self-enforced.
 - No GitHub Actions / CI pipeline for now. Local scripts (§10) are the only gate — run them before

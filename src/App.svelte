@@ -1,6 +1,5 @@
-<script lang="ts"></script>
+<script lang="ts">
+  import DocumentShell from "./lib/components/DocumentShell.svelte";
+</script>
 
-<main>
-  <h1>Technical Rider Editor</h1>
-  <p>Document and section editing arrives in later epics.</p>
-</main>
+<DocumentShell />
