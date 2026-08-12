@@ -126,7 +126,10 @@
     flex-direction: column;
     gap: var(--space-1);
     padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--color-border);
+  }
+
+  .quicklook-section__topic:not(:first-child) {
+    border-top: 1px solid var(--color-border);
   }
 
   .quicklook-section__topic--drag-over {
