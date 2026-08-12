@@ -1,4 +1,5 @@
 import { createId } from "./id";
+import { clamp } from "./util";
 
 export interface ContactRow {
   id: string;
@@ -50,4 +51,18 @@ export function updateContact(
       c.id === contactId ? { ...c, ...patch } : c,
     ),
   };
+}
+
+export function reorderContacts(
+  data: ContactsSectionData,
+  fromIndex: number,
+  toIndex: number,
+): ContactsSectionData {
+  if (fromIndex < 0 || fromIndex >= data.contacts.length) return data;
+  const target = clamp(toIndex, 0, data.contacts.length - 1);
+  if (fromIndex === target) return data;
+  const contacts = [...data.contacts];
+  const [moved] = contacts.splice(fromIndex, 1);
+  contacts.splice(target, 0, moved!);
+  return { ...data, contacts };
 }
