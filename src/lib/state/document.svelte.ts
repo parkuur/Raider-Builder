@@ -11,6 +11,7 @@ import type { MonitorListSectionData } from "../model/monitor-list";
 import type { BandMembersSectionData } from "../model/band-members";
 import type { StageMapSectionData } from "../model/stage-map";
 import type { ContactsSectionData } from "../model/contacts";
+import type { QuickLookSectionData } from "../model/quicklook";
 
 let state = $state<RiderDocument>(createEmptyDocument());
 
@@ -150,6 +151,14 @@ export function setContactsData(
   data: ContactsSectionData,
 ): void {
   state = mutations.setSectionData(state, rowId, sectionId, "contacts", data);
+}
+
+export function setQuickLookData(
+  rowId: string,
+  sectionId: string,
+  data: QuickLookSectionData,
+): void {
+  state = mutations.setSectionData(state, rowId, sectionId, "quicklook", data);
 }
 
 export function setHeaderField<K extends keyof Header>(
