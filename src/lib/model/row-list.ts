@@ -1,7 +1,10 @@
 import { clamp } from "./util";
 
-export interface PairableRow {
+export interface ListRow {
   id: string;
+}
+
+export interface PairableRow extends ListRow {
   pairedWithId: string | undefined;
 }
 
@@ -10,7 +13,7 @@ export interface NumberedRow {
   label: string;
 }
 
-export function addListRow<R extends PairableRow>(
+export function addListRow<R extends ListRow>(
   rows: R[],
   makeRow: () => R,
   atIndex?: number,
@@ -32,7 +35,7 @@ export function removeListRow<R extends PairableRow>(
     );
 }
 
-export function reorderListRows<R extends PairableRow>(
+export function reorderListRows<R extends ListRow>(
   rows: R[],
   fromIndex: number,
   toIndex: number,
