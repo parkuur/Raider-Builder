@@ -60,3 +60,25 @@ verified).
      row alongside Contacts.
 - Any gap found is filed as a follow-up story (in this file or a new epic) before this story is
   considered done — this pass exists to catch integration issues the per-epic specs couldn't see.
+
+**QA results (2026-08-12)**
+
+Executed against one document containing Channel List (with a Snare Top/Bottom stereo pair),
+Requirements, Band Members (7 members), Stage Map (a mic and a DI icon at the same default position),
+Monitor List, Equipment, and a paired Contacts + Quick Look (one row topic, one table topic) row.
+
+1. **Band Members balance** — PASS. With 7 members alongside the other 7 sections, rows grouped as
+   `[4, 3]`, matching `balancedRows(7)`'s contract.
+2. **Stereo-pair numbering survives a document-level reorder** — PASS. Channel numbering before a
+   whole-row drag (Channel List's row dragged from the top of the document to between Stage Map and
+   Monitor List, past Requirements and Band Members) was `["1", "2–3", "", "4"]`; identical after the
+   drag. The pair stayed keyed by row ID through the reorder, as designed.
+3. **Stage Map click-to-front with other sections present** — PASS. Item B (DI, created second)
+   rendered above item A (mic, created first) at baseline (`z-index` 2 vs 1); clicking A raised it
+   above B (`z-index` 3 vs 2), with Requirements/Band Members above and Monitor List/Equipment below
+   the Stage Map section in the same document.
+4. **Quick Look icon parity paired with Contacts** — PASS. Both the row topic and the table topic
+   rendered an `.icon-glyph` with a `data-icon` attribute (`"zap"`, the default) while paired
+   side-by-side with Contacts in one row.
+
+No gaps found; no follow-up story filed.
