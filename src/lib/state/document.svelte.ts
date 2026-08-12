@@ -9,6 +9,7 @@ import type { EquipmentSectionData } from "../model/equipment";
 import type { ChannelListSectionData } from "../model/channel-list";
 import type { MonitorListSectionData } from "../model/monitor-list";
 import type { BandMembersSectionData } from "../model/band-members";
+import type { StageMapSectionData } from "../model/stage-map";
 
 let state = $state<RiderDocument>(createEmptyDocument());
 
@@ -132,6 +133,14 @@ export function setBandMembersData(
     "band-members",
     data,
   );
+}
+
+export function setStageMapData(
+  rowId: string,
+  sectionId: string,
+  data: StageMapSectionData,
+): void {
+  state = mutations.setSectionData(state, rowId, sectionId, "stage-map", data);
 }
 
 export function setHeaderField<K extends keyof Header>(

@@ -3,6 +3,7 @@ import type { ChannelListSectionData } from "./channel-list";
 import type { EquipmentSectionData } from "./equipment";
 import type { MonitorListSectionData } from "./monitor-list";
 import type { RequirementsSectionData } from "./requirements";
+import type { StageMapSectionData } from "./stage-map";
 
 export interface PlaceholderSectionData {
   note: string;
@@ -15,6 +16,7 @@ export interface SectionDataMap {
   "channel-list": ChannelListSectionData;
   "monitor-list": MonitorListSectionData;
   "band-members": BandMembersSectionData;
+  "stage-map": StageMapSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;
