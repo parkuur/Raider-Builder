@@ -14,6 +14,7 @@
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
 
   let {
     rowId,
@@ -101,22 +102,26 @@
           }}
         ></div>
       {/if}
-      <button
-        type="button"
-        class="stage-map__remove no-print"
-        aria-label="Remove item"
-        onclick={() => commit(removeStageItem(section.data, item.id))}
-      >
-        ×
-      </button>
-      <input
+      <div class="stage-map__remove no-print">
+        <RemoveButton
+          label="Remove item"
+          onclick={() => commit(removeStageItem(section.data, item.id))}
+        />
+      </div>
+      <textarea
         class="stage-map__label"
+        rows={item.label.split("\n").length}
         value={item.label}
         oninput={(e) =>
           commit(
             updateStageItemLabel(section.data, item.id, e.currentTarget.value),
           )}
-      />
+        onkeydown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}></textarea>
     </div>
   {/each}
   <div
@@ -196,9 +201,22 @@
     width: 40px;
     height: 36px;
     border: none;
-    background: var(--color-accent);
+    background: transparent;
     color: var(--color-background);
+  }
+
+  /*
+   * The triangle shape lives on a ::before layer rather than on the item
+   * itself — clip-path clips the item's own descendants too, which hid
+   * the remove button and label of every triangle (power) item.
+   */
+  .stage-map__item--triangle::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--color-accent);
     clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    z-index: -1;
   }
 
   .stage-map__abbr {
@@ -223,16 +241,8 @@
 
   .stage-map__remove {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 14px;
-    height: 14px;
-    line-height: 1;
-    border: none;
-    background: var(--color-danger);
-    color: #fff;
-    cursor: pointer;
-    font-size: 10px;
+    top: -10px;
+    right: -10px;
   }
 
   .stage-map__label {
@@ -241,10 +251,14 @@
     left: 50%;
     transform: translateX(-50%);
     width: 70px;
+    resize: none;
+    overflow: hidden;
     text-align: center;
+    line-height: 1.3;
     border: none;
     background: transparent;
     color: var(--color-text);
+    font-family: inherit;
     font-size: 9px;
   }
 

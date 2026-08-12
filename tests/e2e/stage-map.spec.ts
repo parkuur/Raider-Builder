@@ -113,4 +113,68 @@ test.describe("Stage Map section", () => {
       .evaluate((el) => getComputedStyle(el).borderColor);
     expect(borderColor).toMatch(/^rgba\(0, 0, 0, 0\)$|transparent$/);
   });
+
+  test("the power item's label and remove button aren't clipped by its triangle shape", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "PWR", exact: true }).click();
+
+    const item = page.locator('[data-category="power"]');
+    await expect(item.locator(".stage-map__label")).toBeVisible();
+    await item.locator(".stage-map__label").fill("Power");
+    await expect(item.locator(".stage-map__label")).toHaveValue("Power");
+    await expect(
+      item.getByRole("button", { name: "Remove item" }),
+    ).toBeVisible();
+  });
+
+  test("Shift+Enter adds a line break in the label; Enter alone does not", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const label = page.locator(".stage-map__label");
+    await label.fill("Vox");
+    await label.press("Shift+Enter");
+    await label.type("Lead");
+    await expect(label).toHaveValue("Vox\nLead");
+
+    await label.press("Enter");
+    await expect(label).not.toBeFocused();
+    await expect(label).toHaveValue("Vox\nLead");
+  });
+
+  test("clicking the label with a real pointer click focuses it for typing", async ({
+    page,
+  }) => {
+    // Regression test: the item's drag handler lived on the whole item box
+    // and called preventDefault() on every pointerdown, including ones that
+    // bubbled up from the label — that silently blocks the browser from
+    // focusing the label, so `.fill()` (which focuses programmatically
+    // rather than via a real click) didn't catch it.
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const label = page.locator(".stage-map__label");
+    // Triple-click selects the item's pre-filled default label so typing
+    // replaces it, matching how a real user would edit it.
+    await label.click({ clickCount: 3 });
+    await expect(label).toBeFocused();
+    await page.keyboard.type("Lead Vox");
+    await expect(label).toHaveValue("Lead Vox");
+  });
 });
