@@ -1,0 +1,43 @@
+:root {
+  /* Color */
+  --color-background: #f2f2f3;
+  --color-text: #1d1f20;
+  --color-accent: #5980a6;
+  --color-border: color-mix(in srgb, var(--color-text) 16%, transparent);
+  --color-text-muted: color-mix(in srgb, var(--color-text) 55%, transparent);
+  --color-text-subtle: color-mix(in srgb, var(--color-text) 45%, transparent);
+
+  /* Type */
+  --font-body: "Barlow", system-ui, sans-serif;
+  --font-heading: "Barlow Condensed", system-ui, sans-serif;
+  --font-size-label: 10.5px;
+  --font-size-body: 13px;
+  --font-size-section-title: 18px;
+  --font-size-doc-title: 34px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+}
