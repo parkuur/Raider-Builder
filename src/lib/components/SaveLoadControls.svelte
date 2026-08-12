@@ -3,6 +3,8 @@
   import { parseDocumentJson } from "../model/persistence";
   import { downloadDocument, readFileAsText } from "../state/persistence";
   import { getDocument, setDocument } from "../state/document.svelte";
+  import { createEmptyDocument } from "../model/document-types";
+  import ChromeIcon from "./icons/ChromeIcon.svelte";
 
   let fileInput: HTMLInputElement | undefined = $state();
   let error = $state<string | null>(null);
@@ -17,6 +19,11 @@
 
   function print(): void {
     window.print();
+  }
+
+  function clear(): void {
+    if (window.confirm("Clear the current document? This can't be undone."))
+      setDocument(createEmptyDocument());
   }
 
   async function onFileChosen(e: Event): Promise<void> {
@@ -43,17 +50,32 @@
     class="save-load-controls__file-input"
     onchange={onFileChosen}
   />
-  <button type="button" class="save-load-controls__button" onclick={triggerLoad}
-    >Load</button
+  <button
+    type="button"
+    class="save-load-controls__button"
+    onclick={triggerLoad}
   >
-  <button type="button" class="save-load-controls__button" onclick={save}
-    >Save</button
+    <ChromeIcon key="upload" size={16} />
+    Load
+  </button>
+  <button type="button" class="save-load-controls__button" onclick={save}>
+    <ChromeIcon key="download" size={16} />
+    Save
+  </button>
+  <button
+    type="button"
+    class="save-load-controls__button save-load-controls__button--danger"
+    onclick={clear}
   >
+    <ChromeIcon key="trash" size={16} />
+    Clear
+  </button>
   <button
     type="button"
     class="save-load-controls__button save-load-controls__button--primary"
     onclick={print}
   >
+    <ChromeIcon key="printer" size={16} />
     Print / PDF
   </button>
 </div>
@@ -87,21 +109,26 @@
   .save-load-controls__button {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-2) var(--space-4);
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
     cursor: pointer;
     font-family: var(--font-heading);
     font-weight: 600;
-    font-size: var(--font-size-label);
+    font-size: var(--font-size-body);
   }
 
   .save-load-controls__button--primary {
     border-color: var(--color-accent);
     background: var(--color-accent);
     color: var(--color-background);
+  }
+
+  .save-load-controls__button--danger {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
   }
 
   .save-load-controls__error {
