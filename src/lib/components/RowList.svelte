@@ -83,4 +83,8 @@
   {/if}
 </div>
 
-<AddSectionMenu open={addMenuAtIndex !== null} onPick={pickType} onClose={closeAddMenu} />
+<AddSectionMenu
+  open={addMenuAtIndex !== null}
+  onPick={pickType}
+  onClose={closeAddMenu}
+/>
