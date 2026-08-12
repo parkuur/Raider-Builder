@@ -1,0 +1,18 @@
+@page {
+  size: A4;
+  margin: 0.7in;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .hidden-from-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+}
