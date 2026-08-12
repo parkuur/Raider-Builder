@@ -41,5 +41,20 @@
     />
     <path d="M10 11 v7" />
     <path d="M14 11 v7" />
+  {:else if key === "plus"}
+    <path d="M12 4 V20" />
+    <path d="M4 12 H20" />
+  {:else if key === "upload"}
+    <path d="M12 15 V4" />
+    <path d="M7 9 L12 4 L17 9" />
+    <path d="M4 19 H20" />
+  {:else if key === "download"}
+    <path d="M12 4 V15" />
+    <path d="M7 10 L12 15 L17 10" />
+    <path d="M4 19 H20" />
+  {:else if key === "printer"}
+    <rect x="6" y="2" width="12" height="7" rx="1" />
+    <rect x="3" y="8" width="18" height="9" rx="1.5" />
+    <rect x="7" y="14" width="10" height="8" rx="1" />
   {/if}
 </svg>
