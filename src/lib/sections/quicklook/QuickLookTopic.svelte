@@ -7,6 +7,7 @@
     addQuickLookLine,
     removeQuickLookLine,
     removeQuickLookTopic,
+    reorderQuickLookTopics,
     setQuickLookTopicIcon,
     setQuickLookTopicTitle,
     updateQuickLookLine,
@@ -15,19 +16,39 @@
   import type { IconKey } from "../../model/icon-keys";
   import QuickLookTopicHeader from "./QuickLookTopicHeader.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import DragHandle from "../../components/DragHandle.svelte";
+  import type { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     data,
     topic,
+    drag,
     onCommit,
   }: {
     data: QuickLookSectionData;
     topic: Topic;
+    drag: DragReorderState;
     onCommit: (next: QuickLookSectionData) => void;
   } = $props();
 </script>
 
-<div class="quicklook-section__topic">
+<div
+  class="quicklook-section__topic"
+  class:quicklook-section__topic--drag-over={drag.isOver(topic.id)}
+  role="presentation"
+  ondragover={(e) => {
+    e.preventDefault();
+    drag.over(topic.id);
+  }}
+  ondrop={(e) => {
+    e.preventDefault();
+    const move = drag.resolveDrop(
+      data.topics.map((t) => t.id),
+      topic.id,
+    );
+    if (move) onCommit(reorderQuickLookTopics(data, move[0], move[1]));
+  }}
+>
   <QuickLookTopicHeader
     iconKey={topic.iconKey}
     title={topic.title}
@@ -37,6 +58,12 @@
       onCommit(setQuickLookTopicTitle(data, topic.id, title))}
     onRemove={() => onCommit(removeQuickLookTopic(data, topic.id))}
   >
+    {#snippet leading()}
+      <DragHandle
+        onDragStart={() => drag.start(topic.id)}
+        onDragEnd={() => drag.end()}
+      />
+    {/snippet}
     {#snippet trailing()}
       {#if topic.kind === "row"}
         <input
@@ -100,6 +127,11 @@
     gap: var(--space-1);
     padding: var(--space-2) 0;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .quicklook-section__topic--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .quicklook-section__value {

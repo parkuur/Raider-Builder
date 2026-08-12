@@ -4,6 +4,7 @@
   import { addQuickLookTopic } from "../../model/quicklook";
   import { setQuickLookData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     rowId,
@@ -14,6 +15,8 @@
   function commit(data: typeof section.data) {
     setQuickLookData(rowId, section.id, data);
   }
+
+  const drag = new DragReorderState();
 </script>
 
 <div class="quicklook-section">
@@ -21,7 +24,7 @@
     <SectionEmptyHint text="No topics yet — add a row or table topic above." />
   {/if}
   {#each section.data.topics as topic (topic.id)}
-    <QuickLookTopic data={section.data} {topic} onCommit={commit} />
+    <QuickLookTopic data={section.data} {topic} {drag} onCommit={commit} />
   {/each}
   <div class="quicklook-section__add-buttons no-print">
     <button

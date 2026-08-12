@@ -43,12 +43,10 @@ test.describe("Channel List stereo pairing", () => {
       .click();
     await expect(numbers).toHaveText(["1", "2–3", "", "4"]);
 
-    // Move D (last row) up above the pair, without interposing between B and
+    // Drag D (last row) above the pair, without interposing between B and
     // C — the pair must stay adjacent and keep showing a combined label,
     // just renumbered.
-    await rows.nth(3).getByRole("button", { name: "Move up" }).click();
-    await rows.nth(2).getByRole("button", { name: "Move up" }).click();
-    await rows.nth(1).getByRole("button", { name: "Move up" }).click();
+    await rows.nth(3).locator(".drag-handle").dragTo(rows.nth(0));
     await expectNameOrder(["D", "A", "B", "C"]);
     await expect(numbers).toHaveText(["1", "2", "3–4", ""]);
 

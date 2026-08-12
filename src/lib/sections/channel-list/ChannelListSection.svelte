@@ -11,6 +11,8 @@
   import { numberRows } from "../../model/row-list";
   import { setChannelListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import DragHandle from "../../components/DragHandle.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     rowId,
@@ -26,6 +28,8 @@
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
+
+  const drag = new DragReorderState();
 </script>
 
 {#if section.data.rows.length === 0}
@@ -34,6 +38,7 @@
 <table class="channel-list">
   <thead>
     <tr>
+      <th class="no-print"></th>
       <th class="channel-list__num">Ch</th>
       <th>Channel</th>
       <th>Source</th>
@@ -45,7 +50,27 @@
   <tbody>
     {#each section.data.rows as row, index (row.id)}
       {@const next = section.data.rows[index + 1]}
-      <tr>
+      <tr
+        class:channel-list__row--drag-over={drag.isOver(row.id)}
+        ondragover={(e) => {
+          e.preventDefault();
+          drag.over(row.id);
+        }}
+        ondrop={(e) => {
+          e.preventDefault();
+          const move = drag.resolveDrop(
+            section.data.rows.map((r) => r.id),
+            row.id,
+          );
+          if (move) commit(reorderChannelRows(section.data, move[0], move[1]));
+        }}
+      >
+        <td class="channel-list__drag no-print">
+          <DragHandle
+            onDragStart={() => drag.start(row.id)}
+            onDragEnd={() => drag.end()}
+          />
+        </td>
         <td class="channel-list__num">{labelFor(row.id)}</td>
         <td>
           <input
@@ -117,26 +142,6 @@
           {/if}
           <button
             type="button"
-            aria-label="Move up"
-            title="Move up"
-            disabled={index === 0}
-            onclick={() =>
-              commit(reorderChannelRows(section.data, index, index - 1))}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            aria-label="Move down"
-            title="Move down"
-            disabled={index === section.data.rows.length - 1}
-            onclick={() =>
-              commit(reorderChannelRows(section.data, index, index + 1))}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
             title="Remove"
             onclick={() => commit(removeChannelRow(section.data, row.id))}
           >
@@ -186,6 +191,16 @@
   .channel-list__phantom {
     width: 44px;
     text-align: center;
+  }
+
+  .channel-list__drag {
+    width: 20px;
+    text-align: center;
+  }
+
+  .channel-list__row--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .channel-list input {
