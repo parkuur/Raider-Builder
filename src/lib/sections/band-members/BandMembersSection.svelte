@@ -69,14 +69,14 @@
               onclick={() => commit(removeBandMember(section.data, member.id))}
             />
           </div>
-          <div class="band-members__avatar">
-            {#if section.data.photoEnabled && member.photoData}
-              <img src={member.photoData} alt="" />
-            {:else}
-              <span>{memberInitials(member.name)}</span>
-            {/if}
-          </div>
           {#if section.data.photoEnabled}
+            <div class="band-members__avatar">
+              {#if member.photoData}
+                <img src={member.photoData} alt="" />
+              {:else}
+                <span>{memberInitials(member.name)}</span>
+              {/if}
+            </div>
             <input
               type="file"
               accept="image/*"
@@ -139,6 +139,7 @@
 
   .band-members__row {
     display: flex;
+    justify-content: center;
     gap: var(--space-3);
   }
 
