@@ -2,11 +2,32 @@
   import SectionFrame from "./SectionFrame.svelte";
   import type { Row } from "../model/document-types";
 
-  let { row }: { row: Row } = $props();
+  let {
+    row,
+    dragging,
+    onDragStart,
+    onDragEnd,
+  }: {
+    row: Row;
+    dragging: boolean;
+    onDragStart: () => void;
+    onDragEnd: () => void;
+  } = $props();
 </script>
 
-<div class="row-view">
-  <div class="row-view__handle no-print" aria-hidden="true">⠿</div>
+<div class="row-view" class:row-view--dragging={dragging}>
+  <div
+    class="row-view__handle no-print"
+    draggable="true"
+    ondragstart={onDragStart}
+    ondragend={onDragEnd}
+    title="Drag to reorder"
+    role="button"
+    tabindex="0"
+    aria-label="Drag to reorder row"
+  >
+    ⠿
+  </div>
   <div class="row-view__sections">
     {#each row.sections as section (section.id)}
       <SectionFrame rowId={row.id} {section} />
@@ -22,12 +43,17 @@
     margin-bottom: var(--space-1);
   }
 
+  .row-view--dragging {
+    opacity: 0.5;
+  }
+
   .row-view__handle {
     flex: none;
     width: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: grab;
     opacity: 0.35;
     padding-top: var(--space-4);
   }
