@@ -7,11 +7,13 @@
     dragging,
     onDragStart,
     onDragEnd,
+    onPairRequest,
   }: {
     row: Row;
     dragging: boolean;
     onDragStart: () => void;
     onDragEnd: () => void;
+    onPairRequest: (rowId: string) => void;
   } = $props();
 </script>
 
@@ -30,7 +32,12 @@
   </div>
   <div class="row-view__sections">
     {#each row.sections as section (section.id)}
-      <SectionFrame rowId={row.id} {section} />
+      <SectionFrame
+        rowId={row.id}
+        {section}
+        sectionCount={row.sections.length}
+        {onPairRequest}
+      />
     {/each}
   </div>
 </div>

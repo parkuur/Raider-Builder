@@ -5,11 +5,22 @@
     removeSection,
     setSectionTitle,
     toggleSectionHidden,
+    unpairSection,
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
 
-  let { rowId, section }: { rowId: string; section: Section } = $props();
+  let {
+    rowId,
+    section,
+    sectionCount,
+    onPairRequest,
+  }: {
+    rowId: string;
+    section: Section;
+    sectionCount: number;
+    onPairRequest: (rowId: string) => void;
+  } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
   // union of per-key entry types, which TS can't recombine into one entry
@@ -17,6 +28,8 @@
   // `section` and the looked-up entry are always keyed by the same runtime
   // `type`.
   const Entry = $derived(sectionRegistry[section.type] as SectionRegistryEntry);
+  const canPair = $derived(Entry.half && sectionCount === 1);
+  const canUnpair = $derived(Entry.half && sectionCount === 2);
 </script>
 
 <div class="section-frame" class:hidden-from-print={section.hidden}>
@@ -28,6 +41,26 @@
       placeholder="Section title"
     />
     <div class="section-frame__actions no-print">
+      {#if canPair}
+        <button
+          type="button"
+          class="section-frame__action"
+          title="Pair"
+          onclick={() => onPairRequest(rowId)}
+        >
+          Pair
+        </button>
+      {/if}
+      {#if canUnpair}
+        <button
+          type="button"
+          class="section-frame__action"
+          title="Unpair"
+          onclick={() => unpairSection(rowId, section.id)}
+        >
+          Unpair
+        </button>
+      {/if}
       <button
         type="button"
         class="section-frame__action"
