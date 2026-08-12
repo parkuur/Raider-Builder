@@ -1,8 +1,24 @@
 <script lang="ts">
-  let { onClick }: { onClick: () => void } = $props();
+  let {
+    onClick,
+    active,
+    onDragOver,
+    onDrop,
+  }: {
+    onClick: () => void;
+    active: boolean;
+    onDragOver: (e: DragEvent) => void;
+    onDrop: (e: DragEvent) => void;
+  } = $props();
 </script>
 
-<div class="pair-slot no-print">
+<div
+  class="pair-slot no-print"
+  class:pair-slot--active={active}
+  role="presentation"
+  ondragover={onDragOver}
+  ondrop={onDrop}
+>
   <button
     type="button"
     class="pair-slot__button"
@@ -35,5 +51,10 @@
     font-family: var(--font-heading);
     font-weight: 600;
     letter-spacing: 0.02em;
+  }
+
+  .pair-slot--active .pair-slot__button {
+    border-style: solid;
+    border-color: var(--color-accent);
   }
 </style>

@@ -5,20 +5,26 @@
     removeSection,
     setSectionTitle,
     toggleSectionHidden,
-    unpairSection,
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
   import ChromeIcon from "./icons/ChromeIcon.svelte";
+  import DragHandle from "./DragHandle.svelte";
 
   let {
     rowId,
     section,
     sectionCount,
+    dragging,
+    onSectionDragStart,
+    onSectionDragEnd,
   }: {
     rowId: string;
     section: Section;
     sectionCount: number;
+    dragging: boolean;
+    onSectionDragStart: () => void;
+    onSectionDragEnd: () => void;
   } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
@@ -27,11 +33,21 @@
   // `section` and the looked-up entry are always keyed by the same runtime
   // `type`.
   const Entry = $derived(sectionRegistry[section.type] as SectionRegistryEntry);
-  const canUnpair = $derived(Entry.half && sectionCount === 2);
 </script>
 
-<div class="section-frame" class:hidden-from-print={section.hidden}>
+<div
+  class="section-frame"
+  class:hidden-from-print={section.hidden}
+  class:section-frame--dragging={dragging}
+>
   <div class="section-frame__head">
+    {#if sectionCount === 2}
+      <DragHandle
+        onDragStart={onSectionDragStart}
+        onDragEnd={onSectionDragEnd}
+        label="Drag to move or unpair"
+      />
+    {/if}
     <input
       class="section-frame__title"
       value={section.title}
@@ -39,16 +55,6 @@
       placeholder="Section title"
     />
     <div class="section-frame__actions no-print">
-      {#if canUnpair}
-        <button
-          type="button"
-          class="section-frame__action section-frame__action--text"
-          title="Unpair"
-          onclick={() => unpairSection(rowId, section.id)}
-        >
-          Unpair
-        </button>
-      {/if}
       <button
         type="button"
         class="section-frame__action"
@@ -97,6 +103,10 @@
     opacity: 0.6;
   }
 
+  .section-frame--dragging {
+    opacity: 0.5;
+  }
+
   .section-frame__head {
     display: flex;
     align-items: center;
@@ -134,12 +144,5 @@
     background: transparent;
     color: var(--color-text);
     cursor: pointer;
-  }
-
-  .section-frame__action--text {
-    width: auto;
-    height: auto;
-    font-size: var(--font-size-label);
-    padding: 4px var(--space-2);
   }
 </style>

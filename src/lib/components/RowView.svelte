@@ -8,15 +8,27 @@
   let {
     row,
     dragging,
+    draggingSectionId,
+    pairDropActive,
     onDragStart,
     onDragEnd,
+    onSectionDragStart,
+    onSectionDragEnd,
     onPairRequest,
+    onPairDragOver,
+    onPairDrop,
   }: {
     row: Row;
     dragging: boolean;
+    draggingSectionId: string | null;
+    pairDropActive: boolean;
     onDragStart: () => void;
     onDragEnd: () => void;
+    onSectionDragStart: (sectionId: string) => void;
+    onSectionDragEnd: () => void;
     onPairRequest: (rowId: string) => void;
+    onPairDragOver: (e: DragEvent) => void;
+    onPairDrop: (e: DragEvent) => void;
   } = $props();
 
   const soleEntry = $derived(
@@ -46,10 +58,18 @@
         rowId={row.id}
         {section}
         sectionCount={row.sections.length}
+        dragging={draggingSectionId === section.id}
+        onSectionDragStart={() => onSectionDragStart(section.id)}
+        {onSectionDragEnd}
       />
     {/each}
     {#if showPairSlot}
-      <PairSlot onClick={() => onPairRequest(row.id)} />
+      <PairSlot
+        onClick={() => onPairRequest(row.id)}
+        active={pairDropActive}
+        onDragOver={onPairDragOver}
+        onDrop={onPairDrop}
+      />
     {/if}
   </div>
 </div>

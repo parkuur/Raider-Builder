@@ -57,8 +57,30 @@ export function pairSections(rowId: string, type: SectionType): void {
   state = mutations.pairSections(state, rowId, buildSection(type));
 }
 
-export function unpairSection(rowId: string, sectionId: string): void {
-  state = mutations.unpairSection(state, rowId, sectionId);
+export function extractSectionToNewRow(
+  sourceRowId: string,
+  sectionId: string,
+  atIndex: number,
+): void {
+  state = mutations.extractSectionToNewRow(
+    state,
+    sourceRowId,
+    sectionId,
+    atIndex,
+  );
+}
+
+export function moveSectionToPair(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+): void {
+  state = mutations.moveSectionToPair(
+    state,
+    sourceRowId,
+    sectionId,
+    targetRowId,
+  );
 }
 
 export function toggleSectionHidden(rowId: string, sectionId: string): void {

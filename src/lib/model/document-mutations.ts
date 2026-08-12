@@ -88,12 +88,13 @@ export function pairSections(
   return { ...doc, rows };
 }
 
-export function unpairSection(
+export function extractSectionToNewRow(
   doc: RiderDocument,
-  rowId: string,
+  sourceRowId: string,
   sectionId: string,
+  atIndex: number,
 ): RiderDocument {
-  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
+  const rowIndex = doc.rows.findIndex((r) => r.id === sourceRowId);
   if (rowIndex === -1) return doc;
   const row = doc.rows[rowIndex]!;
   if (row.sections.length !== 2) return doc;
@@ -103,7 +104,37 @@ export function unpairSection(
   const rows = [...doc.rows];
   rows[rowIndex] = { ...row, sections: [remaining] };
   const newRow: Row = { id: createId("row"), sections: [removed] };
-  rows.splice(rowIndex + 1, 0, newRow);
+  const insertIndex = clamp(atIndex, 0, rows.length);
+  rows.splice(insertIndex, 0, newRow);
+  return { ...doc, rows };
+}
+
+export function moveSectionToPair(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+): RiderDocument {
+  if (sourceRowId === targetRowId) return doc;
+  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
+  const targetRow = doc.rows.find((r) => r.id === targetRowId);
+  if (!sourceRow || !targetRow) return doc;
+  if (targetRow.sections.length !== 1) return doc;
+  const moved = sourceRow.sections.find((s) => s.id === sectionId);
+  if (!moved) return doc;
+  const sourceRemaining = sourceRow.sections.filter((s) => s.id !== sectionId);
+  let rows = doc.rows.map((r) => {
+    if (r.id === targetRowId) {
+      return { ...r, sections: [targetRow.sections[0], moved] } as Row;
+    }
+    if (r.id === sourceRowId && sourceRemaining.length > 0) {
+      return { ...r, sections: sourceRemaining as [Section] };
+    }
+    return r;
+  });
+  if (sourceRemaining.length === 0) {
+    rows = rows.filter((r) => r.id !== sourceRowId);
+  }
   return { ...doc, rows };
 }
 
