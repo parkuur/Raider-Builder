@@ -114,6 +114,32 @@ test.describe("Stage Map section", () => {
     expect(borderColor).toMatch(/^rgba\(0, 0, 0, 0\)$|transparent$/);
   });
 
+  test("the power item's triangle background is forced to print", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "PWR", exact: true }).click();
+
+    await page.emulateMedia({ media: "print" });
+
+    const colorAdjust = await page
+      .locator('[data-category="power"]')
+      .evaluate(
+        (el) =>
+          getComputedStyle(el, "::before").getPropertyValue(
+            "-webkit-print-color-adjust",
+          ) ||
+          getComputedStyle(el, "::before").getPropertyValue(
+            "print-color-adjust",
+          ),
+      );
+    expect(colorAdjust).toBe("exact");
+  });
+
   test("the power item's label and remove button aren't clipped by its triangle shape", async ({
     page,
   }) => {

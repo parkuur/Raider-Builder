@@ -217,6 +217,11 @@
     background: var(--color-accent);
     clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
     z-index: -1;
+    /* Unlike the other shapes, the triangle has no border — its background
+       fill is the only thing that makes it visible, so it must survive
+       browsers' default of not printing background colors. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .stage-map__abbr {
