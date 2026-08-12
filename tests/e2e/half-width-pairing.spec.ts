@@ -7,11 +7,7 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page.getByRole("button", { name: "Section", exact: true }).click();
-    await expect(
-      page
-        .locator(".section-frame")
-        .getByRole("button", { name: "Pair", exact: true }),
-    ).toHaveCount(0);
+    await expect(page.locator(".pair-slot")).toHaveCount(0);
   });
 
   test("pairing a Quick Look section onto a Contacts section renders them side-by-side, and unpairing splits them back", async ({
@@ -26,8 +22,8 @@ test.describe("half-width pairing UI", () => {
       .click();
 
     await page
-      .locator(".section-frame")
-      .getByRole("button", { name: "Pair", exact: true })
+      .locator(".row-view")
+      .getByRole("button", { name: "Add paired section" })
       .click();
     await expect(
       page.getByRole("dialog", { name: "Add section" }),

@@ -1,5 +1,8 @@
 <script lang="ts">
   import SectionFrame from "./SectionFrame.svelte";
+  import PairSlot from "./PairSlot.svelte";
+  import { sectionRegistry } from "../sections/registry";
+  import type { SectionRegistryEntry } from "../sections/registry";
   import type { Row } from "../model/document-types";
 
   let {
@@ -15,6 +18,13 @@
     onDragEnd: () => void;
     onPairRequest: (rowId: string) => void;
   } = $props();
+
+  const soleEntry = $derived(
+    row.sections.length === 1
+      ? (sectionRegistry[row.sections[0]!.type] as SectionRegistryEntry)
+      : undefined,
+  );
+  const showPairSlot = $derived(soleEntry?.half === true);
 </script>
 
 <div class="row-view" class:row-view--dragging={dragging}>
@@ -36,9 +46,11 @@
         rowId={row.id}
         {section}
         sectionCount={row.sections.length}
-        {onPairRequest}
       />
     {/each}
+    {#if showPairSlot}
+      <PairSlot onClick={() => onPairRequest(row.id)} />
+    {/if}
   </div>
 </div>
 

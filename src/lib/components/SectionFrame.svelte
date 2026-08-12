@@ -15,12 +15,10 @@
     rowId,
     section,
     sectionCount,
-    onPairRequest,
   }: {
     rowId: string;
     section: Section;
     sectionCount: number;
-    onPairRequest: (rowId: string) => void;
   } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
@@ -29,7 +27,6 @@
   // `section` and the looked-up entry are always keyed by the same runtime
   // `type`.
   const Entry = $derived(sectionRegistry[section.type] as SectionRegistryEntry);
-  const canPair = $derived(Entry.half && sectionCount === 1);
   const canUnpair = $derived(Entry.half && sectionCount === 2);
 </script>
 
@@ -42,16 +39,6 @@
       placeholder="Section title"
     />
     <div class="section-frame__actions no-print">
-      {#if canPair}
-        <button
-          type="button"
-          class="section-frame__action section-frame__action--text"
-          title="Pair"
-          onclick={() => onPairRequest(rowId)}
-        >
-          Pair
-        </button>
-      {/if}
       {#if canUnpair}
         <button
           type="button"
