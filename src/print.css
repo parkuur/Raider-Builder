@@ -15,4 +15,25 @@
   body {
     background: #fff;
   }
+
+  input:not([type="checkbox"]),
+  textarea,
+  select {
+    border-color: transparent !important;
+    background: transparent !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  textarea {
+    resize: none;
+  }
+
+  table tr {
+    break-inside: avoid;
+  }
+
+  table thead {
+    display: table-header-group;
+  }
 }

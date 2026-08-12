@@ -106,7 +106,7 @@
         ×
       </button>
       <input
-        class="stage-map__label no-print"
+        class="stage-map__label"
         value={item.label}
         oninput={(e) =>
           commit(
@@ -145,6 +145,7 @@
     position: relative;
     width: 100%;
     border: 1px solid var(--color-border);
+    break-inside: avoid;
     background-image:
       repeating-linear-gradient(
         0deg,
