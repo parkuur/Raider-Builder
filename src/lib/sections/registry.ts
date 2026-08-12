@@ -11,12 +11,16 @@ import ChannelListSection from "./channel-list/ChannelListSection.svelte";
 import MonitorListSection from "./monitor-list/MonitorListSection.svelte";
 import BandMembersSection from "./band-members/BandMembersSection.svelte";
 import StageMapSection from "./stage-map/StageMapSection.svelte";
+import ContactsSection from "./contacts/ContactsSection.svelte";
+import QuickLookSection from "./quicklook/QuickLookSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
 import { defaultMonitorListData } from "../model/monitor-list";
 import { defaultBandMembersData } from "../model/band-members";
 import { defaultStageMapData } from "../model/stage-map";
+import { defaultContactsData } from "../model/contacts";
+import { defaultQuickLookData } from "../model/quicklook";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -82,5 +86,19 @@ export const sectionRegistry: SectionRegistry = {
     half: false,
     defaultData: defaultStageMapData,
     component: StageMapSection,
+  },
+  contacts: {
+    type: "contacts",
+    label: "Contacts",
+    half: true,
+    defaultData: defaultContactsData,
+    component: ContactsSection,
+  },
+  quicklook: {
+    type: "quicklook",
+    label: "Quick Look",
+    half: true,
+    defaultData: defaultQuickLookData,
+    component: QuickLookSection,
   },
 };

@@ -4,25 +4,41 @@
   import AddSectionTrigger from "./AddSectionTrigger.svelte";
   import AddSectionMenu from "./AddSectionMenu.svelte";
   import EmptyState from "./EmptyState.svelte";
-  import { addRow, getDocument, reorderRows } from "../state/document.svelte";
+  import {
+    addRow,
+    getDocument,
+    pairSections,
+    reorderRows,
+  } from "../state/document.svelte";
   import type { SectionType } from "../model/section-types";
 
-  let addMenuAtIndex = $state<number | null>(null);
+  type MenuRequest =
+    { kind: "insert"; index: number } | { kind: "pair"; rowId: string };
+
+  let menuRequest = $state<MenuRequest | null>(null);
   let draggingRowId = $state<string | null>(null);
   let hoverZoneIndex = $state<number | null>(null);
 
-  function openAddMenu(index: number): void {
-    addMenuAtIndex = index;
+  function openInsertMenu(index: number): void {
+    menuRequest = { kind: "insert", index };
   }
 
-  function closeAddMenu(): void {
-    addMenuAtIndex = null;
+  function openPairMenu(rowId: string): void {
+    menuRequest = { kind: "pair", rowId };
+  }
+
+  function closeMenu(): void {
+    menuRequest = null;
   }
 
   function pickType(type: SectionType): void {
-    if (addMenuAtIndex === null) return;
-    addRow(type, addMenuAtIndex);
-    closeAddMenu();
+    if (!menuRequest) return;
+    if (menuRequest.kind === "insert") {
+      addRow(type, menuRequest.index);
+    } else {
+      pairSections(menuRequest.rowId, type);
+    }
+    closeMenu();
   }
 
   function handleDragStart(rowId: string): void {
@@ -58,33 +74,35 @@
 
 <div class="row-list">
   {#if getDocument().rows.length === 0}
-    <EmptyState onAdd={() => openAddMenu(0)} />
+    <EmptyState onAdd={() => openInsertMenu(0)} />
   {:else}
     <RowDropZone
       active={hoverZoneIndex === 0}
       onDragOver={(e) => handleZoneDragOver(0, e)}
       onDrop={(e) => handleZoneDrop(0, e)}
     />
-    <AddSectionTrigger onClick={() => openAddMenu(0)} />
+    <AddSectionTrigger onClick={() => openInsertMenu(0)} />
     {#each getDocument().rows as row, i (row.id)}
       <RowView
         {row}
         dragging={draggingRowId === row.id}
         onDragStart={() => handleDragStart(row.id)}
         onDragEnd={handleDragEnd}
+        onPairRequest={openPairMenu}
       />
       <RowDropZone
         active={hoverZoneIndex === i + 1}
         onDragOver={(e) => handleZoneDragOver(i + 1, e)}
         onDrop={(e) => handleZoneDrop(i + 1, e)}
       />
-      <AddSectionTrigger onClick={() => openAddMenu(i + 1)} />
+      <AddSectionTrigger onClick={() => openInsertMenu(i + 1)} />
     {/each}
   {/if}
 </div>
 
 <AddSectionMenu
-  open={addMenuAtIndex !== null}
+  open={menuRequest !== null}
+  filterHalfOnly={menuRequest?.kind === "pair"}
   onPick={pickType}
-  onClose={closeAddMenu}
+  onClose={closeMenu}
 />
