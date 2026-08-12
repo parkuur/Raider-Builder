@@ -4,6 +4,12 @@ import { createId } from "../model/id";
 import { createEmptyDocument } from "../model/document-types";
 import type { Header, RiderDocument } from "../model/document-types";
 import type { Section, SectionType } from "../model/section-types";
+import type { RequirementsSectionData } from "../model/requirements";
+import type { EquipmentSectionData } from "../model/equipment";
+import type { ChannelListSectionData } from "../model/channel-list";
+import type { MonitorListSectionData } from "../model/monitor-list";
+import type { BandMembersSectionData } from "../model/band-members";
+import type { StageMapSectionData } from "../model/stage-map";
 
 let state = $state<RiderDocument>(createEmptyDocument());
 
@@ -63,6 +69,78 @@ export function setSectionTitle(
   title: string,
 ): void {
   state = mutations.setSectionTitle(state, rowId, sectionId, title);
+}
+
+export function setRequirementsData(
+  rowId: string,
+  sectionId: string,
+  data: RequirementsSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "requirements",
+    data,
+  );
+}
+
+export function setEquipmentData(
+  rowId: string,
+  sectionId: string,
+  data: EquipmentSectionData,
+): void {
+  state = mutations.setSectionData(state, rowId, sectionId, "equipment", data);
+}
+
+export function setChannelListData(
+  rowId: string,
+  sectionId: string,
+  data: ChannelListSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "channel-list",
+    data,
+  );
+}
+
+export function setMonitorListData(
+  rowId: string,
+  sectionId: string,
+  data: MonitorListSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "monitor-list",
+    data,
+  );
+}
+
+export function setBandMembersData(
+  rowId: string,
+  sectionId: string,
+  data: BandMembersSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "band-members",
+    data,
+  );
+}
+
+export function setStageMapData(
+  rowId: string,
+  sectionId: string,
+  data: StageMapSectionData,
+): void {
+  state = mutations.setSectionData(state, rowId, sectionId, "stage-map", data);
 }
 
 export function setHeaderField<K extends keyof Header>(
