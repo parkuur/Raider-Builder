@@ -114,6 +114,17 @@
     gap: var(--space-1);
   }
 
+  @media print {
+    /*
+     * :last-of-type (not :last-child) because the "+ Add item" button
+     * trails the item divs in the same list container — it would
+     * otherwise be the true last-child, making every item match.
+     */
+    .equipment-section__item:not(:last-of-type) {
+      border-bottom: 1px solid var(--color-border);
+    }
+  }
+
   .equipment-section__item-name {
     flex: 1;
     min-width: 0;
