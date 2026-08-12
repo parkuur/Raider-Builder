@@ -13,6 +13,7 @@
   } from "../../model/stage-map";
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
 
   let {
     rowId,
@@ -65,6 +66,9 @@
   {/each}
 </div>
 
+{#if section.data.items.length === 0}
+  <SectionEmptyHint text="No items placed yet — choose a category above." />
+{/if}
 <div
   class="stage-map__canvas"
   bind:this={canvasEl}

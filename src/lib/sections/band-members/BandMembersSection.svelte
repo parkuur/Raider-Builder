@@ -9,6 +9,8 @@
     updateBandMember,
   } from "../../model/band-members";
   import { setBandMembersData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
 
   let {
     rowId,
@@ -53,19 +55,20 @@
   Show member photos
 </label>
 
+{#if section.data.members.length === 0}
+  <SectionEmptyHint text="No members yet — add one below." />
+{/if}
 <div class="band-members__grid">
   {#each rows as memberRow, rowIndex (rowIndex)}
     <div class="band-members__row" data-row-index={rowIndex}>
       {#each memberRow as member (member.id)}
         <div class="band-members__card">
-          <button
-            type="button"
-            class="band-members__remove no-print"
-            aria-label="Remove member"
-            onclick={() => commit(removeBandMember(section.data, member.id))}
-          >
-            ×
-          </button>
+          <div class="band-members__remove">
+            <RemoveButton
+              label="Remove member"
+              onclick={() => commit(removeBandMember(section.data, member.id))}
+            />
+          </div>
           <div class="band-members__avatar">
             {#if section.data.photoEnabled && member.photoData}
               <img src={member.photoData} alt="" />
@@ -154,12 +157,6 @@
     position: absolute;
     top: 2px;
     right: 4px;
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: var(--font-size-body);
-    line-height: 1;
   }
 
   .band-members__avatar {

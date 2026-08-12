@@ -6,6 +6,8 @@
     updateContact,
   } from "../../model/contacts";
   import { setContactsData } from "../../state/document.svelte";
+  import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
 
   let {
     rowId,
@@ -19,6 +21,9 @@
 </script>
 
 <div class="contacts-section">
+  {#if section.data.contacts.length === 0}
+    <SectionEmptyHint text="No contacts yet — add one below." />
+  {/if}
   {#each section.data.contacts as contact (contact.id)}
     <div class="contacts-section__row">
       <input
@@ -65,14 +70,10 @@
             }),
           )}
       />
-      <button
-        type="button"
-        class="contacts-section__remove no-print"
-        aria-label="Remove contact"
+      <RemoveButton
+        label="Remove contact"
         onclick={() => commit(removeContact(section.data, contact.id))}
-      >
-        ×
-      </button>
+      />
     </div>
   {/each}
   <button
@@ -108,16 +109,6 @@
     color: var(--color-text);
     font-size: var(--font-size-body);
     padding: 4px var(--space-2);
-  }
-
-  .contacts-section__remove {
-    border: none;
-    background: transparent;
-    color: var(--color-text-muted);
-    cursor: pointer;
-    font-size: var(--font-size-body);
-    line-height: 1;
-    padding: 4px;
   }
 
   .contacts-section__add {

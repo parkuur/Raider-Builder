@@ -27,7 +27,7 @@ test.describe("Contacts section", () => {
 
     await rows.nth(1).locator(".contacts-section__name").fill("Sam Lee");
 
-    await rows.nth(1).locator(".contacts-section__remove").click();
+    await rows.nth(1).getByRole("button", { name: "Remove contact" }).click();
     await expect(rows).toHaveCount(1);
     await expect(rows.nth(0).locator(".contacts-section__name")).toHaveValue(
       "Jamie Rivera",
@@ -52,7 +52,9 @@ test.describe("Contacts section", () => {
     await expect(
       page.getByRole("button", { name: "+ Add Contact" }),
     ).toBeHidden();
-    await expect(page.locator(".contacts-section__remove")).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "Remove contact" }),
+    ).toBeHidden();
     await expect(page.locator(".contacts-section__name")).toBeVisible();
   });
 });
