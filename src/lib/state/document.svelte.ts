@@ -4,6 +4,7 @@ import { createId } from "../model/id";
 import { createEmptyDocument } from "../model/document-types";
 import type { Header, RiderDocument } from "../model/document-types";
 import type { Section, SectionType } from "../model/section-types";
+import type { RequirementsSectionData } from "../model/requirements";
 
 let state = $state<RiderDocument>(createEmptyDocument());
 
@@ -63,6 +64,20 @@ export function setSectionTitle(
   title: string,
 ): void {
   state = mutations.setSectionTitle(state, rowId, sectionId, title);
+}
+
+export function setRequirementsData(
+  rowId: string,
+  sectionId: string,
+  data: RequirementsSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "requirements",
+    data,
+  );
 }
 
 export function setHeaderField<K extends keyof Header>(

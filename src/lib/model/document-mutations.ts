@@ -1,7 +1,7 @@
 import { createId } from "./id";
 import { clamp } from "./util";
 import type { Header, RiderDocument, Row } from "./document-types";
-import type { Section } from "./section-types";
+import type { Section, SectionDataMap, SectionType } from "./section-types";
 
 /**
  * Every function here is immutable and no-ops by returning the exact same
@@ -141,6 +141,28 @@ export function setSectionTitle(
     ...row,
     sections: row.sections.map((s) =>
       s.id === sectionId ? { ...s, title } : s,
+    ) as [Section] | [Section, Section],
+  };
+  return { ...doc, rows };
+}
+
+export function setSectionData<T extends SectionType>(
+  doc: RiderDocument,
+  rowId: string,
+  sectionId: string,
+  type: T,
+  data: SectionDataMap[T],
+): RiderDocument {
+  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
+  if (rowIndex === -1) return doc;
+  const row = doc.rows[rowIndex]!;
+  const section = row.sections.find((s) => s.id === sectionId);
+  if (!section || section.type !== type) return doc;
+  const rows = [...doc.rows];
+  rows[rowIndex] = {
+    ...row,
+    sections: row.sections.map((s) =>
+      s.id === sectionId ? ({ ...s, data } as Section) : s,
     ) as [Section] | [Section, Section],
   };
   return { ...doc, rows };

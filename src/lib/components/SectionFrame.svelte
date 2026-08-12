@@ -7,10 +7,16 @@
     toggleSectionHidden,
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
+  import type { SectionRegistryEntry } from "../sections/registry";
 
   let { rowId, section }: { rowId: string; section: Section } = $props();
 
-  const Entry = $derived(sectionRegistry[section.type]);
+  // Indexing a mapped-type registry by a widened `SectionType` key yields a
+  // union of per-key entry types, which TS can't recombine into one entry
+  // generic over the full union — safe to widen back explicitly since
+  // `section` and the looked-up entry are always keyed by the same runtime
+  // `type`.
+  const Entry = $derived(sectionRegistry[section.type] as SectionRegistryEntry);
 </script>
 
 <div class="section-frame" class:hidden-from-print={section.hidden}>

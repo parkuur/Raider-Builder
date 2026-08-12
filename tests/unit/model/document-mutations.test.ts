@@ -6,6 +6,7 @@ import {
   removeSection,
   reorderRows,
   setHeaderField,
+  setSectionData,
   setSectionTitle,
   toggleSectionHidden,
   unpairSection,
@@ -270,6 +271,47 @@ describe("setSectionTitle", () => {
     const doc = docWithRows(makeRow("r1", makeSection("s1")));
     expect(setSectionTitle(doc, "missing", "s1", "x")).toBe(doc);
     expect(setSectionTitle(doc, "r1", "missing", "x")).toBe(doc);
+  });
+});
+
+describe("setSectionData", () => {
+  it("replaces the data of the targeted section", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1", "old")));
+    const result = setSectionData(doc, "r1", "s1", "placeholder", {
+      note: "new",
+    });
+    expect(result.rows[0]!.sections[0]!.data).toEqual({ note: "new" });
+  });
+
+  it("leaves other sections in the same row untouched", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1", "a"), makeSection("s2", "b")),
+    );
+    const result = setSectionData(doc, "r1", "s1", "placeholder", {
+      note: "changed",
+    });
+    expect(result.rows[0]!.sections[1]!.data).toEqual({ note: "b" });
+  });
+
+  it("is a no-op for an unknown row id", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1")));
+    expect(
+      setSectionData(doc, "missing", "s1", "placeholder", { note: "x" }),
+    ).toBe(doc);
+  });
+
+  it("is a no-op for an unknown section id", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1")));
+    expect(
+      setSectionData(doc, "r1", "missing", "placeholder", { note: "x" }),
+    ).toBe(doc);
+  });
+
+  it("is a no-op when the given type doesn't match the section's actual type", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1")));
+    expect(
+      setSectionData(doc, "r1", "s1", "requirements", { groups: [] }),
+    ).toBe(doc);
   });
 });
 
