@@ -92,6 +92,15 @@
         onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
       }}
     >
+      {#if meta.shape === "triangle"}
+        <svg
+          class="stage-map__triangle-outline"
+          viewBox="0 0 40 36"
+          aria-hidden="true"
+        >
+          <polygon points="20,2 2,34 38,34" />
+        </svg>
+      {/if}
       <span class="stage-map__abbr">{meta.abbreviation}</span>
       {#if meta.resizable}
         <div
@@ -202,26 +211,27 @@
     height: 36px;
     border: none;
     background: transparent;
-    color: var(--color-background);
   }
 
   /*
-   * The triangle shape lives on a ::before layer rather than on the item
-   * itself — clip-path clips the item's own descendants too, which hid
-   * the remove button and label of every triangle (power) item.
+   * An outline (not a fill) for consistency with the other shapes, which
+   * are all drawn with a plain border — a CSS border can't itself form a
+   * triangle, and a background-color fill (the earlier approach) doesn't
+   * print reliably since browsers skip background colors by default.
+   * An SVG stroke sidesteps both problems.
    */
-  .stage-map__item--triangle::before {
-    content: "";
+  .stage-map__triangle-outline {
     position: absolute;
     inset: 0;
-    background: var(--color-accent);
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-    z-index: -1;
-    /* Unlike the other shapes, the triangle has no border — its background
-       fill is the only thing that makes it visible, so it must survive
-       browsers' default of not printing background colors. */
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .stage-map__triangle-outline polygon {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: 1.5;
   }
 
   .stage-map__abbr {

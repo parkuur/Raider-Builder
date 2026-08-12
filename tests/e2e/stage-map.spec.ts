@@ -114,7 +114,7 @@ test.describe("Stage Map section", () => {
     expect(borderColor).toMatch(/^rgba\(0, 0, 0, 0\)$|transparent$/);
   });
 
-  test("the power item's triangle background is forced to print", async ({
+  test("the power item is an outline like the other shapes, with legible text in print", async ({
     page,
   }) => {
     await page.goto("/");
@@ -123,21 +123,26 @@ test.describe("Stage Map section", () => {
       .click();
     await page.getByRole("button", { name: "Stage Map", exact: true }).click();
     await page.getByRole("button", { name: "PWR", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
 
     await page.emulateMedia({ media: "print" });
 
-    const colorAdjust = await page
-      .locator('[data-category="power"]')
-      .evaluate(
-        (el) =>
-          getComputedStyle(el, "::before").getPropertyValue(
-            "-webkit-print-color-adjust",
-          ) ||
-          getComputedStyle(el, "::before").getPropertyValue(
-            "print-color-adjust",
-          ),
-      );
-    expect(colorAdjust).toBe("exact");
+    const power = page.locator('[data-category="power"]');
+    await expect(power.locator(".stage-map__triangle-outline")).toBeVisible();
+
+    // No background fill left to strip in print — only a stroke, which
+    // always prints — and the abbreviation text is the same color as
+    // every other shape's, not the pale color once reserved for
+    // contrasting against a solid fill.
+    const [triangleTextColor, circleTextColor] = await Promise.all([
+      power
+        .locator(".stage-map__abbr")
+        .evaluate((el) => getComputedStyle(el).color),
+      page
+        .locator('[data-category="mic"] .stage-map__abbr')
+        .evaluate((el) => getComputedStyle(el).color),
+    ]);
+    expect(triangleTextColor).toBe(circleTextColor);
   });
 
   test("the power item's label and remove button aren't clipped by its triangle shape", async ({
