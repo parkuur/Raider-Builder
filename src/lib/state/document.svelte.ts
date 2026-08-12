@@ -8,6 +8,7 @@ import type { RequirementsSectionData } from "../model/requirements";
 import type { EquipmentSectionData } from "../model/equipment";
 import type { ChannelListSectionData } from "../model/channel-list";
 import type { MonitorListSectionData } from "../model/monitor-list";
+import type { BandMembersSectionData } from "../model/band-members";
 
 let state = $state<RiderDocument>(createEmptyDocument());
 
@@ -115,6 +116,20 @@ export function setMonitorListData(
     rowId,
     sectionId,
     "monitor-list",
+    data,
+  );
+}
+
+export function setBandMembersData(
+  rowId: string,
+  sectionId: string,
+  data: BandMembersSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "band-members",
     data,
   );
 }

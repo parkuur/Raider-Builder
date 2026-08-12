@@ -1,3 +1,4 @@
+import type { BandMembersSectionData } from "./band-members";
 import type { ChannelListSectionData } from "./channel-list";
 import type { EquipmentSectionData } from "./equipment";
 import type { MonitorListSectionData } from "./monitor-list";
@@ -13,6 +14,7 @@ export interface SectionDataMap {
   equipment: EquipmentSectionData;
   "channel-list": ChannelListSectionData;
   "monitor-list": MonitorListSectionData;
+  "band-members": BandMembersSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;

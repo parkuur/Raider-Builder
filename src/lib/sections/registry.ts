@@ -9,10 +9,12 @@ import RequirementsSection from "./requirements/RequirementsSection.svelte";
 import EquipmentSection from "./equipment/EquipmentSection.svelte";
 import ChannelListSection from "./channel-list/ChannelListSection.svelte";
 import MonitorListSection from "./monitor-list/MonitorListSection.svelte";
+import BandMembersSection from "./band-members/BandMembersSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
 import { defaultMonitorListData } from "../model/monitor-list";
+import { defaultBandMembersData } from "../model/band-members";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -64,5 +66,12 @@ export const sectionRegistry: SectionRegistry = {
     half: false,
     defaultData: defaultMonitorListData,
     component: MonitorListSection,
+  },
+  "band-members": {
+    type: "band-members",
+    label: "Band Members",
+    half: false,
+    defaultData: defaultBandMembersData,
+    component: BandMembersSection,
   },
 };
