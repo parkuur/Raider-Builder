@@ -6,7 +6,9 @@ import type {
 } from "../model/section-types";
 import PlaceholderSection from "./placeholder/PlaceholderSection.svelte";
 import RequirementsSection from "./requirements/RequirementsSection.svelte";
+import EquipmentSection from "./equipment/EquipmentSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
+import { defaultEquipmentData } from "../model/equipment";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -37,5 +39,12 @@ export const sectionRegistry: SectionRegistry = {
     half: false,
     defaultData: defaultRequirementsData,
     component: RequirementsSection,
+  },
+  equipment: {
+    type: "equipment",
+    label: "Equipment",
+    half: false,
+    defaultData: defaultEquipmentData,
+    component: EquipmentSection,
   },
 };

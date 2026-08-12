@@ -1,3 +1,4 @@
+import type { EquipmentSectionData } from "./equipment";
 import type { RequirementsSectionData } from "./requirements";
 
 export interface PlaceholderSectionData {
@@ -7,6 +8,7 @@ export interface PlaceholderSectionData {
 export interface SectionDataMap {
   placeholder: PlaceholderSectionData;
   requirements: RequirementsSectionData;
+  equipment: EquipmentSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;
