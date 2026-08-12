@@ -1,9 +1,9 @@
 import { test, expect } from "@playwright/test";
 
-test("scaffolded page loads", async ({ page }) => {
+test("scaffolded app loads and shows the empty state", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Technical Rider Editor");
   await expect(
-    page.getByRole("heading", { name: "Technical Rider Editor" }),
+    page.getByRole("button", { name: "+ Add your first section" }),
   ).toBeVisible();
 });
