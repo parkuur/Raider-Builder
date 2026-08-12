@@ -1,4 +1,6 @@
+import type { ChannelListSectionData } from "./channel-list";
 import type { EquipmentSectionData } from "./equipment";
+import type { MonitorListSectionData } from "./monitor-list";
 import type { RequirementsSectionData } from "./requirements";
 
 export interface PlaceholderSectionData {
@@ -9,6 +11,8 @@ export interface SectionDataMap {
   placeholder: PlaceholderSectionData;
   requirements: RequirementsSectionData;
   equipment: EquipmentSectionData;
+  "channel-list": ChannelListSectionData;
+  "monitor-list": MonitorListSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;

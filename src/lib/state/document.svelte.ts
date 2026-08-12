@@ -6,6 +6,8 @@ import type { Header, RiderDocument } from "../model/document-types";
 import type { Section, SectionType } from "../model/section-types";
 import type { RequirementsSectionData } from "../model/requirements";
 import type { EquipmentSectionData } from "../model/equipment";
+import type { ChannelListSectionData } from "../model/channel-list";
+import type { MonitorListSectionData } from "../model/monitor-list";
 
 let state = $state<RiderDocument>(createEmptyDocument());
 
@@ -87,6 +89,34 @@ export function setEquipmentData(
   data: EquipmentSectionData,
 ): void {
   state = mutations.setSectionData(state, rowId, sectionId, "equipment", data);
+}
+
+export function setChannelListData(
+  rowId: string,
+  sectionId: string,
+  data: ChannelListSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "channel-list",
+    data,
+  );
+}
+
+export function setMonitorListData(
+  rowId: string,
+  sectionId: string,
+  data: MonitorListSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "monitor-list",
+    data,
+  );
 }
 
 export function setHeaderField<K extends keyof Header>(

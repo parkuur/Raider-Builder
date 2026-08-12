@@ -7,8 +7,12 @@ import type {
 import PlaceholderSection from "./placeholder/PlaceholderSection.svelte";
 import RequirementsSection from "./requirements/RequirementsSection.svelte";
 import EquipmentSection from "./equipment/EquipmentSection.svelte";
+import ChannelListSection from "./channel-list/ChannelListSection.svelte";
+import MonitorListSection from "./monitor-list/MonitorListSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
+import { defaultChannelListData } from "../model/channel-list";
+import { defaultMonitorListData } from "../model/monitor-list";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -46,5 +50,19 @@ export const sectionRegistry: SectionRegistry = {
     half: false,
     defaultData: defaultEquipmentData,
     component: EquipmentSection,
+  },
+  "channel-list": {
+    type: "channel-list",
+    label: "Channel List",
+    half: false,
+    defaultData: defaultChannelListData,
+    component: ChannelListSection,
+  },
+  "monitor-list": {
+    type: "monitor-list",
+    label: "Monitor List",
+    half: false,
+    defaultData: defaultMonitorListData,
+    component: MonitorListSection,
   },
 };
