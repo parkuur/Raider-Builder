@@ -43,14 +43,14 @@ export function addQuickLookTopic(
       ? {
           id: createId("topic"),
           kind: "row",
-          iconKey: "zap",
+          iconKey: "circle",
           title: "",
           value: "",
         }
       : {
           id: createId("topic"),
           kind: "table",
-          iconKey: "zap",
+          iconKey: "circle",
           title: "",
           lines: [],
         };

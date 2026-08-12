@@ -22,15 +22,15 @@ test.describe("Quick Look section", () => {
     // regression test for the prototype's row/table icon-parity bug.
     await expect(topics.nth(0).locator(".icon-glyph")).toHaveAttribute(
       "data-icon",
-      "zap",
+      "circle",
     );
     await expect(topics.nth(1).locator(".icon-glyph")).toHaveAttribute(
       "data-icon",
-      "zap",
+      "circle",
     );
 
     await topics.nth(1).locator(".icon-picker__trigger").click();
-    await topics.nth(1).getByRole("option", { name: "Monitors" }).click();
+    await topics.nth(1).getByRole("option", { name: "Monitoring" }).click();
     await expect(topics.nth(1).locator(".icon-glyph")).toHaveAttribute(
       "data-icon",
       "headphones",
@@ -38,7 +38,7 @@ test.describe("Quick Look section", () => {
     // The row topic's icon is unaffected by changing the table topic's icon.
     await expect(topics.nth(0).locator(".icon-glyph")).toHaveAttribute(
       "data-icon",
-      "zap",
+      "circle",
     );
   });
 

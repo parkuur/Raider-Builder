@@ -24,7 +24,7 @@ function rowTopic(
   return {
     id,
     kind: "row",
-    iconKey: "zap",
+    iconKey: "circle",
     title: "",
     value: "",
     ...overrides,
@@ -38,7 +38,7 @@ function tableTopic(
   return {
     id,
     kind: "table",
-    iconKey: "zap",
+    iconKey: "circle",
     title: "",
     lines: [],
     ...overrides,
@@ -61,7 +61,7 @@ describe("addQuickLookTopic", () => {
   it("appends a row topic with the default icon", () => {
     const result = addQuickLookTopic(dataWith([]), "row");
     expect(result.topics).toHaveLength(1);
-    expect(result.topics[0]).toMatchObject({ kind: "row", iconKey: "zap" });
+    expect(result.topics[0]).toMatchObject({ kind: "row", iconKey: "circle" });
   });
 
   it("appends a table topic with the default icon and no lines", () => {
@@ -69,7 +69,7 @@ describe("addQuickLookTopic", () => {
     expect(result.topics).toHaveLength(1);
     expect(result.topics[0]).toMatchObject({
       kind: "table",
-      iconKey: "zap",
+      iconKey: "circle",
       lines: [],
     });
   });
@@ -113,7 +113,7 @@ describe("setQuickLookTopicIcon / setQuickLookTopicTitle", () => {
 
   it("are no-ops for an unknown topic id", () => {
     const data = dataWith([rowTopic("t1")]);
-    expect(setQuickLookTopicIcon(data, "missing", "wifi")).toBe(data);
+    expect(setQuickLookTopicIcon(data, "missing", "hard-hat")).toBe(data);
     expect(setQuickLookTopicTitle(data, "missing", "x")).toBe(data);
   });
 });
