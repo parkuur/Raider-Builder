@@ -63,5 +63,12 @@ test.describe("Requirements section", () => {
     await expect(page.getByRole("button", { name: "+ Add Item" })).toBeHidden();
     await expect(page.locator(".requirements-section__heading")).toBeVisible();
     await expect(page.locator(".requirements-section__text")).toBeVisible();
+
+    // Regression: the textarea's resize handle must not render in print,
+    // even though it's resizable on screen.
+    const resize = await page
+      .locator(".requirements-section__text")
+      .evaluate((el) => getComputedStyle(el).resize);
+    expect(resize).toBe("none");
   });
 });
