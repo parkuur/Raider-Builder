@@ -29,7 +29,8 @@ test.describe("Quick Look section", () => {
       "zap",
     );
 
-    await topics.nth(1).getByRole("combobox").selectOption("headphones");
+    await topics.nth(1).locator(".icon-picker__trigger").click();
+    await topics.nth(1).getByRole("option", { name: "Monitors" }).click();
     await expect(topics.nth(1).locator(".icon-glyph")).toHaveAttribute(
       "data-icon",
       "headphones",
@@ -131,7 +132,7 @@ test.describe("Quick Look section", () => {
     await expect(
       page.getByRole("button", { name: "Remove topic" }),
     ).toBeHidden();
-    await expect(page.locator(".icon-picker__select")).toBeHidden();
+    await expect(page.locator(".icon-picker__trigger")).toBeVisible();
     await expect(page.locator(".quicklook-topic-header__title")).toBeVisible();
     await expect(page.locator(".quicklook-section__value")).toBeVisible();
   });
