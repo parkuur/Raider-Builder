@@ -12,6 +12,7 @@
   import { setMonitorListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
@@ -41,7 +42,7 @@
       <th class="no-print"></th>
       <th class="monitor-list__num">Mon</th>
       <th>Player</th>
-      <th>Type</th>
+      <th class="monitor-list__type">Type</th>
       <th>Mix Notes</th>
       <th class="no-print"></th>
     </tr>
@@ -84,7 +85,7 @@
               )}
           />
         </td>
-        <td>
+        <td class="monitor-list__type">
           <input
             value={row.type}
             placeholder="Wedge / IEM"
@@ -127,13 +128,10 @@
               Pair
             </button>
           {/if}
-          <button
-            type="button"
-            title="Remove"
+          <RemoveButton
+            label="Remove monitor"
             onclick={() => commit(removeMonitorRow(section.data, row.id))}
-          >
-            Remove
-          </button>
+          />
         </td>
       </tr>
     {/each}
@@ -178,6 +176,10 @@
   .monitor-list__drag {
     width: 20px;
     text-align: center;
+  }
+
+  .monitor-list__type {
+    width: 80px;
   }
 
   .monitor-list__row--drag-over {
