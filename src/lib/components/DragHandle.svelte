@@ -28,6 +28,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 20px;
     cursor: grab;
     opacity: 0.35;
     padding: 4px;
