@@ -41,7 +41,7 @@ test.describe("Quick Look section", () => {
     );
   });
 
-  test("row topic has a value field and table topic has a tag plus addable label/value lines", async ({
+  test("row topic has a value field and table topic has addable label/value lines", async ({
     page,
   }) => {
     await page.goto("/");
@@ -65,7 +65,6 @@ test.describe("Quick Look section", () => {
     await page.getByRole("button", { name: "+ Add Table Topic" }).click();
     const tableTopic = page.locator(".quicklook-section__topic").nth(1);
     await tableTopic.locator(".quicklook-topic-header__title").fill("Schedule");
-    await tableTopic.locator(".quicklook-section__tag").fill("Day of Show");
 
     await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
     const line = tableTopic.locator(".quicklook-section__line").first();

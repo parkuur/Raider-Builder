@@ -6,7 +6,6 @@ import {
   removeQuickLookLine,
   removeQuickLookTopic,
   reorderQuickLookTopics,
-  setQuickLookTableTag,
   setQuickLookTopicIcon,
   setQuickLookTopicTitle,
   updateQuickLookLine,
@@ -41,7 +40,6 @@ function tableTopic(
     kind: "table",
     iconKey: "zap",
     title: "",
-    tag: "",
     lines: [],
     ...overrides,
   };
@@ -132,19 +130,6 @@ describe("updateQuickLookRowValue", () => {
   it("is a no-op when the targeted topic is a table topic", () => {
     const data = dataWith([tableTopic("t1")]);
     expect(updateQuickLookRowValue(data, "t1", "x")).toBe(data);
-  });
-});
-
-describe("setQuickLookTableTag", () => {
-  it("updates a table topic's tag", () => {
-    const data = dataWith([tableTopic("t1")]);
-    const result = setQuickLookTableTag(data, "t1", "FOH");
-    expect((result.topics[0] as QuickLookTableTopic).tag).toBe("FOH");
-  });
-
-  it("is a no-op when the targeted topic is a row topic", () => {
-    const data = dataWith([rowTopic("t1")]);
-    expect(setQuickLookTableTag(data, "t1", "x")).toBe(data);
   });
 });
 
