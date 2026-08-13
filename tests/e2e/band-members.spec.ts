@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pointerDragTo } from "./utils/pointer-drag";
 
 test.describe("Band Members section", () => {
   test("cards are grouped into balanced rows as members are added", async ({
@@ -56,6 +57,49 @@ test.describe("Band Members section", () => {
       .first()
       .evaluate((el) => getComputedStyle(el).justifyContent);
     expect(justifyContent).toBe("center");
+  });
+
+  test("dragging a card across a visual-row boundary reorders the underlying member list", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Band Members", exact: true })
+      .click();
+
+    const addMember = page.getByRole("button", { name: "+ Add Member" });
+    // 5 members balance into rows of [3, 2] (see balanced-rows), so the 5th
+    // card lands in the second visual row.
+    for (let i = 0; i < 5; i++) await addMember.click();
+
+    const cards = page.locator(".band-members__card");
+    await expect(cards).toHaveCount(5);
+    for (let i = 0; i < 5; i++) {
+      await cards
+        .nth(i)
+        .locator(".band-members__name")
+        .fill(`Member ${i + 1}`);
+    }
+
+    await pointerDragTo(
+      page,
+      cards.nth(4).locator(".drag-handle"),
+      cards.nth(0),
+    );
+
+    const names = await page
+      .locator(".band-members__name")
+      .evaluateAll((els) => els.map((el) => (el as HTMLInputElement).value));
+    expect(names).toEqual([
+      "Member 5",
+      "Member 1",
+      "Member 2",
+      "Member 3",
+      "Member 4",
+    ]);
   });
 
   test("avatar circle only appears once photos are enabled, with an initials fallback", async ({
