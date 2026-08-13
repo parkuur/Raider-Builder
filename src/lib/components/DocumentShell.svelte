@@ -34,6 +34,11 @@
    * today's margins regardless of the originating device's viewport. */
   @media screen and (max-width: 640px) {
     .toolbar {
+      /* The hamburger toggle and its dropdown are both position: absolute
+       * (see SaveLoadControls.svelte), so neither contributes to this
+       * bar's height in normal flow — without an explicit minimum it
+       * collapses to just its own padding. */
+      min-height: 52px;
       padding: var(--space-2) var(--space-2);
     }
 
