@@ -63,6 +63,10 @@ test.describe("Quick Look section", () => {
     await expect(rowTopic.locator(".quicklook-section__value")).toHaveValue(
       "2 handhelds",
     );
+    await expect(rowTopic.locator(".quicklook-section__value")).toHaveCSS(
+      "text-align",
+      "right",
+    );
 
     await page.getByRole("button", { name: "+ Add Table Topic" }).click();
     const tableTopic = page.locator(".quicklook-section__topic").nth(1);
