@@ -7,12 +7,14 @@
     reorderMonitorRows,
     updateMonitorRow,
   } from "../../model/monitor-list";
+  import { fitColumnChars } from "../../model/column-fit";
   import { setMonitorListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { autosizeTextarea } from "../../actions/autosize-textarea";
 
   let {
     rowId,
@@ -29,6 +31,19 @@
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
 
+  const playerChars = $derived(
+    fitColumnChars(
+      section.data.rows.map((r) => r.player),
+      "Player",
+    ),
+  );
+  const typeChars = $derived(
+    fitColumnChars(
+      section.data.rows.map((r) => r.type),
+      "Wedge / IEM",
+    ),
+  );
+
   const drag = new DragReorderState();
 </script>
 
@@ -42,7 +57,7 @@
         <th class="no-print"></th>
         <th class="monitor-list__num">Mon</th>
         <th>Player</th>
-        <th class="monitor-list__type">Type</th>
+        <th>Type</th>
         <th>Mix Notes</th>
         <th class="no-print"></th>
         <th class="monitor-list__mode">Mode</th>
@@ -70,7 +85,7 @@
             />
           </td>
           <td class="monitor-list__num">{labelFor(row.id)}</td>
-          <td>
+          <td style:width="{playerChars}ch">
             <input
               class="monitor-list__player-input"
               value={row.player}
@@ -83,7 +98,7 @@
                 )}
             />
           </td>
-          <td class="monitor-list__type">
+          <td style:width="{typeChars}ch">
             <input
               value={row.type}
               placeholder="Wedge / IEM"
@@ -96,7 +111,9 @@
             />
           </td>
           <td>
-            <input
+            <textarea
+              use:autosizeTextarea={row.notes}
+              rows="1"
               value={row.notes}
               placeholder="Mix notes"
               oninput={(e) =>
@@ -104,8 +121,7 @@
                   updateMonitorRow(section.data, row.id, {
                     notes: e.currentTarget.value,
                   }),
-                )}
-            />
+                )}></textarea>
           </td>
           <td class="monitor-list__actions no-print">
             <StereoToggle
@@ -179,23 +195,27 @@
     text-align: center;
   }
 
-  .monitor-list__type {
-    width: 80px;
-  }
-
   .monitor-list__row--drag-over {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
   }
 
-  .monitor-list input {
+  .monitor-list input,
+  .monitor-list textarea {
     width: 100%;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
+    font-family: inherit;
     font-size: var(--font-size-body);
     padding: 3px var(--space-1);
     box-sizing: border-box;
+  }
+
+  .monitor-list textarea {
+    display: block;
+    resize: none;
+    overflow: hidden;
   }
 
   .monitor-list__actions {
