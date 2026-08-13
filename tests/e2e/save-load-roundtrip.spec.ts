@@ -24,7 +24,9 @@ test("save then load round-trips the document unchanged", async ({ page }) => {
   const downloadPath = await download.path();
   expect(downloadPath).toBeTruthy();
 
-  // Reload to prove the round trip goes through the file, not hidden state.
+  // Clear localStorage so the reload proves the round trip goes through the
+  // loaded file, not the auto-persisted copy of the document.
+  await page.evaluate(() => localStorage.clear());
   await page.reload();
   await expect(
     page.getByRole("button", { name: "+ Add your first section" }),

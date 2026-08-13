@@ -3,6 +3,7 @@
   import { parseDocumentJson } from "../model/persistence";
   import { downloadDocument, readFileAsText } from "../state/persistence";
   import { getDocument, setDocument } from "../state/document.svelte";
+  import { clearDocumentFromLocalStorage } from "../state/local-storage";
   import { createEmptyDocument } from "../model/document-types";
   import ChromeIcon from "./icons/ChromeIcon.svelte";
 
@@ -22,8 +23,10 @@
   }
 
   function clear(): void {
-    if (window.confirm("Clear the current document? This can't be undone."))
+    if (window.confirm("Clear the current document? This can't be undone.")) {
       setDocument(createEmptyDocument());
+      clearDocumentFromLocalStorage();
+    }
   }
 
   async function onFileChosen(e: Event): Promise<void> {
