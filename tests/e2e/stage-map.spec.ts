@@ -209,3 +209,73 @@ test.describe("Stage Map section", () => {
     await expect(label).toHaveValue("Lead Vox");
   });
 });
+
+test.describe("Stage Map section at a narrow viewport", () => {
+  test.use({ viewport: { width: 360, height: 900 } });
+
+  test("click-to-front ordering still works on the scaled-down canvas", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    // Below the mobile breakpoint the canvas renders scaled down (floored,
+    // per StageMapSection.svelte) — confirm that's actually happening here,
+    // not just that the interaction happens to still work unscaled.
+    const scale = await page
+      .locator(".stage-map__canvas")
+      .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+    expect(scale).toBeLessThan(1);
+
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+
+    expect(await zIndexOf(itemB)).toBeGreaterThan(await zIndexOf(itemA));
+
+    await itemA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+
+    expect(await zIndexOf(itemA)).toBeGreaterThan(await zIndexOf(itemB));
+
+    // No canvas item should ever be unreachable — this narrow viewport's
+    // horizontal scroll wrapper must actually contain everything.
+    const overflow = await page.evaluate(
+      () => document.body.scrollWidth - document.body.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  });
+
+  test("print always renders the canvas unscaled, regardless of the mobile viewport it was opened from", async ({
+    page,
+  }) => {
+    // Regression test: the mobile scale is tracked in JS via a matchMedia
+    // listener, and Chromium's print emulation updates `matchMedia(...)
+    // .matches` without firing that listener's `change` event — confirmed
+    // directly against this exact query — so nothing would have reset the
+    // scale before printing without the dedicated print.css-style override
+    // in StageMapSection.svelte.
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const screenScale = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).a,
+    );
+    expect(screenScale).toBeLessThan(1);
+
+    await page.emulateMedia({ media: "print" });
+    const printTransform = await canvas.evaluate(
+      (el) => getComputedStyle(el).transform,
+    );
+    expect(printTransform).toBe("none");
+  });
+});
