@@ -123,20 +123,22 @@
                   }),
                 )}></textarea>
           </td>
-          <td class="monitor-list__actions no-print">
-            <StereoToggle
-              active={row.stereo}
-              onToggle={() =>
-                commit(
-                  updateMonitorRow(section.data, row.id, {
-                    stereo: !row.stereo,
-                  }),
-                )}
-            />
-            <RemoveButton
-              label="Remove monitor"
-              onclick={() => commit(removeMonitorRow(section.data, row.id))}
-            />
+          <td class="monitor-list__actions-cell no-print">
+            <div class="monitor-list__actions">
+              <StereoToggle
+                active={row.stereo}
+                onToggle={() =>
+                  commit(
+                    updateMonitorRow(section.data, row.id, {
+                      stereo: !row.stereo,
+                    }),
+                  )}
+              />
+              <RemoveButton
+                label="Remove monitor"
+                onclick={() => commit(removeMonitorRow(section.data, row.id))}
+              />
+            </div>
           </td>
           <td class="monitor-list__mode">{row.stereo ? "Stereo" : "Mono"}</td>
         </tr>
@@ -218,10 +220,26 @@
     overflow: hidden;
   }
 
+  .monitor-list__actions-cell {
+    /* Without an explicit width, this column has no content-based hint
+     * either (its content is a flex row of small buttons, not text), so
+     * the auto-layout table treats it as a second unconstrained column
+     * alongside Mix Notes and gives it a share of the leftover space too —
+     * `width: 1%` is the standard shrink-to-fit trick that tells the
+     * table this column only wants its content's width, leaving Mix Notes
+     * as the sole recipient of whatever space is left over. It has to sit
+     * on the `<td>` itself (kept as a plain table-cell) rather than on the
+     * flex row directly — a `display: flex` cell stops reporting its
+     * content's intrinsic width to the table layout algorithm, which
+     * collapses this column to a few px when tried directly on it.
+     */
+    width: 1%;
+    white-space: nowrap;
+  }
+
   .monitor-list__actions {
     display: flex;
     gap: 4px;
-    white-space: nowrap;
   }
 
   /*
