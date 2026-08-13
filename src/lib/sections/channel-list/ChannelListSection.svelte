@@ -45,6 +45,21 @@
   );
 
   const drag = new DragReorderState();
+
+  // 48V, Notes, and the stereo toggle move to a labeled second row per
+  // channel below this breakpoint — the table has too many columns to stay
+  // readable on a phone otherwise. `screen` (not just the width condition)
+  // keeps this out of print regardless of the viewport that printed it, the
+  // same guarantee BandMembersSection/EquipmentSection rely on for their
+  // own mobile layouts.
+  let isNarrowViewport = $state(false);
+  $effect(() => {
+    const query = window.matchMedia("screen and (max-width: 640px)");
+    isNarrowViewport = query.matches;
+    const onChange = (e: MediaQueryListEvent) => (isNarrowViewport = e.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  });
 </script>
 
 {#if section.data.rows.length === 0}
@@ -58,8 +73,10 @@
         <th class="channel-list__num">Ch</th>
         <th>Channel</th>
         <th>Source</th>
-        <th class="channel-list__phantom">48V</th>
-        <th>Notes</th>
+        {#if !isNarrowViewport}
+          <th class="channel-list__phantom">48V</th>
+          <th>Notes</th>
+        {/if}
         <th class="no-print"></th>
       </tr>
     </thead>
@@ -110,47 +127,97 @@
                 )}
             />
           </td>
-          <td class="channel-list__phantom">
-            <input
-              type="checkbox"
-              checked={row.phantom}
-              onchange={(e) =>
-                commit(
-                  updateChannelRow(section.data, row.id, {
-                    phantom: e.currentTarget.checked,
-                  }),
-                )}
-            />
-          </td>
-          <td class="channel-list__notes">
-            <textarea
-              use:autosizeTextarea={row.notes}
-              rows="1"
-              value={row.notes}
-              placeholder="Notes"
-              oninput={(e) =>
-                commit(
-                  updateChannelRow(section.data, row.id, {
-                    notes: e.currentTarget.value,
-                  }),
-                )}></textarea>
-          </td>
+          {#if !isNarrowViewport}
+            <td class="channel-list__phantom">
+              <input
+                type="checkbox"
+                checked={row.phantom}
+                onchange={(e) =>
+                  commit(
+                    updateChannelRow(section.data, row.id, {
+                      phantom: e.currentTarget.checked,
+                    }),
+                  )}
+              />
+            </td>
+            <td class="channel-list__notes">
+              <textarea
+                use:autosizeTextarea={row.notes}
+                rows="1"
+                value={row.notes}
+                placeholder="Notes"
+                oninput={(e) =>
+                  commit(
+                    updateChannelRow(section.data, row.id, {
+                      notes: e.currentTarget.value,
+                    }),
+                  )}></textarea>
+            </td>
+          {/if}
           <td class="channel-list__actions no-print">
-            <StereoToggle
-              active={row.stereo}
-              onToggle={() =>
-                commit(
-                  updateChannelRow(section.data, row.id, {
-                    stereo: !row.stereo,
-                  }),
-                )}
-            />
+            {#if !isNarrowViewport}
+              <StereoToggle
+                active={row.stereo}
+                onToggle={() =>
+                  commit(
+                    updateChannelRow(section.data, row.id, {
+                      stereo: !row.stereo,
+                    }),
+                  )}
+              />
+            {/if}
             <RemoveButton
               label="Remove channel"
               onclick={() => commit(removeChannelRow(section.data, row.id))}
             />
           </td>
         </tr>
+        {#if isNarrowViewport}
+          <tr class="channel-list__row-mobile no-print">
+            <td colspan="5">
+              <div class="channel-list__mobile-fields">
+                <label class="channel-list__mobile-field">
+                  48V
+                  <input
+                    type="checkbox"
+                    checked={row.phantom}
+                    onchange={(e) =>
+                      commit(
+                        updateChannelRow(section.data, row.id, {
+                          phantom: e.currentTarget.checked,
+                        }),
+                      )}
+                  />
+                </label>
+                <label
+                  class="channel-list__mobile-field channel-list__mobile-field--notes"
+                >
+                  Notes
+                  <textarea
+                    use:autosizeTextarea={row.notes}
+                    rows="1"
+                    value={row.notes}
+                    placeholder="Notes"
+                    oninput={(e) =>
+                      commit(
+                        updateChannelRow(section.data, row.id, {
+                          notes: e.currentTarget.value,
+                        }),
+                      )}></textarea>
+                </label>
+                <StereoToggle
+                  active={row.stereo}
+                  onToggle={() =>
+                    commit(
+                      updateChannelRow(section.data, row.id, {
+                        stereo: !row.stereo,
+                      }),
+                    )}
+                />
+              </div>
+            </td>
+          </tr>
+        {/if}
       {/each}
     </tbody>
   </table>
@@ -220,6 +287,39 @@
     .channel-list tbody tr:not(:last-child) td {
       border-bottom: 1px solid var(--color-border);
     }
+
+    /* Belt-and-suspenders restatement: isNarrowViewport is already
+     * `screen`-scoped so this row never renders under print, but print
+     * always gets the desktop single-row shape regardless of the device
+     * that printed it, so this is worth being explicit about. */
+    .channel-list__row-mobile {
+      display: none !important;
+    }
+  }
+
+  .channel-list__mobile-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 2px 0;
+  }
+
+  .channel-list__mobile-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+  }
+
+  .channel-list__mobile-field--notes {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .channel-list__mobile-field input[type="checkbox"] {
+    width: auto;
   }
 
   .channel-list input,
