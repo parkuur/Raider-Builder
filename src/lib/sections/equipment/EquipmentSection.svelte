@@ -7,6 +7,7 @@
     setEquipmentListTitle,
     updateEquipmentItem,
   } from "../../model/equipment";
+  import { fitColumnChars } from "../../model/column-fit";
   import { setEquipmentData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
@@ -30,6 +31,10 @@
   {#each section.data.lists as list, listIndex (list.id)}
     {@const idx = listIndex as 0 | 1}
     {@const drag = dragByList[idx]}
+    {@const countChars = fitColumnChars(
+      list.items.map((i) => i.count),
+      "Qty",
+    )}
     <div class="equipment-section__list">
       <input
         class="equipment-section__title"
@@ -76,6 +81,7 @@
           />
           <input
             class="equipment-section__item-count"
+            style:width="{countChars}ch"
             value={item.count}
             placeholder="Qty"
             oninput={(e) =>
@@ -172,7 +178,7 @@
   }
 
   .equipment-section__item-count {
-    width: 44px;
+    flex: none;
     text-align: center;
     border: 1px solid var(--color-border);
     background: transparent;
