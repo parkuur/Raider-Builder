@@ -106,7 +106,7 @@
     <Entry.component {rowId} {section} />
   </div>
   {#if showPairBadge}
-    <div class="section-frame__pair-badge" aria-hidden="true">
+    <div class="section-frame__pair-badge no-print" aria-hidden="true">
       <LinkIcon size={12} />
     </div>
   {/if}
@@ -174,16 +174,18 @@
   }
 
   /*
-   * Sits on the paired-divider rule (RowView.svelte), which is a border on
-   * this element's own left edge (desktop) or top edge (mobile stacked) —
-   * anchoring to this box's own corner, rather than to the shared row
-   * container, keeps the badge correctly on the rule regardless of how
-   * tall either paired section actually is.
+   * Sits on top of the paired-divider rule (RowView.svelte), which is a
+   * full-height/width border, not shortened to meet it — offset in from
+   * the line's true end (rather than centered exactly on it) by 5mm plus
+   * its own radius, so a 5mm tail of the line still shows past the badge
+   * down to the actual corner. Anchoring to this box's own corner, rather
+   * than to the shared row container, keeps the badge correctly on the
+   * rule regardless of how tall either paired section actually is.
    */
   .section-frame__pair-badge {
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: calc(5mm + 10px);
     transform: translate(-50%, 50%);
     width: 20px;
     height: 20px;
@@ -197,8 +199,13 @@
   }
 
   @media screen and (max-width: 640px) {
+    /*
+     * Same idea rotated 90°: the mobile stacked divider is a full-width top
+     * border, and the badge sits offset in from its left end by the same
+     * 5mm-plus-radius amount, leaving a 5mm tail to its left.
+     */
     .section-frame__pair-badge {
-      left: 0;
+      left: calc(5mm + 10px);
       top: 0;
       bottom: auto;
       transform: translate(-50%, -50%);
