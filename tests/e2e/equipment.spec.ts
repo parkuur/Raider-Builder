@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pointerDragTo } from "./utils/pointer-drag";
 
 test.describe("Equipment section", () => {
   test("edit list titles and add/edit/remove items in each list independently", async ({
@@ -58,6 +59,48 @@ test.describe("Equipment section", () => {
     ).toHaveValue("PA System");
     await expect(
       lists.nth(1).locator(".equipment-section__item-name").nth(0),
+    ).toHaveValue("Backline");
+  });
+
+  test("dragging an item's handle onto another item reorders within its list, not the other", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Equipment", exact: true }).click();
+
+    const addButtons = page.getByRole("button", { name: "+ Add item" });
+    await addButtons.nth(0).click();
+    await addButtons.nth(0).click();
+    await addButtons.nth(1).click();
+
+    const lists = page.locator(".equipment-section__list");
+    const bandItems = lists.nth(0).locator(".equipment-section__item");
+    const venueItems = lists.nth(1).locator(".equipment-section__item");
+
+    await bandItems.nth(0).locator(".equipment-section__item-name").fill("A");
+    await bandItems.nth(1).locator(".equipment-section__item-name").fill("B");
+    await venueItems
+      .nth(0)
+      .locator(".equipment-section__item-name")
+      .fill("Backline");
+
+    await pointerDragTo(
+      page,
+      bandItems.nth(1).locator(".drag-handle"),
+      bandItems.nth(0),
+    );
+
+    await expect(
+      bandItems.nth(0).locator(".equipment-section__item-name"),
+    ).toHaveValue("B");
+    await expect(
+      bandItems.nth(1).locator(".equipment-section__item-name"),
+    ).toHaveValue("A");
+    await expect(
+      venueItems.nth(0).locator(".equipment-section__item-name"),
     ).toHaveValue("Backline");
   });
 
