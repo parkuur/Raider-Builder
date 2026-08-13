@@ -2,11 +2,11 @@ import { createId } from "./id";
 import { clamp } from "./util";
 
 export type StageItemCategory =
-  "mic" | "di" | "amp" | "drum" | "mon" | "xlr" | "power" | "riser";
+  "mic" | "di" | "amp" | "drum" | "mon" | "xlr" | "power" | "riser" | "name";
 
 export interface StageItemCategoryMeta {
   abbreviation: string;
-  shape: "circle" | "square" | "triangle" | "rectangle";
+  shape: "circle" | "square" | "triangle" | "rectangle" | "ellipse";
   dashed?: boolean;
   resizable?: boolean;
 }
@@ -28,6 +28,7 @@ export const STAGE_ITEM_CATEGORIES: Record<
     dashed: true,
     resizable: true,
   },
+  name: { abbreviation: "NAME", shape: "ellipse" },
 };
 
 const DEFAULT_LABELS: Record<StageItemCategory, string> = {
@@ -39,6 +40,7 @@ const DEFAULT_LABELS: Record<StageItemCategory, string> = {
   xlr: "XLR Run",
   power: "Power",
   riser: "Riser",
+  name: "Name",
 };
 
 const MIN_CANVAS_HEIGHT = 160;
@@ -52,6 +54,8 @@ export interface StageItem {
   id: string;
   category: StageItemCategory;
   label: string;
+  /** Editable center text for the "name" category; unused by every other category. */
+  nameText: string;
   x: number;
   y: number;
   w: number | undefined;
@@ -81,6 +85,7 @@ export function addStageItem(
     id: createId("stage-item"),
     category,
     label: DEFAULT_LABELS[category],
+    nameText: "",
     x: 50,
     y: 50,
     w: meta.resizable ? DEFAULT_RISER_WIDTH : undefined,
@@ -107,6 +112,18 @@ export function updateStageItemLabel(
   return {
     ...data,
     items: data.items.map((i) => (i.id === itemId ? { ...i, label } : i)),
+  };
+}
+
+export function updateStageItemName(
+  data: StageMapSectionData,
+  itemId: string,
+  nameText: string,
+): StageMapSectionData {
+  if (!data.items.some((i) => i.id === itemId)) return data;
+  return {
+    ...data,
+    items: data.items.map((i) => (i.id === itemId ? { ...i, nameText } : i)),
   };
 }
 

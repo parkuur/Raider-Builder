@@ -7,6 +7,7 @@ import {
   removeStageItem,
   resizeStageItem,
   setCanvasHeight,
+  updateStageItemName,
 } from "../../../src/lib/model/stage-map";
 import type { StageItem } from "../../../src/lib/model/stage-map";
 
@@ -19,6 +20,7 @@ function item(
     id,
     category,
     label: id,
+    nameText: "",
     x: 50,
     y: 50,
     w: undefined,
@@ -60,6 +62,19 @@ describe("moveStageItem", () => {
   it("is a no-op for an unknown id", () => {
     const data = defaultStageMapData();
     expect(moveStageItem(data, "missing", 10, 10)).toBe(data);
+  });
+});
+
+describe("updateStageItemName", () => {
+  it("updates the name item's center text", () => {
+    const data = { items: [item("a", 1, "name")], canvasHeight: 260 };
+    const result = updateStageItemName(data, "a", "J. Smith");
+    expect(result.items[0]).toMatchObject({ nameText: "J. Smith" });
+  });
+
+  it("is a no-op for an unknown id", () => {
+    const data = defaultStageMapData();
+    expect(updateStageItemName(data, "missing", "J. Smith")).toBe(data);
   });
 });
 
