@@ -77,14 +77,20 @@
    * them so pairing reads as a distinct signal — every other seam in the
    * document (RowGap, between unrelated rows) uses the neutral border
    * color, so hue alone marks "these two belong together." The rule itself
-   * stays subtle; the link badge (SectionFrame.svelte) carries the signal.
+   * stays subtle; the link badge (SectionFrame.svelte) carries the signal
+   * and sits on top of it, offset in from the line's true end (rather than
+   * exactly at it) so a short tail of the full-length line still shows
+   * past the badge.
    */
   .row-view__sections--paired
     > :global(.section-frame)
     + :global(.section-frame) {
     border-left: 1px solid
       color-mix(in srgb, var(--color-accent) 35%, transparent);
-    padding-left: var(--space-2);
+    /* Wider than the usual paired gap (space-2) — the badge's own circle
+       (~11.5px radius including its border) is wider than that, so content
+       would otherwise start before the badge visually clears the line. */
+    padding-left: var(--space-4);
   }
 
   @media screen and (max-width: 640px) {
@@ -108,7 +114,7 @@
       padding-left: 0;
       border-top: 1px solid
         color-mix(in srgb, var(--color-accent) 35%, transparent);
-      padding-top: var(--space-2);
+      padding-top: var(--space-4);
     }
   }
 </style>

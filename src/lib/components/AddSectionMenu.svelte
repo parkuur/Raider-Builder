@@ -2,6 +2,7 @@
   import { sectionRegistry } from "../sections/registry";
   import { groupSectionTypesByWidth } from "../model/registry-grouping";
   import type { SectionType } from "../model/section-types";
+  import SquareSplitHorizontalIcon from "phosphor-svelte/lib/SquareSplitHorizontalIcon";
 
   let {
     open,
@@ -51,7 +52,10 @@
           >
             {entry.label}
             {#if entry.half}
-              <span class="add-section-menu__half-tag">(half)</span>
+              <span class="add-section-menu__half-tag" aria-hidden="true">
+                <SquareSplitHorizontalIcon size={14} />
+              </span>
+              <span class="add-section-menu__half-sr">(half)</span>
             {/if}
           </button>
         {/each}
@@ -110,9 +114,23 @@
   }
 
   .add-section-menu__half-tag {
+    display: inline-flex;
     opacity: 0.55;
-    font-size: var(--font-size-label);
     margin-left: var(--space-1);
+  }
+
+  /* Kept for screen readers: the icon above is decorative (aria-hidden), so
+     this preserves "Contacts (half)" etc. as the option's accessible name. */
+  .add-section-menu__half-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .add-section-menu__footer {

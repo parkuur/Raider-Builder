@@ -68,7 +68,13 @@
 
   function canPairWith(targetRowId: string): boolean {
     if (!liftedSource) return false;
-    if (liftedSource.rowId === targetRowId) return false;
+    // Moving a section onto a pair slot on its own row is a meaningless
+    // no-op (there's nothing to move — moveSectionToPair guards this too),
+    // but copying a solo half-width section onto its own row's pair slot
+    // is exactly how you pair it with a copy of itself, so only move mode
+    // is excluded here.
+    if (liftedSource.rowId === targetRowId && liftedSource.mode === "move")
+      return false;
     const section = liftedSectionOf(liftedSource);
     if (!section) return false;
     const entry = sectionRegistry[section.type] as SectionRegistryEntry;

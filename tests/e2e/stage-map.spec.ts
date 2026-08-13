@@ -164,6 +164,54 @@ test.describe("Stage Map section", () => {
     ).toBeVisible();
   });
 
+  test("XLR and DI items render as half-height rectangles, not squares", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+    await page.getByRole("button", { name: "XLR", exact: true }).click();
+
+    for (const category of ["di", "xlr"]) {
+      const box = await page
+        .locator(`[data-category="${category}"]`)
+        .boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeCloseTo(box!.width / 2, 0);
+    }
+  });
+
+  test("a Name marker's center text is directly editable and auto-shrinks to fit", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "NAME", exact: true }).click();
+
+    const nameInput = page.locator(".stage-map__name-input");
+    await expect(nameInput).toBeVisible();
+    const baseFontSize = await nameInput.evaluate(
+      (el) => getComputedStyle(el).fontSize,
+    );
+
+    await nameInput.fill("A Very Long Band Member Name");
+    await expect(nameInput).toHaveValue("A Very Long Band Member Name");
+    const shrunkFontSize = await nameInput.evaluate(
+      (el) => getComputedStyle(el).fontSize,
+    );
+    expect(parseFloat(shrunkFontSize)).toBeLessThan(parseFloat(baseFontSize));
+
+    // Same editable label-below field every other marker has.
+    const item = page.locator('[data-category="name"]');
+    await expect(item.locator(".stage-map__label")).toBeVisible();
+  });
+
   test("Shift+Enter adds a line break in the label; Enter alone does not", async ({
     page,
   }) => {

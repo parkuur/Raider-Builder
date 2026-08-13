@@ -81,4 +81,27 @@ test.describe("copy-lift/copy-place", () => {
       page.locator(".row-view").first().locator(".section-frame"),
     ).toHaveCount(2);
   });
+
+  test("lifting a standalone half section for copy and placing it on its own pair slot pairs it with a copy of itself", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .click();
+
+    const row = page.locator(".row-view").first();
+    await row.getByRole("button", { name: "Copy this section" }).click();
+    await row
+      .locator(".pair-slot")
+      .getByRole("button", { name: "Place copy here to pair" })
+      .click();
+
+    await expect(page.locator(".row-view")).toHaveCount(1);
+    await expect(row.locator(".section-frame")).toHaveCount(2);
+    await expect(row.locator(".contacts-section")).toHaveCount(2);
+  });
 });

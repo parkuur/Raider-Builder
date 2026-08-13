@@ -195,6 +195,16 @@ describe("duplicateSectionIntoPair", () => {
     expect(duplicateSectionIntoPair(doc, "r1", "missing", "r2")).toBe(doc);
     expect(duplicateSectionIntoPair(doc, "r1", "s1", "missing")).toBe(doc);
   });
+
+  it("pairs a solo section with a copy of itself when source and target row are the same", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1", "a")));
+    const result = duplicateSectionIntoPair(doc, "r1", "s1", "r1");
+    expect(result.rows).toHaveLength(1);
+    const [original, copy] = result.rows[0]!.sections;
+    expect(original!.id).toBe("s1");
+    expect(copy!.id).not.toBe("s1");
+    expect(copy!.data).toEqual({ note: "a" });
+  });
 });
 
 describe("reorderRows", () => {

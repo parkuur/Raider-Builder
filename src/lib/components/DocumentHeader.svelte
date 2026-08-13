@@ -3,15 +3,6 @@
 </script>
 
 <header class="document-header">
-  <a
-    class="document-header__logo no-print"
-    href="https://frostysound.fi"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Frosty Sound"
-  >
-    <img src="/fs-logo.jpg" alt="Frosty Sound" />
-  </a>
   <div class="document-header__fields">
     <input
       class="document-header__title"
@@ -49,27 +40,7 @@
 
 <style>
   .document-header {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-4);
     margin-bottom: var(--space-5);
-  }
-
-  .document-header__logo {
-    flex: none;
-    display: block;
-  }
-
-  .document-header__logo img {
-    display: block;
-    height: 40px;
-    width: auto;
-    object-fit: contain;
-  }
-
-  .document-header__fields {
-    flex: 1;
-    min-width: 0;
   }
 
   .document-header__title,

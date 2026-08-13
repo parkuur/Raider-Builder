@@ -10,11 +10,13 @@
     resizeStageItem,
     setCanvasHeight,
     updateStageItemLabel,
+    updateStageItemName,
   } from "../../model/stage-map";
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import { autoFitText } from "../../components/auto-fit-text";
 
   let {
     rowId,
@@ -38,6 +40,7 @@
     "mon",
     "power",
     "riser",
+    "name",
   ];
 
   // Below the mobile breakpoint, the canvas renders at this fixed authored
@@ -151,7 +154,24 @@
               <polygon points="20,2 2,34 38,34" />
             </svg>
           {/if}
-          <span class="stage-map__abbr">{meta.abbreviation}</span>
+          {#if item.category === "name"}
+            <input
+              class="stage-map__name-input"
+              value={item.nameText}
+              placeholder="Name"
+              use:autoFitText={{ min: 6 }}
+              oninput={(e) =>
+                commit(
+                  updateStageItemName(
+                    section.data,
+                    item.id,
+                    e.currentTarget.value,
+                  ),
+                )}
+            />
+          {:else}
+            <span class="stage-map__abbr">{meta.abbreviation}</span>
+          {/if}
           {#if meta.resizable}
             <div
               class="stage-map__resize-handle no-print"
@@ -303,6 +323,15 @@
     border-style: dashed;
   }
 
+  .stage-map__item--rectangle {
+    height: 18px;
+  }
+
+  .stage-map__item--ellipse {
+    width: 54px;
+    border-radius: 50%;
+  }
+
   .stage-map__item--triangle {
     width: 40px;
     height: 36px;
@@ -337,6 +366,24 @@
     letter-spacing: 0.02em;
     pointer-events: none;
     margin-top: auto;
+  }
+
+  .stage-map__name-input {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 10px;
+    text-align: center;
+    padding: 0;
+    cursor: text;
+    touch-action: none;
   }
 
   .stage-map__resize-handle {

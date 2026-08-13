@@ -16,6 +16,7 @@ import type { BandMembersSectionData } from "../model/band-members";
 import type { StageMapSectionData } from "../model/stage-map";
 import type { ContactsSectionData } from "../model/contacts";
 import type { QuickLookSectionData } from "../model/quicklook";
+import type { TextSectionData } from "../model/text";
 
 let state = $state<RiderDocument>(
   loadDocumentFromLocalStorage(Object.keys(sectionRegistry)) ??
@@ -226,6 +227,14 @@ export function setQuickLookData(
   data: QuickLookSectionData,
 ): void {
   state = mutations.setSectionData(state, rowId, sectionId, "quicklook", data);
+}
+
+export function setTextData(
+  rowId: string,
+  sectionId: string,
+  data: TextSectionData,
+): void {
+  state = mutations.setSectionData(state, rowId, sectionId, "text", data);
 }
 
 export function setHeaderField<K extends keyof Header>(
