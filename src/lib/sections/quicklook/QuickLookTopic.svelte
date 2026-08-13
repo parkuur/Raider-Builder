@@ -15,6 +15,7 @@
     updateQuickLookRowValue,
   } from "../../model/quicklook";
   import type { IconKey } from "../../model/icon-keys";
+  import { fitColumnChars } from "../../model/column-fit";
   import QuickLookTopicHeader from "./QuickLookTopicHeader.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
@@ -79,6 +80,10 @@
   </QuickLookTopicHeader>
 
   {#if topic.kind === "table"}
+    {@const valueChars = fitColumnChars(
+      topic.lines.map((l) => l.value),
+      "Value",
+    )}
     {#each topic.lines as line (line.id)}
       <div
         class="quicklook-section__line"
@@ -112,6 +117,7 @@
         />
         <input
           class="quicklook-section__line-value"
+          style:width="{valueChars}ch"
           value={line.value}
           placeholder="Value"
           oninput={(e) =>
@@ -177,13 +183,20 @@
 
   .quicklook-section__line-label,
   .quicklook-section__line-value {
-    flex: 1;
-    min-width: 0;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
     padding: 4px var(--space-2);
+  }
+
+  .quicklook-section__line-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .quicklook-section__line-value {
+    flex: none;
   }
 
   .quicklook-section__add-line {
