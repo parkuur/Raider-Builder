@@ -7,6 +7,7 @@
     addQuickLookLine,
     removeQuickLookLine,
     removeQuickLookTopic,
+    reorderQuickLookLine,
     reorderQuickLookTopics,
     setQuickLookTopicIcon,
     setQuickLookTopicTitle,
@@ -17,7 +18,7 @@
   import QuickLookTopicHeader from "./QuickLookTopicHeader.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
-  import type { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     data,
@@ -30,6 +31,8 @@
     drag: DragReorderState;
     onCommit: (next: QuickLookSectionData) => void;
   } = $props();
+
+  const lineDrag = new DragReorderState();
 </script>
 
 <div
@@ -77,7 +80,25 @@
 
   {#if topic.kind === "table"}
     {#each topic.lines as line (line.id)}
-      <div class="quicklook-section__line">
+      <div
+        class="quicklook-section__line"
+        data-reorder-item={line.id}
+        class:quicklook-section__line--drag-over={lineDrag.isOver(line.id)}
+      >
+        <DragHandle
+          label="Drag to reorder line"
+          onStart={() => lineDrag.start(line.id)}
+          onOver={(id) => lineDrag.over(id)}
+          onDrop={(id) => {
+            const move = lineDrag.resolveDrop(
+              topic.lines.map((l) => l.id),
+              id,
+            );
+            if (move)
+              onCommit(reorderQuickLookLine(data, topic.id, move[0], move[1]));
+          }}
+          onEnd={() => lineDrag.end()}
+        />
         <input
           class="quicklook-section__line-label"
           value={line.label}
@@ -147,7 +168,11 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    margin-left: calc(20px + var(--space-2));
+  }
+
+  .quicklook-section__line--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .quicklook-section__line-label,
@@ -163,7 +188,7 @@
 
   .quicklook-section__add-line {
     align-self: flex-start;
-    margin-left: calc(20px + var(--space-2));
+    margin-left: calc(20px + var(--space-1));
     padding: 4px var(--space-2);
     border: 1px dashed var(--color-border);
     background: transparent;

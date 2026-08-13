@@ -115,6 +115,40 @@ test.describe("Quick Look section", () => {
     ).toHaveValue("First");
   });
 
+  test("dragging a line's handle onto another line reorders them within the table topic", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    const tableTopic = page.locator(".quicklook-section__topic").first();
+    await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
+    await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
+
+    const lines = tableTopic.locator(".quicklook-section__line");
+    await lines.nth(0).locator(".quicklook-section__line-label").fill("First");
+    await lines.nth(1).locator(".quicklook-section__line-label").fill("Second");
+
+    await pointerDragTo(
+      page,
+      lines.nth(1).locator(".drag-handle"),
+      lines.nth(0),
+    );
+
+    await expect(
+      lines.nth(0).locator(".quicklook-section__line-label"),
+    ).toHaveValue("Second");
+    await expect(
+      lines.nth(1).locator(".quicklook-section__line-label"),
+    ).toHaveValue("First");
+  });
+
   test("editing controls are hidden in print, content stays visible", async ({
     page,
   }) => {

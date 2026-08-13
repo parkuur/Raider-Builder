@@ -5,6 +5,7 @@ import {
   defaultQuickLookData,
   removeQuickLookLine,
   removeQuickLookTopic,
+  reorderQuickLookLine,
   reorderQuickLookTopics,
   setQuickLookTopicIcon,
   setQuickLookTopicTitle,
@@ -165,5 +166,42 @@ describe("addQuickLookLine / removeQuickLookLine / updateQuickLookLine", () => {
   it("removeQuickLookLine is a no-op for an unknown line id", () => {
     const data = dataWith([tableTopic("t1")]);
     expect(removeQuickLookLine(data, "t1", "missing")).toBe(data);
+  });
+});
+
+describe("reorderQuickLookLine", () => {
+  function lineTopic(id: string, lineIds: string[]): QuickLookTableTopic {
+    return tableTopic(id, {
+      lines: lineIds.map((lineId) => ({ id: lineId, label: "", value: "" })),
+    });
+  }
+
+  it("moves a line to the target index within its topic", () => {
+    const data = dataWith([lineTopic("t1", ["l1", "l2", "l3"])]);
+    const result = reorderQuickLookLine(data, "t1", 0, 2);
+    expect(
+      (result.topics[0] as QuickLookTableTopic).lines.map((l) => l.id),
+    ).toEqual(["l2", "l3", "l1"]);
+  });
+
+  it("is a no-op for an unknown topic id", () => {
+    const data = dataWith([lineTopic("t1", ["l1", "l2"])]);
+    expect(reorderQuickLookLine(data, "missing", 0, 1)).toBe(data);
+  });
+
+  it("is a no-op when the targeted topic is a row topic", () => {
+    const data = dataWith([rowTopic("t1")]);
+    expect(reorderQuickLookLine(data, "t1", 0, 1)).toBe(data);
+  });
+
+  it("does not affect another topic's lines", () => {
+    const data = dataWith([
+      lineTopic("t1", ["l1", "l2"]),
+      lineTopic("t2", ["l3", "l4"]),
+    ]);
+    const result = reorderQuickLookLine(data, "t1", 0, 1);
+    expect(
+      (result.topics[1] as QuickLookTableTopic).lines.map((l) => l.id),
+    ).toEqual(["l3", "l4"]);
   });
 });
