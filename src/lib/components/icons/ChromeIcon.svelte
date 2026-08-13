@@ -56,5 +56,9 @@
     <rect x="6" y="2" width="12" height="7" rx="1" />
     <rect x="3" y="8" width="18" height="9" rx="1.5" />
     <rect x="7" y="14" width="10" height="8" rx="1" />
+  {:else if key === "menu"}
+    <path d="M4 7 H20" />
+    <path d="M4 12 H20" />
+    <path d="M4 17 H20" />
   {/if}
 </svg>
