@@ -7,8 +7,16 @@ import type { Action } from "svelte/action";
  * Notes) need their full text visible via height, not a scrollbar.
  */
 function resize(node: HTMLTextAreaElement): void {
+  // scrollHeight measures the content+padding box, but box-sizing:
+  // border-box (used throughout this app's form controls) makes `height`
+  // include the border too — without adding it back, the assigned height
+  // is short by the border width and the content still clips by a couple
+  // of pixels.
+  const style = getComputedStyle(node);
+  const borderHeight =
+    parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
   node.style.height = "auto";
-  node.style.height = `${node.scrollHeight}px`;
+  node.style.height = `${node.scrollHeight + borderHeight}px`;
 }
 
 export const autosizeTextarea: Action<HTMLTextAreaElement, unknown> = (

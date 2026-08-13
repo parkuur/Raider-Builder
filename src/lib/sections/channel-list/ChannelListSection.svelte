@@ -7,12 +7,14 @@
     reorderChannelRows,
     updateChannelRow,
   } from "../../model/channel-list";
+  import { fitColumnChars } from "../../model/column-fit";
   import { setChannelListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { autosizeTextarea } from "../../actions/autosize-textarea";
 
   let {
     rowId,
@@ -28,6 +30,19 @@
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
+
+  const nameChars = $derived(
+    fitColumnChars(
+      section.data.rows.map((r) => r.name),
+      "e.g. Kick In",
+    ),
+  );
+  const sourceChars = $derived(
+    fitColumnChars(
+      section.data.rows.map((r) => r.source),
+      "SM58 / DI",
+    ),
+  );
 
   const drag = new DragReorderState();
 </script>
@@ -70,7 +85,7 @@
             />
           </td>
           <td class="channel-list__num">{labelFor(row.id)}</td>
-          <td>
+          <td style:width="{nameChars}ch">
             <input
               class="channel-list__name-input"
               value={row.name}
@@ -83,7 +98,7 @@
                 )}
             />
           </td>
-          <td>
+          <td style:width="{sourceChars}ch">
             <input
               value={row.source}
               placeholder="SM58 / DI"
@@ -107,8 +122,10 @@
                 )}
             />
           </td>
-          <td>
-            <input
+          <td class="channel-list__notes">
+            <textarea
+              use:autosizeTextarea={row.notes}
+              rows="1"
               value={row.notes}
               placeholder="Notes"
               oninput={(e) =>
@@ -116,8 +133,7 @@
                   updateChannelRow(section.data, row.id, {
                     notes: e.currentTarget.value,
                   }),
-                )}
-            />
+                )}></textarea>
           </td>
           <td class="channel-list__actions no-print">
             <StereoToggle
@@ -206,11 +222,13 @@
     }
   }
 
-  .channel-list input {
+  .channel-list input,
+  .channel-list textarea {
     width: 100%;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
+    font-family: inherit;
     font-size: var(--font-size-body);
     padding: 3px var(--space-1);
     box-sizing: border-box;
@@ -218,6 +236,12 @@
 
   .channel-list input[type="checkbox"] {
     width: auto;
+  }
+
+  .channel-list textarea {
+    display: block;
+    resize: none;
+    overflow: hidden;
   }
 
   .channel-list__actions {
