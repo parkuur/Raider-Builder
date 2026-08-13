@@ -130,4 +130,30 @@
     border-left: 1px solid var(--color-divider-subtle);
     padding-left: var(--space-2);
   }
+
+  /*
+   * Below this breakpoint, a paired row's two sections stack vertically
+   * instead of squeezing side-by-side. `screen` (not just the width
+   * condition) is what excludes this from print — the printed page is
+   * governed by the @page box, not the originating device's viewport, so
+   * pairs always print side-by-side regardless (see print.css).
+   */
+  @media screen and (max-width: 640px) {
+    .row-view__sections {
+      flex-direction: column;
+    }
+
+    .row-view__sections--paired {
+      gap: var(--space-2);
+    }
+
+    .row-view__sections--paired
+      > :global(.section-frame)
+      + :global(.section-frame) {
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid var(--color-divider-subtle);
+      padding-top: var(--space-2);
+    }
+  }
 </style>
