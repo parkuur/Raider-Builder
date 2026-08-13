@@ -48,6 +48,9 @@ test.describe("half-width pairing UI", () => {
     await expect(
       frames.getByRole("button", { name: "Move or unpair this section" }),
     ).toHaveCount(2);
+    // The link badge marks the pairing itself — exactly one per pair, on
+    // the trailing section, not duplicated per side.
+    await expect(page.locator(".section-frame__pair-badge")).toHaveCount(1);
   });
 
   test("deleting one side of a pair removes the pairing, leaving the other section standalone", async ({

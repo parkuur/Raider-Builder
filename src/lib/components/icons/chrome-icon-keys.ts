@@ -9,6 +9,7 @@ export const CHROME_ICON_KEYS = [
   "printer",
   "menu",
   "move",
+  "link",
 ] as const;
 
 export type ChromeIconKey = (typeof CHROME_ICON_KEYS)[number];

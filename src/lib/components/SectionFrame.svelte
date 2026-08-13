@@ -13,6 +13,7 @@
     rowId,
     section,
     sectionCount,
+    showPairBadge,
     liftedMode,
     onToggleMoveLift,
     onToggleCopyLift,
@@ -20,6 +21,7 @@
     rowId: string;
     section: Section;
     sectionCount: number;
+    showPairBadge: boolean;
     liftedMode: "move" | "copy" | null;
     onToggleMoveLift: () => void;
     onToggleCopyLift: () => void;
@@ -102,6 +104,11 @@
   <div class="section-frame__body">
     <Entry.component {rowId} {section} />
   </div>
+  {#if showPairBadge}
+    <div class="section-frame__pair-badge" aria-hidden="true">
+      <ChromeIcon key="link" size={12} />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -163,5 +170,37 @@
     border-color: var(--color-accent);
     color: var(--color-background);
     background: var(--color-accent);
+  }
+
+  /*
+   * Sits on the paired-divider rule (RowView.svelte), which is a border on
+   * this element's own left edge (desktop) or top edge (mobile stacked) —
+   * anchoring to this box's own corner, rather than to the shared row
+   * container, keeps the badge correctly on the rule regardless of how
+   * tall either paired section actually is.
+   */
+  .section-frame__pair-badge {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background: var(--color-background);
+    color: var(--color-accent);
+  }
+
+  @media screen and (max-width: 640px) {
+    .section-frame__pair-badge {
+      left: 0;
+      top: 0;
+      bottom: auto;
+      transform: translate(-50%, -50%);
+    }
   }
 </style>

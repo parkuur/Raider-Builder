@@ -38,11 +38,12 @@
 
 <div class="row-view">
   <div class="row-view__sections" class:row-view__sections--paired={paired}>
-    {#each row.sections as section (section.id)}
+    {#each row.sections as section, sectionIndex (section.id)}
       <SectionFrame
         rowId={row.id}
         {section}
         sectionCount={row.sections.length}
+        showPairBadge={paired && sectionIndex === 1}
         liftedMode={liftedSectionId === section.id ? liftedMode : null}
         onToggleMoveLift={() => onToggleMoveLift(section.id)}
         onToggleCopyLift={() => onToggleCopyLift(section.id)}
@@ -73,16 +74,16 @@
 
   /*
    * Paired sections get an accent-colored (not neutral-gray) rule between
-   * them specifically so pairing reads as a distinct, noticeable signal —
-   * every other seam in the document (RowGap, between unrelated rows) uses
-   * the neutral border color, so hue alone marks "these two belong
-   * together" at a glance.
+   * them so pairing reads as a distinct signal — every other seam in the
+   * document (RowGap, between unrelated rows) uses the neutral border
+   * color, so hue alone marks "these two belong together." The rule itself
+   * stays subtle; the link badge (SectionFrame.svelte) carries the signal.
    */
   .row-view__sections--paired
     > :global(.section-frame)
     + :global(.section-frame) {
-    border-left: 2px solid
-      color-mix(in srgb, var(--color-accent) 45%, transparent);
+    border-left: 1px solid
+      color-mix(in srgb, var(--color-accent) 35%, transparent);
     padding-left: var(--space-2);
   }
 
@@ -105,8 +106,8 @@
       + :global(.section-frame) {
       border-left: none;
       padding-left: 0;
-      border-top: 2px solid
-        color-mix(in srgb, var(--color-accent) 45%, transparent);
+      border-top: 1px solid
+        color-mix(in srgb, var(--color-accent) 35%, transparent);
       padding-top: var(--space-2);
     }
   }
