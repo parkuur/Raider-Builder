@@ -5,6 +5,15 @@
 </script>
 
 <div class="toolbar no-print">
+  <a
+    class="toolbar__logo"
+    href="https://frostysound.fi"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Frosty Sound"
+  >
+    <img src="/fs-logo.png" alt="Frosty Sound" />
+  </a>
   <SaveLoadControls />
 </div>
 
@@ -18,9 +27,25 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
     padding: var(--space-2) var(--space-5);
     background: var(--color-background);
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .toolbar__logo {
+    flex: none;
+    display: block;
+  }
+
+  .toolbar__logo img {
+    display: block;
+    height: 28px;
+    width: auto;
+    object-fit: contain;
   }
 
   .document-shell {
