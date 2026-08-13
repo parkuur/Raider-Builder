@@ -4,6 +4,7 @@ import {
   defaultBandMembersData,
   memberInitials,
   removeBandMember,
+  reorderBandMember,
   setPhotoEnabled,
   updateBandMember,
 } from "../../../src/lib/model/band-members";
@@ -52,6 +53,19 @@ describe("removeBandMember", () => {
   it("is a no-op for an unknown id", () => {
     const data = dataWith({ id: "m1" });
     expect(removeBandMember(data, "missing")).toBe(data);
+  });
+});
+
+describe("reorderBandMember", () => {
+  it("moves a member to the target index", () => {
+    const data = dataWith({ id: "m1" }, { id: "m2" }, { id: "m3" });
+    const result = reorderBandMember(data, 0, 2);
+    expect(result.members.map((m) => m.id)).toEqual(["m2", "m3", "m1"]);
+  });
+
+  it("is a no-op for an out-of-range fromIndex", () => {
+    const data = dataWith({ id: "m1" });
+    expect(reorderBandMember(data, 5, 0)).toBe(data);
   });
 });
 

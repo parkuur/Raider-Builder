@@ -5,12 +5,15 @@
     addBandMember,
     memberInitials,
     removeBandMember,
+    reorderBandMember,
     setPhotoEnabled,
     updateBandMember,
   } from "../../model/band-members";
   import { setBandMembersData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import DragHandle from "../../components/DragHandle.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     rowId,
@@ -21,6 +24,8 @@
   function commit(data: typeof section.data) {
     setBandMembersData(rowId, section.id, data);
   }
+
+  const drag = new DragReorderState();
 
   // Each card is a fixed 124px, so more than 2 per row overflows a narrow
   // phone. This reuses the same 640px breakpoint as the rest of the mobile
@@ -76,7 +81,26 @@
   {#each rows as memberRow, rowIndex (rowIndex)}
     <div class="band-members__row" data-row-index={rowIndex}>
       {#each memberRow as member (member.id)}
-        <div class="band-members__card">
+        <div
+          class="band-members__card"
+          data-reorder-item={member.id}
+          class:band-members__card--drag-over={drag.isOver(member.id)}
+        >
+          <div class="band-members__drag">
+            <DragHandle
+              onStart={() => drag.start(member.id)}
+              onOver={(id) => drag.over(id)}
+              onDrop={(id) => {
+                const move = drag.resolveDrop(
+                  section.data.members.map((m) => m.id),
+                  id,
+                );
+                if (move)
+                  commit(reorderBandMember(section.data, move[0], move[1]));
+              }}
+              onEnd={() => drag.end()}
+            />
+          </div>
           <div class="band-members__remove">
             <RemoveButton
               label="Remove member"
@@ -167,6 +191,17 @@
     width: 124px;
     border: 1px solid var(--color-border);
     padding: var(--space-3) var(--space-2);
+  }
+
+  .band-members__card--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  .band-members__drag {
+    position: absolute;
+    top: 2px;
+    left: 4px;
   }
 
   .band-members__remove {

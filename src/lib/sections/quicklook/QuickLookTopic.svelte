@@ -7,6 +7,7 @@
     addQuickLookLine,
     removeQuickLookLine,
     removeQuickLookTopic,
+    reorderQuickLookLine,
     reorderQuickLookTopics,
     setQuickLookTopicIcon,
     setQuickLookTopicTitle,
@@ -14,10 +15,11 @@
     updateQuickLookRowValue,
   } from "../../model/quicklook";
   import type { IconKey } from "../../model/icon-keys";
+  import { fitColumnChars } from "../../model/column-fit";
   import QuickLookTopicHeader from "./QuickLookTopicHeader.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
-  import type { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     data,
@@ -30,6 +32,8 @@
     drag: DragReorderState;
     onCommit: (next: QuickLookSectionData) => void;
   } = $props();
+
+  const lineDrag = new DragReorderState();
 </script>
 
 <div
@@ -76,8 +80,30 @@
   </QuickLookTopicHeader>
 
   {#if topic.kind === "table"}
+    {@const valueChars = fitColumnChars(
+      topic.lines.map((l) => l.value),
+      "Value",
+    )}
     {#each topic.lines as line (line.id)}
-      <div class="quicklook-section__line">
+      <div
+        class="quicklook-section__line"
+        data-reorder-item={line.id}
+        class:quicklook-section__line--drag-over={lineDrag.isOver(line.id)}
+      >
+        <DragHandle
+          label="Drag to reorder line"
+          onStart={() => lineDrag.start(line.id)}
+          onOver={(id) => lineDrag.over(id)}
+          onDrop={(id) => {
+            const move = lineDrag.resolveDrop(
+              topic.lines.map((l) => l.id),
+              id,
+            );
+            if (move)
+              onCommit(reorderQuickLookLine(data, topic.id, move[0], move[1]));
+          }}
+          onEnd={() => lineDrag.end()}
+        />
         <input
           class="quicklook-section__line-label"
           value={line.label}
@@ -91,6 +117,7 @@
         />
         <input
           class="quicklook-section__line-value"
+          style:width="{valueChars}ch"
           value={line.value}
           placeholder="Value"
           oninput={(e) =>
@@ -136,6 +163,7 @@
   .quicklook-section__value {
     flex: 1;
     min-width: 0;
+    text-align: right;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
@@ -147,13 +175,15 @@
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    margin-left: calc(20px + var(--space-2));
+  }
+
+  .quicklook-section__line--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .quicklook-section__line-label,
   .quicklook-section__line-value {
-    flex: 1;
-    min-width: 0;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
@@ -161,9 +191,18 @@
     padding: 4px var(--space-2);
   }
 
+  .quicklook-section__line-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .quicklook-section__line-value {
+    flex: none;
+  }
+
   .quicklook-section__add-line {
     align-self: flex-start;
-    margin-left: calc(20px + var(--space-2));
+    margin-left: calc(20px + var(--space-1));
     padding: 4px var(--space-2);
     border: 1px dashed var(--color-border);
     background: transparent;

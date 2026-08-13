@@ -1,5 +1,6 @@
 import { createId } from "./id";
 import { clamp } from "./util";
+import { reorderListRows } from "./row-list";
 import type { IconKey } from "./icon-keys";
 
 export interface QuickLookLine {
@@ -149,6 +150,24 @@ export function removeQuickLookLine(
       t.id === topicId && t.kind === "table"
         ? { ...t, lines: t.lines.filter((l) => l.id !== lineId) }
         : t,
+    ),
+  };
+}
+
+export function reorderQuickLookLine(
+  data: QuickLookSectionData,
+  topicId: string,
+  fromIndex: number,
+  toIndex: number,
+): QuickLookSectionData {
+  const topic = data.topics.find((t) => t.id === topicId);
+  if (!topic || topic.kind !== "table") return data;
+  const lines = reorderListRows(topic.lines, fromIndex, toIndex);
+  if (lines === topic.lines) return data;
+  return {
+    ...data,
+    topics: data.topics.map((t) =>
+      t.id === topicId && t.kind === "table" ? { ...t, lines } : t,
     ),
   };
 }

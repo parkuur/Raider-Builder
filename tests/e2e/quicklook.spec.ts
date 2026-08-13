@@ -63,6 +63,10 @@ test.describe("Quick Look section", () => {
     await expect(rowTopic.locator(".quicklook-section__value")).toHaveValue(
       "2 handhelds",
     );
+    await expect(rowTopic.locator(".quicklook-section__value")).toHaveCSS(
+      "text-align",
+      "right",
+    );
 
     await page.getByRole("button", { name: "+ Add Table Topic" }).click();
     const tableTopic = page.locator(".quicklook-section__topic").nth(1);
@@ -113,6 +117,82 @@ test.describe("Quick Look section", () => {
     await expect(
       topics.nth(1).locator(".quicklook-topic-header__title"),
     ).toHaveValue("First");
+  });
+
+  test("dragging a line's handle onto another line reorders them within the table topic", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    const tableTopic = page.locator(".quicklook-section__topic").first();
+    await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
+    await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
+
+    const lines = tableTopic.locator(".quicklook-section__line");
+    await lines.nth(0).locator(".quicklook-section__line-label").fill("First");
+    await lines.nth(1).locator(".quicklook-section__line-label").fill("Second");
+
+    await pointerDragTo(
+      page,
+      lines.nth(1).locator(".drag-handle"),
+      lines.nth(0),
+    );
+
+    await expect(
+      lines.nth(0).locator(".quicklook-section__line-label"),
+    ).toHaveValue("Second");
+    await expect(
+      lines.nth(1).locator(".quicklook-section__line-label"),
+    ).toHaveValue("First");
+  });
+
+  test("a long Value in one line widens the Value column for every line in that table topic", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    const tableTopic = page.locator(".quicklook-section__topic").first();
+    await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
+    await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
+
+    const lines = tableTopic.locator(".quicklook-section__line");
+    await lines
+      .nth(0)
+      .locator(".quicklook-section__line-value")
+      .fill("6:00 PM");
+    await lines
+      .nth(1)
+      .locator(".quicklook-section__line-value")
+      .fill("A much longer value describing the second line in detail");
+
+    const valueInputs = tableTopic.locator(".quicklook-section__line-value");
+    const w0 = (await valueInputs.nth(0).boundingBox())!.width;
+    const w1 = (await valueInputs.nth(1).boundingBox())!.width;
+    expect(w0).toBeCloseTo(w1, 0);
+    expect(w0).toBeGreaterThan(200);
+
+    // A long Label doesn't affect the Value column's width — Label is the
+    // stretch side, Value is the fit-to-content side.
+    await lines
+      .nth(0)
+      .locator(".quicklook-section__line-label")
+      .fill("A very long label that should not affect the value column");
+    const w0After = (await valueInputs.nth(0).boundingBox())!.width;
+    expect(w0After).toBeCloseTo(w0, 0);
   });
 
   test("editing controls are hidden in print, content stays visible", async ({

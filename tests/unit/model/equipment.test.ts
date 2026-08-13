@@ -3,6 +3,7 @@ import {
   addEquipmentItem,
   defaultEquipmentData,
   removeEquipmentItem,
+  reorderEquipmentItem,
   setEquipmentListTitle,
   updateEquipmentItem,
 } from "../../../src/lib/model/equipment";
@@ -83,6 +84,28 @@ describe("removeEquipmentItem", () => {
     const result = removeEquipmentItem(data, 0, "shared");
     expect(result.lists[0].items).toHaveLength(0);
     expect(result.lists[1].items).toHaveLength(1);
+  });
+});
+
+describe("reorderEquipmentItem", () => {
+  it("moves an item within the targeted list", () => {
+    const data = dataWith([{ id: "i1" }, { id: "i2" }, { id: "i3" }]);
+    const result = reorderEquipmentItem(data, 0, 0, 2);
+    expect(result.lists[0].items.map((i) => i.id)).toEqual(["i2", "i3", "i1"]);
+  });
+
+  it("does not affect the other list", () => {
+    const data = dataWith(
+      [{ id: "i1" }, { id: "i2" }],
+      [{ id: "v1" }, { id: "v2" }],
+    );
+    const result = reorderEquipmentItem(data, 0, 0, 1);
+    expect(result.lists[1].items.map((i) => i.id)).toEqual(["v1", "v2"]);
+  });
+
+  it("is a no-op for an out-of-range fromIndex", () => {
+    const data = dataWith([{ id: "i1" }]);
+    expect(reorderEquipmentItem(data, 0, 5, 0)).toEqual(data);
   });
 });
 

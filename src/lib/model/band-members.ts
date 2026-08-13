@@ -1,4 +1,5 @@
 import { createId } from "./id";
+import { reorderListRows } from "./row-list";
 
 export interface BandMember {
   id: string;
@@ -34,6 +35,15 @@ export function removeBandMember(
 ): BandMembersSectionData {
   if (!data.members.some((m) => m.id === memberId)) return data;
   return { ...data, members: data.members.filter((m) => m.id !== memberId) };
+}
+
+export function reorderBandMember(
+  data: BandMembersSectionData,
+  fromIndex: number,
+  toIndex: number,
+): BandMembersSectionData {
+  const members = reorderListRows(data.members, fromIndex, toIndex);
+  return members === data.members ? data : { ...data, members };
 }
 
 export function updateBandMember(

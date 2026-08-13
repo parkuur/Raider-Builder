@@ -1,4 +1,5 @@
 import { createId } from "./id";
+import { reorderListRows } from "./row-list";
 
 export interface EquipmentItem {
   id: string;
@@ -69,6 +70,18 @@ export function removeEquipmentItem(
     ...l,
     items: l.items.filter((item) => item.id !== itemId),
   }));
+}
+
+export function reorderEquipmentItem(
+  data: EquipmentSectionData,
+  listIndex: 0 | 1,
+  fromIndex: number,
+  toIndex: number,
+): EquipmentSectionData {
+  return updateList(data, listIndex, (list) => {
+    const items = reorderListRows(list.items, fromIndex, toIndex);
+    return items === list.items ? list : { ...list, items };
+  });
 }
 
 export function updateEquipmentItem(

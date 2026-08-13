@@ -2,18 +2,19 @@
   import type { Section } from "../../model/section-types";
   import {
     addMonitorRow,
-    pairMonitorRows,
+    numberMonitorRows,
     removeMonitorRow,
     reorderMonitorRows,
-    unpairMonitorRow,
     updateMonitorRow,
   } from "../../model/monitor-list";
-  import { numberRows } from "../../model/row-list";
+  import { fitColumnChars } from "../../model/column-fit";
   import { setMonitorListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { autosizeTextarea } from "../../actions/autosize-textarea";
 
   let {
     rowId,
@@ -25,10 +26,23 @@
     setMonitorListData(rowId, section.id, data);
   }
 
-  const numbered = $derived(numberRows(section.data.rows));
+  const numbered = $derived(numberMonitorRows(section.data));
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
+
+  const playerChars = $derived(
+    fitColumnChars(
+      section.data.rows.map((r) => r.player),
+      "Player",
+    ),
+  );
+  const typeChars = $derived(
+    fitColumnChars(
+      section.data.rows.map((r) => r.type),
+      "Wedge / IEM",
+    ),
+  );
 
   const drag = new DragReorderState();
 </script>
@@ -43,14 +57,14 @@
         <th class="no-print"></th>
         <th class="monitor-list__num">Mon</th>
         <th>Player</th>
-        <th class="monitor-list__type">Type</th>
+        <th>Type</th>
         <th>Mix Notes</th>
         <th class="no-print"></th>
+        <th class="monitor-list__mode">Mode</th>
       </tr>
     </thead>
     <tbody>
-      {#each section.data.rows as row, index (row.id)}
-        {@const next = section.data.rows[index + 1]}
+      {#each section.data.rows as row (row.id)}
         <tr
           data-reorder-item={row.id}
           class:monitor-list__row--drag-over={drag.isOver(row.id)}
@@ -71,7 +85,7 @@
             />
           </td>
           <td class="monitor-list__num">{labelFor(row.id)}</td>
-          <td>
+          <td style:width="{playerChars}ch">
             <input
               class="monitor-list__player-input"
               value={row.player}
@@ -84,7 +98,7 @@
                 )}
             />
           </td>
-          <td class="monitor-list__type">
+          <td style:width="{typeChars}ch">
             <input
               value={row.type}
               placeholder="Wedge / IEM"
@@ -97,7 +111,9 @@
             />
           </td>
           <td>
-            <input
+            <textarea
+              use:autosizeTextarea={row.notes}
+              rows="1"
               value={row.notes}
               placeholder="Mix notes"
               oninput={(e) =>
@@ -105,33 +121,26 @@
                   updateMonitorRow(section.data, row.id, {
                     notes: e.currentTarget.value,
                   }),
-                )}
-            />
+                )}></textarea>
           </td>
-          <td class="monitor-list__actions no-print">
-            {#if row.pairedWithId !== undefined}
-              <button
-                type="button"
-                title="Unpair"
-                onclick={() => commit(unpairMonitorRow(section.data, row.id))}
-              >
-                Unpair
-              </button>
-            {:else if next && next.pairedWithId === undefined}
-              <button
-                type="button"
-                title="Pair with next row"
-                onclick={() =>
-                  commit(pairMonitorRows(section.data, row.id, next.id))}
-              >
-                Pair
-              </button>
-            {/if}
-            <RemoveButton
-              label="Remove monitor"
-              onclick={() => commit(removeMonitorRow(section.data, row.id))}
-            />
+          <td class="monitor-list__actions-cell no-print">
+            <div class="monitor-list__actions">
+              <StereoToggle
+                active={row.stereo}
+                onToggle={() =>
+                  commit(
+                    updateMonitorRow(section.data, row.id, {
+                      stereo: !row.stereo,
+                    }),
+                  )}
+              />
+              <RemoveButton
+                label="Remove monitor"
+                onclick={() => commit(removeMonitorRow(section.data, row.id))}
+              />
+            </div>
           </td>
+          <td class="monitor-list__mode">{row.stereo ? "Stereo" : "Mono"}</td>
         </tr>
       {/each}
     </tbody>
@@ -188,43 +197,69 @@
     text-align: center;
   }
 
-  .monitor-list__type {
-    width: 80px;
-  }
-
   .monitor-list__row--drag-over {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
   }
 
-  .monitor-list input {
+  .monitor-list input,
+  .monitor-list textarea {
     width: 100%;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
+    font-family: inherit;
     font-size: var(--font-size-body);
     padding: 3px var(--space-1);
     box-sizing: border-box;
   }
 
-  .monitor-list__actions {
-    display: flex;
-    gap: 4px;
+  .monitor-list textarea {
+    display: block;
+    resize: none;
+    overflow: hidden;
+  }
+
+  .monitor-list__actions-cell {
+    /* Without an explicit width, this column has no content-based hint
+     * either (its content is a flex row of small buttons, not text), so
+     * the auto-layout table treats it as a second unconstrained column
+     * alongside Mix Notes and gives it a share of the leftover space too —
+     * `width: 1%` is the standard shrink-to-fit trick that tells the
+     * table this column only wants its content's width, leaving Mix Notes
+     * as the sole recipient of whatever space is left over. It has to sit
+     * on the `<td>` itself (kept as a plain table-cell) rather than on the
+     * flex row directly — a `display: flex` cell stops reporting its
+     * content's intrinsic width to the table layout algorithm, which
+     * collapses this column to a few px when tried directly on it.
+     */
+    width: 1%;
     white-space: nowrap;
   }
 
-  .monitor-list__actions button {
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text);
-    font-size: var(--font-size-label);
-    padding: 3px 6px;
-    cursor: pointer;
+  .monitor-list__actions {
+    display: flex;
+    gap: 4px;
   }
 
-  .monitor-list__actions button:disabled {
-    opacity: 0.4;
-    cursor: default;
+  /*
+   * The on-screen toggle button already shows its own "Mono"/"Stereo"
+   * label, but it's `no-print`, so print needs its own substitute — a
+   * trailing, print-only cell rather than duplicating the label on screen.
+   */
+  .monitor-list__mode {
+    display: none;
+    text-align: center;
+    font-size: var(--font-size-label);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  @media print {
+    .monitor-list__mode {
+      display: table-cell;
+    }
   }
 
   .monitor-list__add {
