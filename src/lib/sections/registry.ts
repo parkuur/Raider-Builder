@@ -13,6 +13,7 @@ import BandMembersSection from "./band-members/BandMembersSection.svelte";
 import StageMapSection from "./stage-map/StageMapSection.svelte";
 import ContactsSection from "./contacts/ContactsSection.svelte";
 import QuickLookSection from "./quicklook/QuickLookSection.svelte";
+import PageBreakSection from "./page-break/PageBreakSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
@@ -21,6 +22,7 @@ import { defaultBandMembersData } from "../model/band-members";
 import { defaultStageMapData } from "../model/stage-map";
 import { defaultContactsData } from "../model/contacts";
 import { defaultQuickLookData } from "../model/quicklook";
+import { defaultPageBreakData } from "../model/page-break";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -33,6 +35,8 @@ export interface SectionRegistryEntry<T extends SectionType = SectionType> {
   half: boolean;
   /** Whether this type is offered in the "Add Section" menu. Defaults to true. */
   addable?: boolean;
+  /** Suppresses the shared title input for types with nothing to title. */
+  hideTitle?: boolean;
   defaultData: () => SectionDataMap[T];
   component: Component<SectionComponentProps<T>>;
 }
@@ -103,5 +107,13 @@ export const sectionRegistry: SectionRegistry = {
     half: true,
     defaultData: defaultQuickLookData,
     component: QuickLookSection,
+  },
+  "page-break": {
+    type: "page-break",
+    label: "Page Break",
+    half: false,
+    hideTitle: true,
+    defaultData: defaultPageBreakData,
+    component: PageBreakSection,
   },
 };

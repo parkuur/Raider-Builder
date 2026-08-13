@@ -41,6 +41,10 @@
     break-inside: avoid;
   }
 
+  .section-frame[data-section-type="page-break"] {
+    break-before: page;
+  }
+
   .section-frame__head {
     break-after: avoid;
   }

@@ -48,14 +48,18 @@
   class="section-frame"
   class:hidden-from-print={section.hidden}
   class:section-frame--lifted={liftedMode !== null}
+  data-section-type={section.type}
 >
   <div class="section-frame__head">
-    <input
-      class="section-frame__title"
-      value={section.title}
-      oninput={(e) => setSectionTitle(rowId, section.id, e.currentTarget.value)}
-      placeholder="Section title"
-    />
+    {#if !Entry.hideTitle}
+      <input
+        class="section-frame__title"
+        value={section.title}
+        oninput={(e) =>
+          setSectionTitle(rowId, section.id, e.currentTarget.value)}
+        placeholder="Section title"
+      />
+    {/if}
     <div class="section-frame__actions no-print">
       <button
         type="button"
