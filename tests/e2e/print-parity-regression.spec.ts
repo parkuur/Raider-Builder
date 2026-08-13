@@ -20,27 +20,27 @@ async function buildDocument(page: Page): Promise<void> {
     .locator(".channel-list__name-input")
     .fill("Kick In Microphone With A Long Descriptive Label");
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: "Monitor List", exact: true }).click();
   await page.getByRole("button", { name: "+ Add Monitor" }).click();
   await page.locator(".monitor-list__player-input").fill("Vocalist");
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: "Band Members", exact: true }).click();
   const addMember = page.getByRole("button", { name: "+ Add Member" });
   for (let i = 0; i < 7; i++) await addMember.click();
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: "Stage Map", exact: true }).click();
   await page.getByRole("button", { name: "MIC", exact: true }).click();
   await page.getByRole("button", { name: "RISER", exact: true }).click();
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.getByRole("button", { name: "+ Add Item" }).click();
   await page.locator(".requirements-section__heading").fill("Power");
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: "Equipment", exact: true }).click();
   await page
     .getByRole("button", { name: "+ Add item", exact: true })
@@ -51,7 +51,7 @@ async function buildDocument(page: Page): Promise<void> {
     .first()
     .fill("PA System With Subwoofers");
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page
     .getByRole("button", { name: "Contacts (half)", exact: true })
     .click();

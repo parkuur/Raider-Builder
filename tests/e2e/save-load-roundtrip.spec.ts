@@ -12,7 +12,7 @@ test("save then load round-trips the document unchanged", async ({ page }) => {
   await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.locator(".section-frame__title").nth(0).fill("First Section");
 
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.locator(".section-frame__title").nth(1).fill("Second Section");
 

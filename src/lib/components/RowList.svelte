@@ -1,11 +1,12 @@
 <script lang="ts">
   import RowView from "./RowView.svelte";
-  import RowDropZone from "./RowDropZone.svelte";
-  import AddSectionTrigger from "./AddSectionTrigger.svelte";
+  import RowGap from "./RowGap.svelte";
   import AddSectionMenu from "./AddSectionMenu.svelte";
   import EmptyState from "./EmptyState.svelte";
   import {
     addRow,
+    duplicateSectionIntoPair,
+    duplicateSectionToNewRow,
     extractSectionToNewRow,
     getDocument,
     moveSectionToPair,
@@ -14,15 +15,18 @@
   } from "../state/document.svelte";
   import { sectionRegistry } from "../sections/registry";
   import type { SectionRegistryEntry } from "../sections/registry";
+  import type { Row } from "../model/document-types";
   import type { Section } from "../model/section-types";
   import type { SectionType } from "../model/section-types";
 
   type MenuRequest =
     { kind: "insert"; index: number } | { kind: "pair"; rowId: string };
 
+  type LiftMode = "move" | "copy";
+
   type LiftedSource =
-    | { kind: "row"; rowId: string }
-    | { kind: "section"; rowId: string; sectionId: string };
+    | { kind: "row"; rowId: string; mode: LiftMode }
+    | { kind: "section"; rowId: string; sectionId: string; mode: LiftMode };
 
   let menuRequest = $state<MenuRequest | null>(null);
   let liftedSource = $state<LiftedSource | null>(null);
@@ -50,14 +54,14 @@
   }
 
   // Resolves the lifted item's underlying Section, regardless of whether the
-  // lift started from a whole-row trigger (only meaningful here when that
-  // row has exactly one section) or a section-level trigger inside a paired
-  // row.
+  // lift started on a lone section (kind "row" — moving/copying it moves/
+  // copies its whole one-section row) or on one side of a paired row (kind
+  // "section").
   function liftedSectionOf(source: LiftedSource): Section | null {
     const row = getDocument().rows.find((r) => r.id === source.rowId);
     if (!row) return null;
     if (source.kind === "row") {
-      return row.sections.length === 1 ? row.sections[0] : null;
+      return row.sections.length === 1 ? row.sections[0]! : null;
     }
     return row.sections.find((s) => s.id === source.sectionId) ?? null;
   }
@@ -71,24 +75,36 @@
     return entry.half === true;
   }
 
-  function toggleLiftRow(rowId: string): void {
+  // The single entry point for both the move and copy triggers on a
+  // section: which underlying mutation kind applies (whole row vs. one side
+  // of a pair) is derived from the row's current section count, not tracked
+  // separately by the caller.
+  function toggleLift(row: Row, sectionId: string, mode: LiftMode): void {
+    const isSameLift =
+      liftedSource?.mode === mode &&
+      (liftedSource.kind === "row"
+        ? liftedSource.rowId === row.id
+        : liftedSource.sectionId === sectionId);
+    if (isSameLift) {
+      liftedSource = null;
+      return;
+    }
     liftedSource =
-      liftedSource?.kind === "row" && liftedSource.rowId === rowId
-        ? null
-        : { kind: "row", rowId };
-  }
-
-  function toggleLiftSection(rowId: string, sectionId: string): void {
-    liftedSource =
-      liftedSource?.kind === "section" && liftedSource.sectionId === sectionId
-        ? null
-        : { kind: "section", rowId, sectionId };
+      row.sections.length === 1
+        ? { kind: "row", rowId: row.id, mode }
+        : { kind: "section", rowId: row.id, sectionId, mode };
   }
 
   function placeAtZone(zoneIndex: number): void {
     const source = liftedSource;
     liftedSource = null;
     if (!source) return;
+    if (source.mode === "copy") {
+      const section = liftedSectionOf(source);
+      if (!section) return;
+      duplicateSectionToNewRow(source.rowId, section.id, zoneIndex);
+      return;
+    }
     if (source.kind === "row") {
       const fromIndex = getDocument().rows.findIndex(
         (r) => r.id === source.rowId,
@@ -109,10 +125,13 @@
     const eligible = canPairWith(targetRowId);
     liftedSource = null;
     if (!source || !eligible) return;
-    const section = source.kind === "row" ? liftedSectionOf(source) : undefined;
-    const sectionId = source.kind === "row" ? section?.id : source.sectionId;
-    if (!sectionId) return;
-    moveSectionToPair(source.rowId, sectionId, targetRowId);
+    const section = liftedSectionOf(source);
+    if (!section) return;
+    if (source.mode === "copy") {
+      duplicateSectionIntoPair(source.rowId, section.id, targetRowId);
+    } else {
+      moveSectionToPair(source.rowId, section.id, targetRowId);
+    }
   }
 
   // Clicking or tapping anywhere outside the lift/drop-target controls
@@ -144,33 +163,38 @@
   {#if getDocument().rows.length === 0}
     <EmptyState onAdd={() => openInsertMenu(0)} />
   {:else}
-    <RowDropZone
+    <RowGap
       available={liftedSource !== null}
-      onClick={() => placeAtZone(0)}
+      mode={liftedSource?.mode ?? null}
+      showRule={false}
+      onAdd={() => openInsertMenu(0)}
+      onPlace={() => placeAtZone(0)}
     />
-    <AddSectionTrigger onClick={() => openInsertMenu(0)} />
     {#each getDocument().rows as row, i (row.id)}
       <RowView
         {row}
-        first={i === 0}
-        liftedRow={liftedSource?.kind === "row" &&
-          liftedSource.rowId === row.id}
-        liftedSectionId={liftedSource?.kind === "section" &&
-        liftedSource.rowId === row.id
-          ? liftedSource.sectionId
+        liftedSectionId={liftedSource && liftedSource.rowId === row.id
+          ? liftedSource.kind === "row"
+            ? row.sections[0]!.id
+            : liftedSource.sectionId
+          : null}
+        liftedMode={liftedSource && liftedSource.rowId === row.id
+          ? liftedSource.mode
           : null}
         pairAvailable={canPairWith(row.id)}
-        onToggleLift={() => toggleLiftRow(row.id)}
-        onToggleSectionLift={(sectionId) =>
-          toggleLiftSection(row.id, sectionId)}
+        pairMode={liftedSource?.mode ?? null}
+        onToggleMoveLift={(sectionId) => toggleLift(row, sectionId, "move")}
+        onToggleCopyLift={(sectionId) => toggleLift(row, sectionId, "copy")}
         onPairAdd={() => openPairMenu(row.id)}
         onPairPlace={() => placeAtPair(row.id)}
       />
-      <RowDropZone
+      <RowGap
         available={liftedSource !== null}
-        onClick={() => placeAtZone(i + 1)}
+        mode={liftedSource?.mode ?? null}
+        showRule={i < getDocument().rows.length - 1}
+        onAdd={() => openInsertMenu(i + 1)}
+        onPlace={() => placeAtZone(i + 1)}
       />
-      <AddSectionTrigger onClick={() => openInsertMenu(i + 1)} />
     {/each}
   {/if}
 </div>

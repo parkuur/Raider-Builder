@@ -98,12 +98,12 @@ test.describe("half-width pairing UI", () => {
     const frames = page.locator(".row-view").first().locator(".section-frame");
 
     // Lift the second (Quick Look) section, then place it at the trailing
-    // drop zone, below the paired row.
+    // gap, below the paired row.
     await frames
       .nth(1)
       .getByRole("button", { name: "Move or unpair this section" })
       .click();
-    await page.locator(".row-drop-zone").last().click();
+    await page.locator(".row-gap__button").last().click();
 
     await expect(page.locator(".row-view")).toHaveCount(2);
     await expect(
@@ -127,7 +127,7 @@ test.describe("half-width pairing UI", () => {
     await page
       .getByRole("button", { name: "Contacts (half)", exact: true })
       .click();
-    await page.getByRole("button", { name: "+ Add Section" }).last().click();
+    await page.getByRole("button", { name: "Add Section" }).last().click();
     await page
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
@@ -135,11 +135,15 @@ test.describe("half-width pairing UI", () => {
     await expect(page.locator(".row-view")).toHaveCount(2);
     await expect(page.locator(".pair-slot")).toHaveCount(2);
 
-    await page.locator(".row-view").nth(1).locator(".row-view__handle").click();
+    await page
+      .locator(".row-view")
+      .nth(1)
+      .getByRole("button", { name: "Move this section" })
+      .click();
     await page
       .locator(".pair-slot")
       .first()
-      .getByRole("button", { name: "Move lifted section here to pair" })
+      .getByRole("button", { name: "Move here to pair" })
       .click();
 
     await expect(page.locator(".row-view")).toHaveCount(1);

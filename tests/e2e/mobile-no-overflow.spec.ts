@@ -7,7 +7,7 @@ async function addFirstSection(page: Page, label: string) {
 }
 
 async function addSection(page: Page, label: string) {
-  await page.getByRole("button", { name: "+ Add Section" }).last().click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
   await page.getByRole("button", { name: label, exact: true }).click();
 }
 

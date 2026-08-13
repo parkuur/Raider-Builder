@@ -8,9 +8,7 @@ test.describe("toolbar hamburger menu on narrow viewports", () => {
   }) => {
     await page.goto("/");
 
-    await expect(
-      page.getByRole("button", { name: "Save" }),
-    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Save" })).not.toBeVisible();
 
     const toggle = page.getByRole("button", { name: "Menu" });
     await expect(toggle).toBeVisible();
@@ -27,9 +25,7 @@ test.describe("toolbar hamburger menu on narrow viewports", () => {
     await page.getByRole("button", { name: "Save" }).click();
     await downloadPromise;
 
-    await expect(
-      page.getByRole("button", { name: "Save" }),
-    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Save" })).not.toBeVisible();
   });
 
   test("clicking outside the open menu closes it", async ({ page }) => {
@@ -39,8 +35,6 @@ test.describe("toolbar hamburger menu on narrow viewports", () => {
     await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
 
     await page.mouse.click(10, 10);
-    await expect(
-      page.getByRole("button", { name: "Save" }),
-    ).not.toBeVisible();
+    await expect(page.getByRole("button", { name: "Save" })).not.toBeVisible();
   });
 });

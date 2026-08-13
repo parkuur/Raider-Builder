@@ -1,7 +1,6 @@
 <script lang="ts">
   import { sectionRegistry } from "../sections/registry";
   import {
-    duplicateSection,
     removeSection,
     setSectionTitle,
     toggleSectionHidden,
@@ -14,14 +13,16 @@
     rowId,
     section,
     sectionCount,
-    lifted,
-    onToggleLift,
+    liftedMode,
+    onToggleMoveLift,
+    onToggleCopyLift,
   }: {
     rowId: string;
     section: Section;
     sectionCount: number;
-    lifted: boolean;
-    onToggleLift: () => void;
+    liftedMode: "move" | "copy" | null;
+    onToggleMoveLift: () => void;
+    onToggleCopyLift: () => void;
   } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
@@ -30,12 +31,20 @@
   // `section` and the looked-up entry are always keyed by the same runtime
   // `type`.
   const Entry = $derived(sectionRegistry[section.type] as SectionRegistryEntry);
+  // A stable name with `aria-pressed` conveying the toggle state (the
+  // standard toggle-button pattern) rather than a name that itself changes
+  // to "Cancel move" when active — a changing name breaks identifying the
+  // same control across the toggle, for assistive tech and tests alike.
+  const moveLabel = $derived(
+    sectionCount === 2 ? "Move or unpair this section" : "Move this section",
+  );
+  const copyLabel = "Copy this section";
 </script>
 
 <div
   class="section-frame"
   class:hidden-from-print={section.hidden}
-  class:section-frame--lifted={lifted}
+  class:section-frame--lifted={liftedMode !== null}
 >
   <div class="section-frame__head">
     <input
@@ -45,20 +54,18 @@
       placeholder="Section title"
     />
     <div class="section-frame__actions no-print">
-      {#if sectionCount === 2}
-        <button
-          type="button"
-          class="section-frame__action"
-          class:section-frame__action--active={lifted}
-          data-lift-ui
-          aria-pressed={lifted}
-          aria-label={lifted ? "Cancel move" : "Move or unpair this section"}
-          title={lifted ? "Cancel move" : "Move or unpair this section"}
-          onclick={onToggleLift}
-        >
-          <ChromeIcon key="move" />
-        </button>
-      {/if}
+      <button
+        type="button"
+        class="section-frame__action"
+        class:section-frame__action--active={liftedMode === "move"}
+        data-lift-ui
+        aria-pressed={liftedMode === "move"}
+        aria-label={moveLabel}
+        title={moveLabel}
+        onclick={onToggleMoveLift}
+      >
+        <ChromeIcon key="move" />
+      </button>
       <button
         type="button"
         class="section-frame__action"
@@ -72,9 +79,12 @@
       <button
         type="button"
         class="section-frame__action"
-        aria-label="Duplicate section"
-        title="Duplicate section"
-        onclick={() => duplicateSection(rowId, section.id)}
+        class:section-frame__action--active={liftedMode === "copy"}
+        data-lift-ui
+        aria-pressed={liftedMode === "copy"}
+        aria-label={copyLabel}
+        title={copyLabel}
+        onclick={onToggleCopyLift}
       >
         <ChromeIcon key="copy" />
       </button>
@@ -151,7 +161,7 @@
 
   .section-frame__action--active {
     border-color: var(--color-accent);
-    background: var(--color-accent);
     color: var(--color-background);
+    background: var(--color-accent);
   }
 </style>

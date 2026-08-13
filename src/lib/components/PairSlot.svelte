@@ -1,13 +1,19 @@
 <script lang="ts">
   let {
     available,
+    mode,
     onAddClick,
     onPlaceClick,
   }: {
     available: boolean;
+    mode: "move" | "copy" | null;
     onAddClick: () => void;
     onPlaceClick: () => void;
   } = $props();
+
+  const placeLabel = $derived(
+    mode === "copy" ? "Place copy here to pair" : "Move here to pair",
+  );
 </script>
 
 <div class="pair-slot no-print" class:pair-slot--available={available}>
@@ -15,10 +21,10 @@
     type="button"
     class="pair-slot__button"
     data-lift-ui
-    aria-label={available ? "Move lifted section here to pair" : "Add paired section"}
+    aria-label={available ? placeLabel : "Add paired section"}
     onclick={available ? onPlaceClick : onAddClick}
   >
-    {available ? "Place here to pair" : "+ Add Section"}
+    {available ? placeLabel : "+ Add Section"}
   </button>
 </div>
 
