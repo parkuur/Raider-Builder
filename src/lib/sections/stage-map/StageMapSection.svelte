@@ -109,87 +109,97 @@
 {/if}
 <div class="stage-map__scroll" bind:this={scrollEl}>
   <div
-    class="stage-map__canvas"
-    bind:this={canvasEl}
-    style:height="{section.data.canvasHeight}px"
-    style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
-    style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
-    style:transform-origin="top left"
+    class="stage-map__scale-box"
+    style:width={canvasScale < 1
+      ? `${CANVAS_BASE_WIDTH * canvasScale}px`
+      : undefined}
+    style:height={canvasScale < 1
+      ? `${section.data.canvasHeight * canvasScale}px`
+      : undefined}
   >
-    {#each section.data.items as item (item.id)}
-      {@const meta = STAGE_ITEM_CATEGORIES[item.category]}
-      <div
-        class="stage-map__item stage-map__item--{meta.shape}"
-        class:stage-map__item--dashed={meta.dashed}
-        style:left="{item.x}%"
-        style:top="{item.y}%"
-        style:width={item.w ? `${item.w}px` : undefined}
-        style:height={item.h ? `${item.h}px` : undefined}
-        style:z-index={item.order}
-        data-item-id={item.id}
-        data-category={item.category}
-        use:pointerDrag={{
-          onStart: () => commit(bringStageItemToFront(section.data, item.id)),
-          onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
-        }}
-      >
-        {#if meta.shape === "triangle"}
-          <svg
-            class="stage-map__triangle-outline"
-            viewBox="0 0 40 36"
-            aria-hidden="true"
-          >
-            <polygon points="20,2 2,34 38,34" />
-          </svg>
-        {/if}
-        <span class="stage-map__abbr">{meta.abbreviation}</span>
-        {#if meta.resizable}
-          <div
-            class="stage-map__resize-handle no-print"
-            use:pointerDrag={{
-              stopPropagation: true,
-              onMove: (dx, dy) => resizeByPixelDelta(item, dx, dy),
-            }}
-          ></div>
-        {/if}
-        <div class="stage-map__remove no-print">
-          <RemoveButton
-            label="Remove item"
-            onclick={() => commit(removeStageItem(section.data, item.id))}
-          />
-        </div>
-        <textarea
-          class="stage-map__label"
-          rows={item.label.split("\n").length}
-          value={item.label}
-          oninput={(e) =>
-            commit(
-              updateStageItemLabel(
-                section.data,
-                item.id,
-                e.currentTarget.value,
-              ),
-            )}
-          onkeydown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              e.currentTarget.blur();
-            }
-          }}></textarea>
-      </div>
-    {/each}
     <div
-      class="stage-map__depth-handle no-print"
-      use:pointerDrag={{
-        onMove: (dx, dy) =>
-          commit(
-            setCanvasHeight(
-              section.data,
-              section.data.canvasHeight + dy / canvasScale,
+      class="stage-map__canvas"
+      bind:this={canvasEl}
+      style:height="{section.data.canvasHeight}px"
+      style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
+      style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
+      style:transform-origin="top left"
+    >
+      {#each section.data.items as item (item.id)}
+        {@const meta = STAGE_ITEM_CATEGORIES[item.category]}
+        <div
+          class="stage-map__item stage-map__item--{meta.shape}"
+          class:stage-map__item--dashed={meta.dashed}
+          style:left="{item.x}%"
+          style:top="{item.y}%"
+          style:width={item.w ? `${item.w}px` : undefined}
+          style:height={item.h ? `${item.h}px` : undefined}
+          style:z-index={item.order}
+          data-item-id={item.id}
+          data-category={item.category}
+          use:pointerDrag={{
+            onStart: () => commit(bringStageItemToFront(section.data, item.id)),
+            onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
+          }}
+        >
+          {#if meta.shape === "triangle"}
+            <svg
+              class="stage-map__triangle-outline"
+              viewBox="0 0 40 36"
+              aria-hidden="true"
+            >
+              <polygon points="20,2 2,34 38,34" />
+            </svg>
+          {/if}
+          <span class="stage-map__abbr">{meta.abbreviation}</span>
+          {#if meta.resizable}
+            <div
+              class="stage-map__resize-handle no-print"
+              use:pointerDrag={{
+                stopPropagation: true,
+                onMove: (dx, dy) => resizeByPixelDelta(item, dx, dy),
+              }}
+            ></div>
+          {/if}
+          <div class="stage-map__remove no-print">
+            <RemoveButton
+              label="Remove item"
+              onclick={() => commit(removeStageItem(section.data, item.id))}
+            />
+          </div>
+          <textarea
+            class="stage-map__label"
+            rows={item.label.split("\n").length}
+            value={item.label}
+            oninput={(e) =>
+              commit(
+                updateStageItemLabel(
+                  section.data,
+                  item.id,
+                  e.currentTarget.value,
+                ),
+              )}
+            onkeydown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.blur();
+              }
+            }}></textarea>
+        </div>
+      {/each}
+      <div
+        class="stage-map__depth-handle no-print"
+        use:pointerDrag={{
+          onMove: (dx, dy) =>
+            commit(
+              setCanvasHeight(
+                section.data,
+                section.data.canvasHeight + dy / canvasScale,
+              ),
             ),
-          ),
-      }}
-    ></div>
+        }}
+      ></div>
+    </div>
   </div>
 </div>
 
@@ -222,6 +232,11 @@
     .stage-map__canvas {
       width: 100% !important;
       transform: none !important;
+    }
+
+    .stage-map__scale-box {
+      width: 100% !important;
+      height: auto !important;
     }
   }
 
