@@ -117,4 +117,34 @@ test.describe("print layout", () => {
       );
     expect(rowCounts).toEqual([4, 3]);
   });
+
+  test("hiding one side of a paired row drops the divider in print, and hiding both hides the row", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await addFirstSection(page, "Contacts (half)");
+    await page
+      .locator(".row-view")
+      .filter({ has: page.locator(".contacts-section") })
+      .getByRole("button", { name: "Add paired section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    const row = page
+      .locator(".row-view")
+      .filter({ has: page.locator(".contacts-section") });
+    const contactsFrame = row.locator(".section-frame").first();
+    const quicklookFrame = row.locator(".section-frame").nth(1);
+
+    await contactsFrame.getByRole("button", { name: "Hide section" }).click();
+    await page.emulateMedia({ media: "print" });
+    await expect(quicklookFrame).toHaveCSS("border-left-style", "none");
+
+    await page.emulateMedia({ media: "screen" });
+    await quicklookFrame.getByRole("button", { name: "Hide section" }).click();
+    await page.emulateMedia({ media: "print" });
+    await expect(row).toBeHidden();
+  });
 });

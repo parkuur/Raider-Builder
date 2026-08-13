@@ -60,4 +60,28 @@
   .equipment-section {
     grid-template-columns: 1fr 1fr !important;
   }
+
+  /*
+   * The paired divider (RowView.svelte) is a plain adjacent-sibling CSS
+   * selector, so it doesn't know about a section's `hidden` state — hiding
+   * the first of a pair still leaves display:none in the DOM, and the
+   * sibling combinator still matches, so the still-visible partner would
+   * otherwise keep a divider pointing at nothing.
+   */
+  .row-view__sections--paired
+    > .section-frame.hidden-from-print
+    + .section-frame {
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+
+  /*
+   * Explicit invariant, not just a consequence of the per-section
+   * hidden-from-print rule above: a row with no visible sections at all
+   * (a hidden solo section, or both sides of a hidden pair) contributes no
+   * space to the printed page.
+   */
+  .row-view:not(:has(.section-frame:not(.hidden-from-print))) {
+    display: none !important;
+  }
 }
