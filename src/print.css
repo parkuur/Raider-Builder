@@ -36,4 +36,12 @@
   table thead {
     display: table-header-group;
   }
+
+  .section-frame {
+    break-inside: avoid;
+  }
+
+  .section-frame__head {
+    break-after: avoid;
+  }
 }
