@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   addRow,
   duplicateSection,
+  duplicateSectionIntoPair,
+  duplicateSectionToNewRow,
   extractSectionToNewRow,
   moveSectionToPair,
   pairSections,
@@ -130,6 +132,68 @@ describe("duplicateSection", () => {
     const doc = docWithRows(makeRow("r1", makeSection("s1")));
     expect(duplicateSection(doc, "missing", "s1")).toBe(doc);
     expect(duplicateSection(doc, "r1", "missing")).toBe(doc);
+  });
+});
+
+describe("duplicateSectionToNewRow", () => {
+  it("inserts a deep-equal, different-id copy at the given index, leaving the source row untouched", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1", "a"), makeSection("s2", "b")),
+      makeRow("r3", makeSection("s3")),
+    );
+    const result = duplicateSectionToNewRow(doc, "r1", "s2", 1);
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows[0]).toBe(doc.rows[0]);
+    expect(result.rows[0]!.sections.map((s) => s.id)).toEqual(["s1", "s2"]);
+    const copy = result.rows[1]!.sections[0]!;
+    expect(copy.id).not.toBe("s2");
+    expect(copy.data).toEqual({ note: "b" });
+  });
+
+  it("clamps an out-of-range index instead of erroring", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1")));
+    const result = duplicateSectionToNewRow(doc, "r1", "s1", 99);
+    expect(result.rows).toHaveLength(2);
+  });
+
+  it("is a no-op for unknown ids", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1")));
+    expect(duplicateSectionToNewRow(doc, "missing", "s1", 0)).toBe(doc);
+    expect(duplicateSectionToNewRow(doc, "r1", "missing", 0)).toBe(doc);
+  });
+});
+
+describe("duplicateSectionIntoPair", () => {
+  it("pairs a deep-equal, different-id copy into the target row, leaving the source untouched", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1", "a")),
+      makeRow("r2", makeSection("s2", "b")),
+    );
+    const result = duplicateSectionIntoPair(doc, "r1", "s1", "r2");
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toBe(doc.rows[0]);
+    expect(result.rows[1]!.sections.map((s) => s.id)[0]).toBe("s2");
+    const copy = result.rows[1]!.sections[1]!;
+    expect(copy.id).not.toBe("s1");
+    expect(copy.data).toEqual({ note: "a" });
+  });
+
+  it("is a no-op when the target row is already paired", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1")),
+      makeRow("r2", makeSection("s2"), makeSection("s3")),
+    );
+    expect(duplicateSectionIntoPair(doc, "r1", "s1", "r2")).toBe(doc);
+  });
+
+  it("is a no-op for unknown ids", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1")),
+      makeRow("r2", makeSection("s2")),
+    );
+    expect(duplicateSectionIntoPair(doc, "missing", "s1", "r2")).toBe(doc);
+    expect(duplicateSectionIntoPair(doc, "r1", "missing", "r2")).toBe(doc);
+    expect(duplicateSectionIntoPair(doc, "r1", "s1", "missing")).toBe(doc);
   });
 });
 

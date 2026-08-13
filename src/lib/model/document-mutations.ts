@@ -41,6 +41,10 @@ export function removeSection(
   return { ...doc, rows };
 }
 
+function cloneSection(source: Section): Section {
+  return { ...structuredClone(source), id: createId("section") };
+}
+
 export function duplicateSection(
   doc: RiderDocument,
   rowId: string,
@@ -50,13 +54,57 @@ export function duplicateSection(
   if (rowIndex === -1) return doc;
   const source = doc.rows[rowIndex]!.sections.find((s) => s.id === sectionId);
   if (!source) return doc;
-  const copy: Section = { ...structuredClone(source), id: createId("section") };
+  const copy = cloneSection(source);
   const newRow: Row = { id: createId("row"), sections: [copy] };
   const rows = [
     ...doc.rows.slice(0, rowIndex + 1),
     newRow,
     ...doc.rows.slice(rowIndex + 1),
   ];
+  return { ...doc, rows };
+}
+
+/**
+ * Copy counterpart to `extractSectionToNewRow` — inserts a clone of the
+ * section as a new standalone row at `atIndex`, leaving the source row (and
+ * its pairing, if any) completely untouched.
+ */
+export function duplicateSectionToNewRow(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  atIndex: number,
+): RiderDocument {
+  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
+  const source = sourceRow?.sections.find((s) => s.id === sectionId);
+  if (!source) return doc;
+  const copy = cloneSection(source);
+  const newRow: Row = { id: createId("row"), sections: [copy] };
+  const index = clamp(atIndex, 0, doc.rows.length);
+  const rows = [...doc.rows.slice(0, index), newRow, ...doc.rows.slice(index)];
+  return { ...doc, rows };
+}
+
+/**
+ * Copy counterpart to `moveSectionToPair` — pairs a clone of the section
+ * into `targetRowId`, leaving the source row untouched.
+ */
+export function duplicateSectionIntoPair(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+): RiderDocument {
+  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
+  const source = sourceRow?.sections.find((s) => s.id === sectionId);
+  const targetRow = doc.rows.find((r) => r.id === targetRowId);
+  if (!source || !targetRow || targetRow.sections.length !== 1) return doc;
+  const copy = cloneSection(source);
+  const rows = doc.rows.map((r) =>
+    r.id === targetRowId
+      ? ({ ...r, sections: [r.sections[0]!, copy] } as Row)
+      : r,
+  );
   return { ...doc, rows };
 }
 
