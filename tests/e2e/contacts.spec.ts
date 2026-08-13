@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pointerDragTo } from "./utils/pointer-drag";
 
 test.describe("Contacts section", () => {
   test("add, edit, and remove contact rows", async ({ page }) => {
@@ -63,7 +64,7 @@ test.describe("Contacts section", () => {
     await rows.nth(1).locator(".contacts-section__name").fill("B");
     await rows.nth(2).locator(".contacts-section__name").fill("C");
 
-    await rows.nth(2).locator(".drag-handle").dragTo(rows.nth(0));
+    await pointerDragTo(page, rows.nth(2).locator(".drag-handle"), rows.nth(0));
 
     const names = page.locator(".contacts-section__name");
     await expect(names.nth(0)).toHaveValue("C");

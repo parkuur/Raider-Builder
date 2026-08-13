@@ -49,24 +49,22 @@
   <tbody>
     {#each section.data.rows as row (row.id)}
       <tr
+        data-reorder-item={row.id}
         class:channel-list__row--drag-over={drag.isOver(row.id)}
-        ondragover={(e) => {
-          e.preventDefault();
-          drag.over(row.id);
-        }}
-        ondrop={(e) => {
-          e.preventDefault();
-          const move = drag.resolveDrop(
-            section.data.rows.map((r) => r.id),
-            row.id,
-          );
-          if (move) commit(reorderChannelRows(section.data, move[0], move[1]));
-        }}
       >
         <td class="channel-list__drag no-print">
           <DragHandle
-            onDragStart={() => drag.start(row.id)}
-            onDragEnd={() => drag.end()}
+            onStart={() => drag.start(row.id)}
+            onOver={(id) => drag.over(id)}
+            onDrop={(id) => {
+              const move = drag.resolveDrop(
+                section.data.rows.map((r) => r.id),
+                id,
+              );
+              if (move)
+                commit(reorderChannelRows(section.data, move[0], move[1]));
+            }}
+            onEnd={() => drag.end()}
           />
         </td>
         <td class="channel-list__num">{labelFor(row.id)}</td>

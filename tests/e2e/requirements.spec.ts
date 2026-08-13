@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pointerDragTo } from "./utils/pointer-drag";
 
 test.describe("Requirements section", () => {
   test("add, edit, reorder, and remove requirement groups", async ({
@@ -27,7 +28,11 @@ test.describe("Requirements section", () => {
 
     // Drag the second group above the first.
     const groups = page.locator(".requirements-section__group");
-    await groups.nth(1).locator(".drag-handle").dragTo(groups.nth(0));
+    await pointerDragTo(
+      page,
+      groups.nth(1).locator(".drag-handle"),
+      groups.nth(0),
+    );
     await expect(headings.nth(0)).toHaveValue("Parking");
     await expect(headings.nth(1)).toHaveValue("Power");
 

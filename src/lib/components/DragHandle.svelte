@@ -1,20 +1,24 @@
 <script lang="ts">
+  import { pointerReorder } from "../actions/pointer-reorder";
+
   let {
-    onDragStart,
-    onDragEnd,
+    onStart,
+    onOver,
+    onDrop,
+    onEnd,
     label = "Drag to reorder",
   }: {
-    onDragStart: (e: DragEvent) => void;
-    onDragEnd: (e: DragEvent) => void;
+    onStart: () => void;
+    onOver: (id: string) => void;
+    onDrop: (id: string) => void;
+    onEnd: () => void;
     label?: string;
   } = $props();
 </script>
 
 <span
   class="drag-handle no-print"
-  draggable="true"
-  ondragstart={onDragStart}
-  ondragend={onDragEnd}
+  use:pointerReorder={{ onStart, onOver, onDrop, onEnd }}
   role="button"
   tabindex="0"
   aria-label={label}
@@ -32,5 +36,6 @@
     cursor: grab;
     opacity: 0.35;
     padding: 4px;
+    touch-action: none;
   }
 </style>

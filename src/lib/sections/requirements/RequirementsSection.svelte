@@ -32,26 +32,22 @@
   {#each section.data.groups as group (group.id)}
     <div
       class="requirements-section__group"
+      data-reorder-item={group.id}
       class:requirements-section__group--drag-over={drag.isOver(group.id)}
-      role="presentation"
-      ondragover={(e) => {
-        e.preventDefault();
-        drag.over(group.id);
-      }}
-      ondrop={(e) => {
-        e.preventDefault();
-        const move = drag.resolveDrop(
-          section.data.groups.map((g) => g.id),
-          group.id,
-        );
-        if (move)
-          commit(reorderRequirementGroups(section.data, move[0], move[1]));
-      }}
     >
       <div class="requirements-section__group-head">
         <DragHandle
-          onDragStart={() => drag.start(group.id)}
-          onDragEnd={() => drag.end()}
+          onStart={() => drag.start(group.id)}
+          onOver={(id) => drag.over(id)}
+          onDrop={(id) => {
+            const move = drag.resolveDrop(
+              section.data.groups.map((g) => g.id),
+              id,
+            );
+            if (move)
+              commit(reorderRequirementGroups(section.data, move[0], move[1]));
+          }}
+          onEnd={() => drag.end()}
         />
         <input
           class="requirements-section__heading"

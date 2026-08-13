@@ -51,24 +51,22 @@
     {#each section.data.rows as row, index (row.id)}
       {@const next = section.data.rows[index + 1]}
       <tr
+        data-reorder-item={row.id}
         class:monitor-list__row--drag-over={drag.isOver(row.id)}
-        ondragover={(e) => {
-          e.preventDefault();
-          drag.over(row.id);
-        }}
-        ondrop={(e) => {
-          e.preventDefault();
-          const move = drag.resolveDrop(
-            section.data.rows.map((r) => r.id),
-            row.id,
-          );
-          if (move) commit(reorderMonitorRows(section.data, move[0], move[1]));
-        }}
       >
         <td class="monitor-list__drag no-print">
           <DragHandle
-            onDragStart={() => drag.start(row.id)}
-            onDragEnd={() => drag.end()}
+            onStart={() => drag.start(row.id)}
+            onOver={(id) => drag.over(id)}
+            onDrop={(id) => {
+              const move = drag.resolveDrop(
+                section.data.rows.map((r) => r.id),
+                id,
+              );
+              if (move)
+                commit(reorderMonitorRows(section.data, move[0], move[1]));
+            }}
+            onEnd={() => drag.end()}
           />
         </td>
         <td class="monitor-list__num">{labelFor(row.id)}</td>

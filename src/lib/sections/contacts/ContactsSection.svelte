@@ -43,24 +43,20 @@
   {#each section.data.contacts as contact (contact.id)}
     <div
       class="contacts-section__row"
+      data-reorder-item={contact.id}
       class:contacts-section__row--drag-over={drag.isOver(contact.id)}
-      role="presentation"
-      ondragover={(e) => {
-        e.preventDefault();
-        drag.over(contact.id);
-      }}
-      ondrop={(e) => {
-        e.preventDefault();
-        const move = drag.resolveDrop(
-          section.data.contacts.map((c) => c.id),
-          contact.id,
-        );
-        if (move) commit(reorderContacts(section.data, move[0], move[1]));
-      }}
     >
       <DragHandle
-        onDragStart={() => drag.start(contact.id)}
-        onDragEnd={() => drag.end()}
+        onStart={() => drag.start(contact.id)}
+        onOver={(id) => drag.over(id)}
+        onDrop={(id) => {
+          const move = drag.resolveDrop(
+            section.data.contacts.map((c) => c.id),
+            id,
+          );
+          if (move) commit(reorderContacts(section.data, move[0], move[1]));
+        }}
+        onEnd={() => drag.end()}
       />
       <div class="contacts-section__identity">
         <input

@@ -34,20 +34,8 @@
 
 <div
   class="quicklook-section__topic"
+  data-reorder-item={topic.id}
   class:quicklook-section__topic--drag-over={drag.isOver(topic.id)}
-  role="presentation"
-  ondragover={(e) => {
-    e.preventDefault();
-    drag.over(topic.id);
-  }}
-  ondrop={(e) => {
-    e.preventDefault();
-    const move = drag.resolveDrop(
-      data.topics.map((t) => t.id),
-      topic.id,
-    );
-    if (move) onCommit(reorderQuickLookTopics(data, move[0], move[1]));
-  }}
 >
   <QuickLookTopicHeader
     iconKey={topic.iconKey}
@@ -60,8 +48,16 @@
   >
     {#snippet leading()}
       <DragHandle
-        onDragStart={() => drag.start(topic.id)}
-        onDragEnd={() => drag.end()}
+        onStart={() => drag.start(topic.id)}
+        onOver={(id) => drag.over(id)}
+        onDrop={(id) => {
+          const move = drag.resolveDrop(
+            data.topics.map((t) => t.id),
+            id,
+          );
+          if (move) onCommit(reorderQuickLookTopics(data, move[0], move[1]));
+        }}
+        onEnd={() => drag.end()}
       />
     {/snippet}
     {#snippet trailing()}
