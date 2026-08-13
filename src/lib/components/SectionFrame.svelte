@@ -9,22 +9,19 @@
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
   import ChromeIcon from "./icons/ChromeIcon.svelte";
-  import DragHandle from "./DragHandle.svelte";
 
   let {
     rowId,
     section,
     sectionCount,
-    dragging,
-    onSectionDragStart,
-    onSectionDragEnd,
+    lifted,
+    onToggleLift,
   }: {
     rowId: string;
     section: Section;
     sectionCount: number;
-    dragging: boolean;
-    onSectionDragStart: () => void;
-    onSectionDragEnd: () => void;
+    lifted: boolean;
+    onToggleLift: () => void;
   } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
@@ -38,16 +35,9 @@
 <div
   class="section-frame"
   class:hidden-from-print={section.hidden}
-  class:section-frame--dragging={dragging}
+  class:section-frame--lifted={lifted}
 >
   <div class="section-frame__head">
-    {#if sectionCount === 2}
-      <DragHandle
-        onDragStart={onSectionDragStart}
-        onDragEnd={onSectionDragEnd}
-        label="Drag to move or unpair"
-      />
-    {/if}
     <input
       class="section-frame__title"
       value={section.title}
@@ -55,6 +45,20 @@
       placeholder="Section title"
     />
     <div class="section-frame__actions no-print">
+      {#if sectionCount === 2}
+        <button
+          type="button"
+          class="section-frame__action"
+          class:section-frame__action--active={lifted}
+          data-lift-ui
+          aria-pressed={lifted}
+          aria-label={lifted ? "Cancel move" : "Move or unpair this section"}
+          title={lifted ? "Cancel move" : "Move or unpair this section"}
+          onclick={onToggleLift}
+        >
+          <ChromeIcon key="move" />
+        </button>
+      {/if}
       <button
         type="button"
         class="section-frame__action"
@@ -102,7 +106,7 @@
     opacity: 0.6;
   }
 
-  .section-frame--dragging {
+  .section-frame--lifted {
     opacity: 0.5;
   }
 
@@ -143,5 +147,11 @@
     background: transparent;
     color: var(--color-text);
     cursor: pointer;
+  }
+
+  .section-frame__action--active {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-background);
   }
 </style>

@@ -8,29 +8,23 @@
   let {
     row,
     first,
-    dragging,
-    draggingSectionId,
-    pairDropActive,
-    onDragStart,
-    onDragEnd,
-    onSectionDragStart,
-    onSectionDragEnd,
-    onPairRequest,
-    onPairDragOver,
-    onPairDrop,
+    liftedRow,
+    liftedSectionId,
+    pairAvailable,
+    onToggleLift,
+    onToggleSectionLift,
+    onPairAdd,
+    onPairPlace,
   }: {
     row: Row;
     first: boolean;
-    dragging: boolean;
-    draggingSectionId: string | null;
-    pairDropActive: boolean;
-    onDragStart: () => void;
-    onDragEnd: () => void;
-    onSectionDragStart: (sectionId: string) => void;
-    onSectionDragEnd: () => void;
-    onPairRequest: (rowId: string) => void;
-    onPairDragOver: (e: DragEvent) => void;
-    onPairDrop: (e: DragEvent) => void;
+    liftedRow: boolean;
+    liftedSectionId: string | null;
+    pairAvailable: boolean;
+    onToggleLift: () => void;
+    onToggleSectionLift: (sectionId: string) => void;
+    onPairAdd: () => void;
+    onPairPlace: () => void;
   } = $props();
 
   const soleEntry = $derived(
@@ -45,37 +39,35 @@
 <div
   class="row-view"
   class:row-view--first={first}
-  class:row-view--dragging={dragging}
+  class:row-view--lifted={liftedRow}
 >
-  <div
+  <button
+    type="button"
     class="row-view__handle no-print"
-    draggable="true"
-    ondragstart={onDragStart}
-    ondragend={onDragEnd}
-    title="Drag to reorder"
-    role="button"
-    tabindex="0"
-    aria-label="Drag to reorder row"
+    class:row-view__handle--lifted={liftedRow}
+    data-lift-ui
+    aria-pressed={liftedRow}
+    aria-label={liftedRow ? "Cancel move" : "Move row"}
+    title={liftedRow ? "Cancel move" : "Move row"}
+    onclick={onToggleLift}
   >
     ⠿
-  </div>
+  </button>
   <div class="row-view__sections" class:row-view__sections--paired={paired}>
     {#each row.sections as section (section.id)}
       <SectionFrame
         rowId={row.id}
         {section}
         sectionCount={row.sections.length}
-        dragging={draggingSectionId === section.id}
-        onSectionDragStart={() => onSectionDragStart(section.id)}
-        {onSectionDragEnd}
+        lifted={liftedSectionId === section.id}
+        onToggleLift={() => onToggleSectionLift(section.id)}
       />
     {/each}
     {#if showPairSlot}
       <PairSlot
-        onClick={() => onPairRequest(row.id)}
-        active={pairDropActive}
-        onDragOver={onPairDragOver}
-        onDrop={onPairDrop}
+        available={pairAvailable}
+        onAddClick={onPairAdd}
+        onPlaceClick={onPairPlace}
       />
     {/if}
   </div>
@@ -84,8 +76,8 @@
 <style>
   .row-view {
     display: flex;
-    gap: var(--space-2);
-    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-1);
   }
 
   .row-view:not(.row-view--first) {
@@ -94,23 +86,36 @@
     border-top: 1px solid var(--color-border);
   }
 
-  .row-view--dragging {
-    opacity: 0.5;
+  .row-view--lifted {
+    opacity: 0.6;
   }
 
   .row-view__handle {
-    flex: none;
-    width: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: grab;
+    width: 100%;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-subtle);
     opacity: 0.35;
-    padding-top: var(--space-4);
+    letter-spacing: 0.2em;
+    cursor: pointer;
+  }
+
+  .row-view__handle:hover {
+    opacity: 0.7;
+  }
+
+  .row-view__handle--lifted {
+    opacity: 1;
+    background: var(--color-accent);
+    color: var(--color-background);
   }
 
   .row-view__sections {
-    flex: 1;
     display: flex;
     gap: var(--space-4);
     align-items: flex-start;
