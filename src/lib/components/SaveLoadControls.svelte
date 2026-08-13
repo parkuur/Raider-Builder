@@ -9,20 +9,29 @@
 
   let fileInput: HTMLInputElement | undefined = $state();
   let error = $state<string | null>(null);
+  let menuOpen = $state(false);
+
+  function closeMenu(): void {
+    menuOpen = false;
+  }
 
   function triggerLoad(): void {
+    closeMenu();
     fileInput?.click();
   }
 
   function save(): void {
+    closeMenu();
     downloadDocument(getDocument());
   }
 
   function print(): void {
+    closeMenu();
     window.print();
   }
 
   function clear(): void {
+    closeMenu();
     if (window.confirm("Clear the current document? This can't be undone.")) {
       setDocument(createEmptyDocument());
       clearDocumentFromLocalStorage();
@@ -45,7 +54,30 @@
   }
 </script>
 
-<div class="save-load-controls no-print">
+<button
+  type="button"
+  class="save-load-controls__toggle no-print"
+  aria-label="Menu"
+  aria-expanded={menuOpen}
+  onclick={() => (menuOpen = !menuOpen)}
+>
+  <ChromeIcon key="menu" size={18} />
+</button>
+
+{#if menuOpen}
+  <div
+    class="save-load-controls-backdrop no-print"
+    role="button"
+    tabindex="-1"
+    onclick={closeMenu}
+    onkeydown={(e) => e.key === "Escape" && closeMenu()}
+  ></div>
+{/if}
+
+<div
+  class="save-load-controls no-print"
+  class:save-load-controls--open={menuOpen}
+>
   <input
     bind:this={fileInput}
     type="file"
@@ -154,5 +186,63 @@
     font-size: var(--font-size-section-title);
     line-height: 1;
     padding: 0;
+  }
+
+  .save-load-controls__toggle {
+    display: none;
+  }
+
+  .save-load-controls-backdrop {
+    display: none;
+  }
+
+  @media screen and (max-width: 640px) {
+    .save-load-controls__toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      right: var(--space-2);
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+    }
+
+    .save-load-controls-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+    }
+
+    .save-load-controls {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: var(--space-2);
+      z-index: 91;
+      margin-top: var(--space-1);
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      background: var(--color-background);
+      border: 1px solid var(--color-border);
+    }
+
+    .save-load-controls--open {
+      display: flex;
+    }
+
+    .save-load-controls__button {
+      justify-content: center;
+    }
   }
 </style>

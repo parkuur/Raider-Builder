@@ -5,6 +5,7 @@
   --color-accent: #5980a6;
   --color-danger: #a65959;
   --color-border: color-mix(in srgb, var(--color-text) 16%, transparent);
+  --color-divider-subtle: color-mix(in srgb, var(--color-text) 10%, transparent);
   --color-text-muted: color-mix(in srgb, var(--color-text) 55%, transparent);
   --color-text-subtle: color-mix(in srgb, var(--color-text) 45%, transparent);
 

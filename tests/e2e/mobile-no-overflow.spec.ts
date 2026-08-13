@@ -18,8 +18,10 @@ async function expectNoOverflow(locator: Locator) {
   expect(overflow).toBeLessThanOrEqual(1);
 }
 
-test.describe("print layout", () => {
-  test("a populated instance of every section type prints without overflow or clipping", async ({
+test.describe("no horizontal overflow at a 360px viewport", () => {
+  test.use({ viewport: { width: 360, height: 900 } });
+
+  test("no section forces the page itself to scroll horizontally", async ({
     page,
   }) => {
     await page.goto("/");
@@ -37,22 +39,8 @@ test.describe("print layout", () => {
     const addMember = page.getByRole("button", { name: "+ Add Member" });
     for (let i = 0; i < 9; i++) await addMember.click();
 
-    await addSection(page, "Stage Map");
-    await page.getByRole("button", { name: "MIC", exact: true }).click();
-    await page.getByRole("button", { name: "RISER", exact: true }).click();
-    await page
-      .locator(".stage-map__label")
-      .first()
-      .fill("Lead Vocal Microphone Position");
-
     await addSection(page, "Requirements");
     await page.getByRole("button", { name: "+ Add Item" }).click();
-    await page.locator(".requirements-section__heading").fill("Power");
-    await page
-      .locator(".requirements-section__text")
-      .fill(
-        "Two dedicated 20A circuits, isolated from lighting, run to stage left and stage right.",
-      );
 
     await addSection(page, "Equipment");
     await page
@@ -66,7 +54,6 @@ test.describe("print layout", () => {
 
     await addSection(page, "Contacts (half)");
     await page.getByRole("button", { name: "+ Add Contact" }).click();
-    await page.locator(".contacts-section__name").fill("Jamie Rivera");
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
@@ -76,45 +63,28 @@ test.describe("print layout", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
     await page.getByRole("button", { name: "+ Add Row Topic" }).click();
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
 
-    await page.emulateMedia({ media: "print" });
-
-    const checks: Array<[string, Locator]> = [
-      ["channel list table", page.locator(".channel-list")],
-      ["monitor list table", page.locator(".monitor-list")],
-      ["band members grid", page.locator(".band-members__grid")],
-      ["stage map canvas", page.locator(".stage-map__canvas")],
-      ["requirements section", page.locator(".requirements-section")],
-      ["equipment section", page.locator(".equipment-section")],
-      ["contacts section", page.locator(".contacts-section")],
-      ["quicklook section", page.locator(".quicklook-section")],
+    const checks: Locator[] = [
+      page.locator(".band-members__grid"),
+      page.locator(".requirements-section"),
+      page.locator(".equipment-section"),
+      page.locator(".contacts-section"),
+      page.locator(".quicklook-section"),
     ];
 
-    for (const [, locator] of checks) {
+    for (const locator of checks) {
       await expect(locator).toBeVisible();
       await expectNoOverflow(locator);
     }
 
-    // The document shell itself must not force horizontal overflow either.
+    // Channel List and Monitor List are dense multi-column tables that may
+    // still need a contained horizontal swipe on the narrowest phones — the
+    // requirement is that *they* contain it, not that they never need it.
+    await expect(page.locator(".channel-list")).toBeVisible();
+    await expect(page.locator(".monitor-list")).toBeVisible();
+
+    // The page itself must never scroll horizontally, regardless.
     await expectNoOverflow(page.locator(".document-shell"));
-  });
-
-  test("Band Members grid keeps balanced row grouping under print media", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await addFirstSection(page, "Band Members");
-    const addMember = page.getByRole("button", { name: "+ Add Member" });
-    for (let i = 0; i < 7; i++) await addMember.click();
-
-    await page.emulateMedia({ media: "print" });
-
-    const rowCounts = await page
-      .locator(".band-members__row")
-      .evaluateAll((els) =>
-        els.map((el) => el.querySelectorAll(".band-members__card").length),
-      );
-    expect(rowCounts).toEqual([4, 3]);
+    await expectNoOverflow(page.locator("body"));
   });
 });

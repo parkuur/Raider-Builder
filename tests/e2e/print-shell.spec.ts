@@ -14,10 +14,9 @@ test("print media hides editing chrome but keeps document content", async ({
   await expect(page.getByRole("button", { name: "Save" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Load" })).toBeHidden();
   await expect(page.getByRole("button", { name: "Print / PDF" })).toBeHidden();
-  await expect(page.locator(".row-view__handle")).toBeHidden();
-  await expect(page.locator(".row-drop-zone").first()).toBeHidden();
+  await expect(page.locator(".row-gap").first()).toBeHidden();
   await expect(
-    page.getByRole("button", { name: "+ Add Section" }).first(),
+    page.getByRole("button", { name: "Add Section" }).first(),
   ).toBeHidden();
   await expect(page.locator(".section-frame__actions")).toBeHidden();
 

@@ -22,10 +22,24 @@
     setBandMembersData(rowId, section.id, data);
   }
 
+  // Each card is a fixed 124px, so more than 2 per row overflows a narrow
+  // phone. This reuses the same 640px breakpoint as the rest of the mobile
+  // layout rather than measuring the section's actual available width, so
+  // it's intentionally conservative (2 per row) across the whole mobile
+  // range rather than perfectly packing e.g. a 600px-wide tablet viewport.
+  let isNarrowViewport = $state(false);
+  $effect(() => {
+    const query = window.matchMedia("screen and (max-width: 640px)");
+    isNarrowViewport = query.matches;
+    const onChange = (e: MediaQueryListEvent) => (isNarrowViewport = e.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  });
+
   const rows = $derived(
     groupIntoRows(
       section.data.members,
-      balancedRows(section.data.members.length),
+      balancedRows(section.data.members.length, isNarrowViewport ? 2 : 4),
     ),
   );
 
@@ -139,6 +153,7 @@
 
   .band-members__row {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-3);
   }

@@ -7,28 +7,24 @@
 
   let {
     row,
-    dragging,
-    draggingSectionId,
-    pairDropActive,
-    onDragStart,
-    onDragEnd,
-    onSectionDragStart,
-    onSectionDragEnd,
-    onPairRequest,
-    onPairDragOver,
-    onPairDrop,
+    liftedSectionId,
+    liftedMode,
+    pairAvailable,
+    pairMode,
+    onToggleMoveLift,
+    onToggleCopyLift,
+    onPairAdd,
+    onPairPlace,
   }: {
     row: Row;
-    dragging: boolean;
-    draggingSectionId: string | null;
-    pairDropActive: boolean;
-    onDragStart: () => void;
-    onDragEnd: () => void;
-    onSectionDragStart: (sectionId: string) => void;
-    onSectionDragEnd: () => void;
-    onPairRequest: (rowId: string) => void;
-    onPairDragOver: (e: DragEvent) => void;
-    onPairDrop: (e: DragEvent) => void;
+    liftedSectionId: string | null;
+    liftedMode: "move" | "copy" | null;
+    pairAvailable: boolean;
+    pairMode: "move" | "copy" | null;
+    onToggleMoveLift: (sectionId: string) => void;
+    onToggleCopyLift: (sectionId: string) => void;
+    onPairAdd: () => void;
+    onPairPlace: () => void;
   } = $props();
 
   const soleEntry = $derived(
@@ -37,71 +33,82 @@
       : undefined,
   );
   const showPairSlot = $derived(soleEntry?.half === true);
+  const paired = $derived(row.sections.length === 2);
 </script>
 
-<div class="row-view" class:row-view--dragging={dragging}>
-  <div
-    class="row-view__handle no-print"
-    draggable="true"
-    ondragstart={onDragStart}
-    ondragend={onDragEnd}
-    title="Drag to reorder"
-    role="button"
-    tabindex="0"
-    aria-label="Drag to reorder row"
-  >
-    ⠿
-  </div>
-  <div class="row-view__sections">
-    {#each row.sections as section (section.id)}
+<div class="row-view">
+  <div class="row-view__sections" class:row-view__sections--paired={paired}>
+    {#each row.sections as section, sectionIndex (section.id)}
       <SectionFrame
         rowId={row.id}
         {section}
         sectionCount={row.sections.length}
-        dragging={draggingSectionId === section.id}
-        onSectionDragStart={() => onSectionDragStart(section.id)}
-        {onSectionDragEnd}
+        showPairBadge={paired && sectionIndex === 1}
+        liftedMode={liftedSectionId === section.id ? liftedMode : null}
+        onToggleMoveLift={() => onToggleMoveLift(section.id)}
+        onToggleCopyLift={() => onToggleCopyLift(section.id)}
       />
     {/each}
     {#if showPairSlot}
       <PairSlot
-        onClick={() => onPairRequest(row.id)}
-        active={pairDropActive}
-        onDragOver={onPairDragOver}
-        onDrop={onPairDrop}
+        available={pairAvailable}
+        mode={pairMode}
+        onAddClick={onPairAdd}
+        onPlaceClick={onPairPlace}
       />
     {/if}
   </div>
 </div>
 
 <style>
-  .row-view {
-    display: flex;
-    gap: var(--space-2);
-    align-items: flex-start;
-    margin-bottom: var(--space-1);
-  }
-
-  .row-view--dragging {
-    opacity: 0.5;
-  }
-
-  .row-view__handle {
-    flex: none;
-    width: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    opacity: 0.35;
-    padding-top: var(--space-4);
-  }
-
   .row-view__sections {
-    flex: 1;
     display: flex;
     gap: var(--space-4);
     align-items: flex-start;
     min-width: 0;
+  }
+
+  .row-view__sections--paired {
+    gap: var(--space-2);
+  }
+
+  /*
+   * Paired sections get an accent-colored (not neutral-gray) rule between
+   * them so pairing reads as a distinct signal — every other seam in the
+   * document (RowGap, between unrelated rows) uses the neutral border
+   * color, so hue alone marks "these two belong together." The rule itself
+   * stays subtle; the link badge (SectionFrame.svelte) carries the signal.
+   */
+  .row-view__sections--paired
+    > :global(.section-frame)
+    + :global(.section-frame) {
+    border-left: 1px solid
+      color-mix(in srgb, var(--color-accent) 35%, transparent);
+    padding-left: var(--space-2);
+  }
+
+  @media screen and (max-width: 640px) {
+    .row-view__sections {
+      flex-direction: column;
+      /* `align-items` governs the cross axis, which flips from vertical to
+       * horizontal once flex-direction goes column — without this, each
+       * stacked section shrinks to its own content width instead of
+       * filling the row, which let wide content overflow the page. */
+      align-items: stretch;
+    }
+
+    .row-view__sections--paired {
+      gap: var(--space-2);
+    }
+
+    .row-view__sections--paired
+      > :global(.section-frame)
+      + :global(.section-frame) {
+      border-left: none;
+      padding-left: 0;
+      border-top: 1px solid
+        color-mix(in srgb, var(--color-accent) 35%, transparent);
+      padding-top: var(--space-2);
+    }
   }
 </style>

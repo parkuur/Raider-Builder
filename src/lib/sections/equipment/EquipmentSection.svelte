@@ -91,6 +91,15 @@
     gap: var(--space-4);
   }
 
+  /* See RowView.svelte for why `screen` (not just the width condition) is
+   * what keeps this out of print — print always gets the two-column layout
+   * regardless of the originating device's viewport (see print.css). */
+  @media screen and (max-width: 640px) {
+    .equipment-section {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .equipment-section__list {
     display: flex;
     flex-direction: column;

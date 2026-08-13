@@ -1,32 +1,30 @@
 <script lang="ts">
   let {
-    onClick,
-    active,
-    onDragOver,
-    onDrop,
+    available,
+    mode,
+    onAddClick,
+    onPlaceClick,
   }: {
-    onClick: () => void;
-    active: boolean;
-    onDragOver: (e: DragEvent) => void;
-    onDrop: (e: DragEvent) => void;
+    available: boolean;
+    mode: "move" | "copy" | null;
+    onAddClick: () => void;
+    onPlaceClick: () => void;
   } = $props();
+
+  const placeLabel = $derived(
+    mode === "copy" ? "Place copy here to pair" : "Move here to pair",
+  );
 </script>
 
-<div
-  class="pair-slot no-print"
-  class:pair-slot--active={active}
-  role="presentation"
-  ondragover={onDragOver}
-  ondrop={onDrop}
->
+<div class="pair-slot no-print" class:pair-slot--available={available}>
   <button
     type="button"
     class="pair-slot__button"
-    aria-label="Add paired section"
-    title="Add paired section"
-    onclick={onClick}
+    data-lift-ui
+    aria-label={available ? placeLabel : "Add paired section"}
+    onclick={available ? onPlaceClick : onAddClick}
   >
-    + Add Section
+    {available ? placeLabel : "+ Add Section"}
   </button>
 </div>
 
@@ -53,8 +51,9 @@
     letter-spacing: 0.02em;
   }
 
-  .pair-slot--active .pair-slot__button {
+  .pair-slot--available .pair-slot__button {
     border-style: solid;
     border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 </style>

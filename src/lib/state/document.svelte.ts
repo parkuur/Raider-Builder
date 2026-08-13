@@ -61,7 +61,37 @@ export function removeSection(rowId: string, sectionId: string): void {
 }
 
 export function duplicateSection(rowId: string, sectionId: string): void {
-  state = mutations.duplicateSection(state, rowId, sectionId);
+  // Svelte's deep-reactive $state wraps nested objects in proxies that
+  // structuredClone (used inside this mutation) can't clone directly — take
+  // a plain snapshot first so the pure mutation layer never has to know
+  // about Svelte's reactivity at all.
+  state = mutations.duplicateSection($state.snapshot(state), rowId, sectionId);
+}
+
+export function duplicateSectionToNewRow(
+  sourceRowId: string,
+  sectionId: string,
+  atIndex: number,
+): void {
+  state = mutations.duplicateSectionToNewRow(
+    $state.snapshot(state),
+    sourceRowId,
+    sectionId,
+    atIndex,
+  );
+}
+
+export function duplicateSectionIntoPair(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+): void {
+  state = mutations.duplicateSectionIntoPair(
+    $state.snapshot(state),
+    sourceRowId,
+    sectionId,
+    targetRowId,
+  );
 }
 
 export function reorderRows(fromIndex: number, toIndex: number): void {

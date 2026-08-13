@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pointerDragTo } from "./utils/pointer-drag";
 
 test.describe("Quick Look section", () => {
   test("row and table topics both render an icon, and changing a table topic's icon via the picker updates it", async ({
@@ -100,7 +101,11 @@ test.describe("Quick Look section", () => {
       .locator(".quicklook-topic-header__title")
       .fill("Second");
 
-    await topics.nth(1).locator(".drag-handle").dragTo(topics.nth(0));
+    await pointerDragTo(
+      page,
+      topics.nth(1).locator(".drag-handle"),
+      topics.nth(0),
+    );
 
     await expect(
       topics.nth(0).locator(".quicklook-topic-header__title"),

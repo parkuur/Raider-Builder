@@ -44,4 +44,20 @@
   .section-frame__head {
     break-after: avoid;
   }
+
+  /*
+   * A paired row's two sections and Equipment's two lists always print
+   * side-by-side/two-column, regardless of the screen-only mobile stacking
+   * in RowView.svelte / EquipmentSection.svelte (those rules are already
+   * scoped to `@media screen`, so they can't apply here — this is a
+   * belt-and-suspenders restatement of that invariant, not a fix for a
+   * real conflict).
+   */
+  .row-view__sections {
+    flex-direction: row !important;
+  }
+
+  .equipment-section {
+    grid-template-columns: 1fr 1fr !important;
+  }
 }

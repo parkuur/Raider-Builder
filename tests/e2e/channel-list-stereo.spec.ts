@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pointerDragTo } from "./utils/pointer-drag";
 
 test.describe("Channel List stereo channels", () => {
   test("numbering accounts for a stereo channel using two numbers, through reorder and deletion", async ({
@@ -43,7 +44,7 @@ test.describe("Channel List stereo channels", () => {
     await expect(numbers).toHaveText(["1", "2–3", "4"]);
 
     // Reordering keeps the combined label attached to the same row.
-    await rows.nth(2).locator(".drag-handle").dragTo(rows.nth(0));
+    await pointerDragTo(page, rows.nth(2).locator(".drag-handle"), rows.nth(0));
     await expectNameOrder(["C", "A", "B"]);
     await expect(numbers).toHaveText(["1", "2", "3–4"]);
 
