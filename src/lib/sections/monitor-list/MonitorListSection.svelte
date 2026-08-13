@@ -36,105 +36,107 @@
 {#if section.data.rows.length === 0}
   <SectionEmptyHint text="No monitor mixes yet — add one below." />
 {/if}
-<table class="monitor-list">
-  <thead>
-    <tr>
-      <th class="no-print"></th>
-      <th class="monitor-list__num">Mon</th>
-      <th>Player</th>
-      <th class="monitor-list__type">Type</th>
-      <th>Mix Notes</th>
-      <th class="no-print"></th>
-    </tr>
-  </thead>
-  <tbody>
-    {#each section.data.rows as row, index (row.id)}
-      {@const next = section.data.rows[index + 1]}
-      <tr
-        data-reorder-item={row.id}
-        class:monitor-list__row--drag-over={drag.isOver(row.id)}
-      >
-        <td class="monitor-list__drag no-print">
-          <DragHandle
-            onStart={() => drag.start(row.id)}
-            onOver={(id) => drag.over(id)}
-            onDrop={(id) => {
-              const move = drag.resolveDrop(
-                section.data.rows.map((r) => r.id),
-                id,
-              );
-              if (move)
-                commit(reorderMonitorRows(section.data, move[0], move[1]));
-            }}
-            onEnd={() => drag.end()}
-          />
-        </td>
-        <td class="monitor-list__num">{labelFor(row.id)}</td>
-        <td>
-          <input
-            class="monitor-list__player-input"
-            value={row.player}
-            placeholder="Player"
-            oninput={(e) =>
-              commit(
-                updateMonitorRow(section.data, row.id, {
-                  player: e.currentTarget.value,
-                }),
-              )}
-          />
-        </td>
-        <td class="monitor-list__type">
-          <input
-            value={row.type}
-            placeholder="Wedge / IEM"
-            oninput={(e) =>
-              commit(
-                updateMonitorRow(section.data, row.id, {
-                  type: e.currentTarget.value,
-                }),
-              )}
-          />
-        </td>
-        <td>
-          <input
-            value={row.notes}
-            placeholder="Mix notes"
-            oninput={(e) =>
-              commit(
-                updateMonitorRow(section.data, row.id, {
-                  notes: e.currentTarget.value,
-                }),
-              )}
-          />
-        </td>
-        <td class="monitor-list__actions no-print">
-          {#if row.pairedWithId !== undefined}
-            <button
-              type="button"
-              title="Unpair"
-              onclick={() => commit(unpairMonitorRow(section.data, row.id))}
-            >
-              Unpair
-            </button>
-          {:else if next && next.pairedWithId === undefined}
-            <button
-              type="button"
-              title="Pair with next row"
-              onclick={() =>
-                commit(pairMonitorRows(section.data, row.id, next.id))}
-            >
-              Pair
-            </button>
-          {/if}
-          <RemoveButton
-            label="Remove monitor"
-            onclick={() => commit(removeMonitorRow(section.data, row.id))}
-          />
-        </td>
+<div class="monitor-list-scroll">
+  <table class="monitor-list">
+    <thead>
+      <tr>
+        <th class="no-print"></th>
+        <th class="monitor-list__num">Mon</th>
+        <th>Player</th>
+        <th class="monitor-list__type">Type</th>
+        <th>Mix Notes</th>
+        <th class="no-print"></th>
       </tr>
-    {/each}
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      {#each section.data.rows as row, index (row.id)}
+        {@const next = section.data.rows[index + 1]}
+        <tr
+          data-reorder-item={row.id}
+          class:monitor-list__row--drag-over={drag.isOver(row.id)}
+        >
+          <td class="monitor-list__drag no-print">
+            <DragHandle
+              onStart={() => drag.start(row.id)}
+              onOver={(id) => drag.over(id)}
+              onDrop={(id) => {
+                const move = drag.resolveDrop(
+                  section.data.rows.map((r) => r.id),
+                  id,
+                );
+                if (move)
+                  commit(reorderMonitorRows(section.data, move[0], move[1]));
+              }}
+              onEnd={() => drag.end()}
+            />
+          </td>
+          <td class="monitor-list__num">{labelFor(row.id)}</td>
+          <td>
+            <input
+              class="monitor-list__player-input"
+              value={row.player}
+              placeholder="Player"
+              oninput={(e) =>
+                commit(
+                  updateMonitorRow(section.data, row.id, {
+                    player: e.currentTarget.value,
+                  }),
+                )}
+            />
+          </td>
+          <td class="monitor-list__type">
+            <input
+              value={row.type}
+              placeholder="Wedge / IEM"
+              oninput={(e) =>
+                commit(
+                  updateMonitorRow(section.data, row.id, {
+                    type: e.currentTarget.value,
+                  }),
+                )}
+            />
+          </td>
+          <td>
+            <input
+              value={row.notes}
+              placeholder="Mix notes"
+              oninput={(e) =>
+                commit(
+                  updateMonitorRow(section.data, row.id, {
+                    notes: e.currentTarget.value,
+                  }),
+                )}
+            />
+          </td>
+          <td class="monitor-list__actions no-print">
+            {#if row.pairedWithId !== undefined}
+              <button
+                type="button"
+                title="Unpair"
+                onclick={() => commit(unpairMonitorRow(section.data, row.id))}
+              >
+                Unpair
+              </button>
+            {:else if next && next.pairedWithId === undefined}
+              <button
+                type="button"
+                title="Pair with next row"
+                onclick={() =>
+                  commit(pairMonitorRows(section.data, row.id, next.id))}
+              >
+                Pair
+              </button>
+            {/if}
+            <RemoveButton
+              label="Remove monitor"
+              onclick={() => commit(removeMonitorRow(section.data, row.id))}
+            />
+          </td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</div>
 <button
   type="button"
   class="monitor-list__add no-print"
@@ -144,6 +146,16 @@
 </button>
 
 <style>
+  /* This table's fixed-width columns plus several text inputs don't fit a
+   * narrow phone even with the page's own padding minimized (see
+   * DocumentShell.svelte) — contain the overflow to the table itself so a
+   * long row never forces the whole page to scroll horizontally. */
+  @media screen and (max-width: 640px) {
+    .monitor-list-scroll {
+      overflow-x: auto;
+    }
+  }
+
   .monitor-list {
     width: 100%;
     border-collapse: collapse;

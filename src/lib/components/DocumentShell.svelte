@@ -28,4 +28,17 @@
     margin: 0 auto;
     padding: var(--space-6) var(--space-5);
   }
+
+  /* Reclaim horizontal space on mobile now that sections have no border to
+   * pad inside of (see SectionFrame.svelte) — screen-only, so print keeps
+   * today's margins regardless of the originating device's viewport. */
+  @media screen and (max-width: 640px) {
+    .toolbar {
+      padding: var(--space-2) var(--space-2);
+    }
+
+    .document-shell {
+      padding: var(--space-4) var(--space-2);
+    }
+  }
 </style>

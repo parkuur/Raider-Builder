@@ -159,6 +159,16 @@ each section's.)
 - Print is unaffected (the shell's print-time width is already governed independently, per the
   above story's reasoning).
 
+**Note (found during implementation):** Channel List and Monitor List are dense multi-column
+tables (several fixed-width columns plus multiple text inputs) that don't fit a 360px viewport
+even with the shell's own padding minimized — reducing padding alone can't fix a table whose
+*content* needs more than the available width. Rather than force those columns/inputs
+illegibly small, each table's overflow is contained to the table itself
+(`overflow-x: auto` on a wrapper, screen-only) so a long row never forces the page itself to
+scroll horizontally — the invariant this story actually guarantees is "the page never scrolls
+horizontally," not "no element ever needs a contained scroll." Channel List and Monitor List are
+therefore a second carve-out alongside the Stage Map.
+
 ### Story: Responsive Stage Map canvas
 
 Below the breakpoint, the Stage Map canvas scales down (items are positioned by `%` of container

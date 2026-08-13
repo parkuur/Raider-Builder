@@ -141,6 +141,11 @@
   @media screen and (max-width: 640px) {
     .row-view__sections {
       flex-direction: column;
+      /* `align-items` governs the cross axis, which flips from vertical to
+       * horizontal once flex-direction goes column — without this, each
+       * stacked section shrinks to its own content width instead of
+       * filling the row, which let wide content overflow the page. */
+      align-items: stretch;
     }
 
     .row-view__sections--paired {

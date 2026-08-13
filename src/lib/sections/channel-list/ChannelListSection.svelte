@@ -34,114 +34,116 @@
 {#if section.data.rows.length === 0}
   <SectionEmptyHint text="No channels yet — add one below." />
 {/if}
-<table class="channel-list">
-  <thead>
-    <tr>
-      <th class="no-print"></th>
-      <th class="channel-list__num">Ch</th>
-      <th>Channel</th>
-      <th>Source</th>
-      <th class="channel-list__phantom">48V</th>
-      <th>Notes</th>
-      <th class="no-print"></th>
-    </tr>
-  </thead>
-  <tbody>
-    {#each section.data.rows as row (row.id)}
-      <tr
-        data-reorder-item={row.id}
-        class:channel-list__row--drag-over={drag.isOver(row.id)}
-      >
-        <td class="channel-list__drag no-print">
-          <DragHandle
-            onStart={() => drag.start(row.id)}
-            onOver={(id) => drag.over(id)}
-            onDrop={(id) => {
-              const move = drag.resolveDrop(
-                section.data.rows.map((r) => r.id),
-                id,
-              );
-              if (move)
-                commit(reorderChannelRows(section.data, move[0], move[1]));
-            }}
-            onEnd={() => drag.end()}
-          />
-        </td>
-        <td class="channel-list__num">{labelFor(row.id)}</td>
-        <td>
-          <input
-            class="channel-list__name-input"
-            value={row.name}
-            placeholder="e.g. Kick In"
-            oninput={(e) =>
-              commit(
-                updateChannelRow(section.data, row.id, {
-                  name: e.currentTarget.value,
-                }),
-              )}
-          />
-        </td>
-        <td>
-          <input
-            value={row.source}
-            placeholder="SM58 / DI"
-            oninput={(e) =>
-              commit(
-                updateChannelRow(section.data, row.id, {
-                  source: e.currentTarget.value,
-                }),
-              )}
-          />
-        </td>
-        <td class="channel-list__phantom">
-          <input
-            type="checkbox"
-            checked={row.phantom}
-            onchange={(e) =>
-              commit(
-                updateChannelRow(section.data, row.id, {
-                  phantom: e.currentTarget.checked,
-                }),
-              )}
-          />
-        </td>
-        <td>
-          <input
-            value={row.notes}
-            placeholder="Notes"
-            oninput={(e) =>
-              commit(
-                updateChannelRow(section.data, row.id, {
-                  notes: e.currentTarget.value,
-                }),
-              )}
-          />
-        </td>
-        <td class="channel-list__actions no-print">
-          <button
-            type="button"
-            class="channel-list__stereo-toggle"
-            class:channel-list__stereo-toggle--active={row.stereo}
-            aria-pressed={row.stereo}
-            title={row.stereo ? "Switch to mono" : "Switch to stereo"}
-            onclick={() =>
-              commit(
-                updateChannelRow(section.data, row.id, {
-                  stereo: !row.stereo,
-                }),
-              )}
-          >
-            {row.stereo ? "Stereo" : "Mono"}
-          </button>
-          <RemoveButton
-            label="Remove channel"
-            onclick={() => commit(removeChannelRow(section.data, row.id))}
-          />
-        </td>
+<div class="channel-list-scroll">
+  <table class="channel-list">
+    <thead>
+      <tr>
+        <th class="no-print"></th>
+        <th class="channel-list__num">Ch</th>
+        <th>Channel</th>
+        <th>Source</th>
+        <th class="channel-list__phantom">48V</th>
+        <th>Notes</th>
+        <th class="no-print"></th>
       </tr>
-    {/each}
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      {#each section.data.rows as row (row.id)}
+        <tr
+          data-reorder-item={row.id}
+          class:channel-list__row--drag-over={drag.isOver(row.id)}
+        >
+          <td class="channel-list__drag no-print">
+            <DragHandle
+              onStart={() => drag.start(row.id)}
+              onOver={(id) => drag.over(id)}
+              onDrop={(id) => {
+                const move = drag.resolveDrop(
+                  section.data.rows.map((r) => r.id),
+                  id,
+                );
+                if (move)
+                  commit(reorderChannelRows(section.data, move[0], move[1]));
+              }}
+              onEnd={() => drag.end()}
+            />
+          </td>
+          <td class="channel-list__num">{labelFor(row.id)}</td>
+          <td>
+            <input
+              class="channel-list__name-input"
+              value={row.name}
+              placeholder="e.g. Kick In"
+              oninput={(e) =>
+                commit(
+                  updateChannelRow(section.data, row.id, {
+                    name: e.currentTarget.value,
+                  }),
+                )}
+            />
+          </td>
+          <td>
+            <input
+              value={row.source}
+              placeholder="SM58 / DI"
+              oninput={(e) =>
+                commit(
+                  updateChannelRow(section.data, row.id, {
+                    source: e.currentTarget.value,
+                  }),
+                )}
+            />
+          </td>
+          <td class="channel-list__phantom">
+            <input
+              type="checkbox"
+              checked={row.phantom}
+              onchange={(e) =>
+                commit(
+                  updateChannelRow(section.data, row.id, {
+                    phantom: e.currentTarget.checked,
+                  }),
+                )}
+            />
+          </td>
+          <td>
+            <input
+              value={row.notes}
+              placeholder="Notes"
+              oninput={(e) =>
+                commit(
+                  updateChannelRow(section.data, row.id, {
+                    notes: e.currentTarget.value,
+                  }),
+                )}
+            />
+          </td>
+          <td class="channel-list__actions no-print">
+            <button
+              type="button"
+              class="channel-list__stereo-toggle"
+              class:channel-list__stereo-toggle--active={row.stereo}
+              aria-pressed={row.stereo}
+              title={row.stereo ? "Switch to mono" : "Switch to stereo"}
+              onclick={() =>
+                commit(
+                  updateChannelRow(section.data, row.id, {
+                    stereo: !row.stereo,
+                  }),
+                )}
+            >
+              {row.stereo ? "Stereo" : "Mono"}
+            </button>
+            <RemoveButton
+              label="Remove channel"
+              onclick={() => commit(removeChannelRow(section.data, row.id))}
+            />
+          </td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</div>
 <button
   type="button"
   class="channel-list__add no-print"
@@ -154,6 +156,16 @@
   .channel-list {
     width: 100%;
     border-collapse: collapse;
+  }
+
+  /* This table's fixed-width columns plus several text inputs don't fit a
+   * narrow phone even with the page's own padding minimized (see
+   * DocumentShell.svelte) — contain the overflow to the table itself so a
+   * long row never forces the whole page to scroll horizontally. */
+  @media screen and (max-width: 640px) {
+    .channel-list-scroll {
+      overflow-x: auto;
+    }
   }
 
   .channel-list th {

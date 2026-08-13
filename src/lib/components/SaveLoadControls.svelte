@@ -196,14 +196,14 @@
     display: none;
   }
 
-  @media (max-width: 640px) {
+  @media screen and (max-width: 640px) {
     .save-load-controls__toggle {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       position: absolute;
       top: 50%;
-      right: var(--space-5);
+      right: var(--space-2);
       transform: translateY(-50%);
       width: 36px;
       height: 36px;
@@ -225,7 +225,7 @@
       display: none;
       position: absolute;
       top: 100%;
-      right: var(--space-5);
+      right: var(--space-2);
       z-index: 91;
       margin-top: var(--space-1);
       flex-direction: column;
