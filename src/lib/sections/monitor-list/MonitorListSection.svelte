@@ -2,17 +2,16 @@
   import type { Section } from "../../model/section-types";
   import {
     addMonitorRow,
-    pairMonitorRows,
+    numberMonitorRows,
     removeMonitorRow,
     reorderMonitorRows,
-    unpairMonitorRow,
     updateMonitorRow,
   } from "../../model/monitor-list";
-  import { numberRows } from "../../model/row-list";
   import { setMonitorListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
@@ -25,7 +24,7 @@
     setMonitorListData(rowId, section.id, data);
   }
 
-  const numbered = $derived(numberRows(section.data.rows));
+  const numbered = $derived(numberMonitorRows(section.data));
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
@@ -46,11 +45,11 @@
         <th class="monitor-list__type">Type</th>
         <th>Mix Notes</th>
         <th class="no-print"></th>
+        <th class="monitor-list__mode">Mode</th>
       </tr>
     </thead>
     <tbody>
-      {#each section.data.rows as row, index (row.id)}
-        {@const next = section.data.rows[index + 1]}
+      {#each section.data.rows as row (row.id)}
         <tr
           data-reorder-item={row.id}
           class:monitor-list__row--drag-over={drag.isOver(row.id)}
@@ -109,29 +108,21 @@
             />
           </td>
           <td class="monitor-list__actions no-print">
-            {#if row.pairedWithId !== undefined}
-              <button
-                type="button"
-                title="Unpair"
-                onclick={() => commit(unpairMonitorRow(section.data, row.id))}
-              >
-                Unpair
-              </button>
-            {:else if next && next.pairedWithId === undefined}
-              <button
-                type="button"
-                title="Pair with next row"
-                onclick={() =>
-                  commit(pairMonitorRows(section.data, row.id, next.id))}
-              >
-                Pair
-              </button>
-            {/if}
+            <StereoToggle
+              active={row.stereo}
+              onToggle={() =>
+                commit(
+                  updateMonitorRow(section.data, row.id, {
+                    stereo: !row.stereo,
+                  }),
+                )}
+            />
             <RemoveButton
               label="Remove monitor"
               onclick={() => commit(removeMonitorRow(section.data, row.id))}
             />
           </td>
+          <td class="monitor-list__mode">{row.stereo ? "Stereo" : "Mono"}</td>
         </tr>
       {/each}
     </tbody>
@@ -213,18 +204,24 @@
     white-space: nowrap;
   }
 
-  .monitor-list__actions button {
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text);
+  /*
+   * The on-screen toggle button already shows its own "Mono"/"Stereo"
+   * label, but it's `no-print`, so print needs its own substitute — a
+   * trailing, print-only cell rather than duplicating the label on screen.
+   */
+  .monitor-list__mode {
+    display: none;
+    text-align: center;
     font-size: var(--font-size-label);
-    padding: 3px 6px;
-    cursor: pointer;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
   }
 
-  .monitor-list__actions button:disabled {
-    opacity: 0.4;
-    cursor: default;
+  @media print {
+    .monitor-list__mode {
+      display: table-cell;
+    }
   }
 
   .monitor-list__add {

@@ -11,6 +11,7 @@
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
@@ -119,21 +120,15 @@
             />
           </td>
           <td class="channel-list__actions no-print">
-            <button
-              type="button"
-              class="channel-list__stereo-toggle"
-              class:channel-list__stereo-toggle--active={row.stereo}
-              aria-pressed={row.stereo}
-              title={row.stereo ? "Switch to mono" : "Switch to stereo"}
-              onclick={() =>
+            <StereoToggle
+              active={row.stereo}
+              onToggle={() =>
                 commit(
                   updateChannelRow(section.data, row.id, {
                     stereo: !row.stereo,
                   }),
                 )}
-            >
-              {row.stereo ? "Stereo" : "Mono"}
-            </button>
+            />
             <RemoveButton
               label="Remove channel"
               onclick={() => commit(removeChannelRow(section.data, row.id))}
@@ -229,20 +224,6 @@
     display: flex;
     gap: 4px;
     white-space: nowrap;
-  }
-
-  .channel-list__stereo-toggle {
-    border: 1px solid var(--color-border);
-    background: transparent;
-    color: var(--color-text-muted);
-    font-size: var(--font-size-label);
-    padding: 3px 6px;
-    cursor: pointer;
-  }
-
-  .channel-list__stereo-toggle--active {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
   }
 
   .channel-list__add {

@@ -1,12 +1,5 @@
 import { createId } from "./id";
-import {
-  addListRow,
-  numberRows,
-  pairListRows,
-  reorderListRows,
-  removeListRow,
-  unpairListRow,
-} from "./row-list";
+import { addListRow, reorderListRows } from "./row-list";
 import type { NumberedRow } from "./row-list";
 
 export interface MonitorRow {
@@ -14,7 +7,7 @@ export interface MonitorRow {
   player: string;
   type: string;
   notes: string;
-  pairedWithId: string | undefined;
+  stereo: boolean;
 }
 
 export interface MonitorListSectionData {
@@ -31,7 +24,7 @@ function makeMonitorRow(): MonitorRow {
     player: "",
     type: "",
     notes: "",
-    pairedWithId: undefined,
+    stereo: false,
   };
 }
 
@@ -53,13 +46,17 @@ export function removeMonitorRow(
   data: MonitorListSectionData,
   rowId: string,
 ): MonitorListSectionData {
-  return withRows(data, removeListRow(data.rows, rowId));
+  if (!data.rows.some((r) => r.id === rowId)) return data;
+  return withRows(
+    data,
+    data.rows.filter((r) => r.id !== rowId),
+  );
 }
 
 export function updateMonitorRow(
   data: MonitorListSectionData,
   rowId: string,
-  patch: Partial<Omit<MonitorRow, "id" | "pairedWithId">>,
+  patch: Partial<Omit<MonitorRow, "id">>,
 ): MonitorListSectionData {
   if (!data.rows.some((r) => r.id === rowId)) return data;
   return {
@@ -76,21 +73,14 @@ export function reorderMonitorRows(
   return withRows(data, reorderListRows(data.rows, fromIndex, toIndex));
 }
 
-export function pairMonitorRows(
-  data: MonitorListSectionData,
-  idA: string,
-  idB: string,
-): MonitorListSectionData {
-  return withRows(data, pairListRows(data.rows, idA, idB));
-}
-
-export function unpairMonitorRow(
-  data: MonitorListSectionData,
-  rowId: string,
-): MonitorListSectionData {
-  return withRows(data, unpairListRow(data.rows, rowId));
-}
-
+/**
+ * Always one sequential number per row, regardless of mono/stereo — unlike
+ * Channel List, a stereo monitor mix does not claim a combined "N–N+1"
+ * label.
+ */
 export function numberMonitorRows(data: MonitorListSectionData): NumberedRow[] {
-  return numberRows(data.rows);
+  return data.rows.map((row, index) => ({
+    id: row.id,
+    label: String(index + 1),
+  }));
 }
