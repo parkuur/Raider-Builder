@@ -6,7 +6,7 @@ export type StageItemCategory =
 
 export interface StageItemCategoryMeta {
   abbreviation: string;
-  shape: "circle" | "square" | "triangle";
+  shape: "circle" | "square" | "triangle" | "rectangle";
   dashed?: boolean;
   resizable?: boolean;
 }
@@ -16,11 +16,11 @@ export const STAGE_ITEM_CATEGORIES: Record<
   StageItemCategoryMeta
 > = {
   mic: { abbreviation: "MIC", shape: "circle" },
-  di: { abbreviation: "DI", shape: "square" },
+  di: { abbreviation: "DI", shape: "rectangle" },
   amp: { abbreviation: "AMP", shape: "square" },
   drum: { abbreviation: "DRM", shape: "circle" },
   mon: { abbreviation: "MON", shape: "square" },
-  xlr: { abbreviation: "XLR", shape: "circle" },
+  xlr: { abbreviation: "XLR", shape: "rectangle" },
   power: { abbreviation: "PWR", shape: "triangle" },
   riser: {
     abbreviation: "RISER",

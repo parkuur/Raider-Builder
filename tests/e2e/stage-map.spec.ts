@@ -164,6 +164,26 @@ test.describe("Stage Map section", () => {
     ).toBeVisible();
   });
 
+  test("XLR and DI items render as half-height rectangles, not squares", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+    await page.getByRole("button", { name: "XLR", exact: true }).click();
+
+    for (const category of ["di", "xlr"]) {
+      const box = await page
+        .locator(`[data-category="${category}"]`)
+        .boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeCloseTo(box!.width / 2, 0);
+    }
+  });
+
   test("Shift+Enter adds a line break in the label; Enter alone does not", async ({
     page,
   }) => {

@@ -303,6 +303,10 @@
     border-style: dashed;
   }
 
+  .stage-map__item--rectangle {
+    height: 18px;
+  }
+
   .stage-map__item--triangle {
     width: 40px;
     height: 36px;
