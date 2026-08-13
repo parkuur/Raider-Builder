@@ -71,22 +71,5 @@
     <path d="M3 12 L6.5 15" />
     <path d="M21 12 L17.5 9" />
     <path d="M21 12 L17.5 15" />
-  {:else if key === "link"}
-    <rect
-      x="3"
-      y="9.5"
-      width="9"
-      height="5"
-      rx="2.5"
-      transform="rotate(-45 7.5 12)"
-    />
-    <rect
-      x="12"
-      y="9.5"
-      width="9"
-      height="5"
-      rx="2.5"
-      transform="rotate(-45 16.5 12)"
-    />
   {/if}
 </svg>

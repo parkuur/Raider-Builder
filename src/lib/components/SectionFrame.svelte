@@ -8,6 +8,7 @@
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
   import ChromeIcon from "./icons/ChromeIcon.svelte";
+  import LinkIcon from "phosphor-svelte/lib/LinkIcon";
 
   let {
     rowId,
@@ -106,7 +107,7 @@
   </div>
   {#if showPairBadge}
     <div class="section-frame__pair-badge" aria-hidden="true">
-      <ChromeIcon key="link" size={12} />
+      <LinkIcon size={12} />
     </div>
   {/if}
 </div>

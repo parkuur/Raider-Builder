@@ -113,6 +113,12 @@ their root causes:
 - Styling: plain CSS with CSS custom properties for design tokens (colors, spacing, type scale) ported
   from the prototype's visual language. No CSS framework unless a later story justifies the need.
 - Keep section components focused on presentation; put branching/derivation logic in `model/`.
+- Icons: prefer the `phosphor-svelte` package over hand-drawing new SVG icons. Import the specific
+  icon component (e.g. `import LinkIcon from "phosphor-svelte/lib/LinkIcon"`) at the call site —
+  this is the pattern `IconGlyph.svelte`/`icon-keys.ts` already use for Quick Look topic icons.
+  `ChromeIcon.svelte`'s hand-drawn stroke-based set (eye/copy/trash/move/etc.) predates this and
+  stays as-is, but new chrome icons should check for a suitable Phosphor icon first rather than
+  hand-drawing another one into that set.
 
 ## 8. Unit/component testing requirements
 
