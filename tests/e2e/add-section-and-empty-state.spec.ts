@@ -24,7 +24,9 @@ test.describe("add-section flow and empty state", () => {
     await expect(
       page.getByRole("dialog", { name: "Add section" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
     await expect(page.locator(".row-view")).toHaveCount(1);
     await expect(
       page.getByText("This rider is empty. Add a section to get started."),
@@ -40,22 +42,30 @@ test.describe("add-section flow and empty state", () => {
     await page
       .getByRole("button", { name: "+ Add your first section" })
       .click();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
     await page.locator(".section-frame__title").nth(0).fill("A");
 
     // "End" trigger — the last gap, after row A.
     await page.getByRole("button", { name: "+ Add Section" }).last().click();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
     await page.locator(".section-frame__title").nth(1).fill("C");
 
     // "Between" trigger — the gap between A and C (index 1 of 3 triggers).
     await page.getByRole("button", { name: "+ Add Section" }).nth(1).click();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
     await page.locator(".section-frame__title").nth(1).fill("B");
 
     // "Start" trigger — the first gap, before row A.
     await page.getByRole("button", { name: "+ Add Section" }).first().click();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
     await page.locator(".section-frame__title").nth(0).fill("Start");
 
     const titles = page.locator(".section-frame__title");

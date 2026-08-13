@@ -2,15 +2,16 @@
   import type { Section } from "../../model/section-types";
   import {
     addChannelRow,
-    pairChannelRows,
+    numberChannelRows,
     removeChannelRow,
     reorderChannelRows,
-    unpairChannelRow,
     updateChannelRow,
   } from "../../model/channel-list";
-  import { numberRows } from "../../model/row-list";
   import { setChannelListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import DragHandle from "../../components/DragHandle.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     rowId,
@@ -22,10 +23,12 @@
     setChannelListData(rowId, section.id, data);
   }
 
-  const numbered = $derived(numberRows(section.data.rows));
+  const numbered = $derived(numberChannelRows(section.data));
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
+
+  const drag = new DragReorderState();
 </script>
 
 {#if section.data.rows.length === 0}
@@ -34,6 +37,7 @@
 <table class="channel-list">
   <thead>
     <tr>
+      <th class="no-print"></th>
       <th class="channel-list__num">Ch</th>
       <th>Channel</th>
       <th>Source</th>
@@ -43,9 +47,28 @@
     </tr>
   </thead>
   <tbody>
-    {#each section.data.rows as row, index (row.id)}
-      {@const next = section.data.rows[index + 1]}
-      <tr>
+    {#each section.data.rows as row (row.id)}
+      <tr
+        class:channel-list__row--drag-over={drag.isOver(row.id)}
+        ondragover={(e) => {
+          e.preventDefault();
+          drag.over(row.id);
+        }}
+        ondrop={(e) => {
+          e.preventDefault();
+          const move = drag.resolveDrop(
+            section.data.rows.map((r) => r.id),
+            row.id,
+          );
+          if (move) commit(reorderChannelRows(section.data, move[0], move[1]));
+        }}
+      >
+        <td class="channel-list__drag no-print">
+          <DragHandle
+            onDragStart={() => drag.start(row.id)}
+            onDragEnd={() => drag.end()}
+          />
+        </td>
         <td class="channel-list__num">{labelFor(row.id)}</td>
         <td>
           <input
@@ -97,51 +120,25 @@
           />
         </td>
         <td class="channel-list__actions no-print">
-          {#if row.pairedWithId !== undefined}
-            <button
-              type="button"
-              title="Unpair"
-              onclick={() => commit(unpairChannelRow(section.data, row.id))}
-            >
-              Unpair
-            </button>
-          {:else if next && next.pairedWithId === undefined}
-            <button
-              type="button"
-              title="Pair with next row"
-              onclick={() =>
-                commit(pairChannelRows(section.data, row.id, next.id))}
-            >
-              Pair
-            </button>
-          {/if}
           <button
             type="button"
-            aria-label="Move up"
-            title="Move up"
-            disabled={index === 0}
+            class="channel-list__stereo-toggle"
+            class:channel-list__stereo-toggle--active={row.stereo}
+            aria-pressed={row.stereo}
+            title={row.stereo ? "Switch to mono" : "Switch to stereo"}
             onclick={() =>
-              commit(reorderChannelRows(section.data, index, index - 1))}
+              commit(
+                updateChannelRow(section.data, row.id, {
+                  stereo: !row.stereo,
+                }),
+              )}
           >
-            ↑
+            {row.stereo ? "Stereo" : "Mono"}
           </button>
-          <button
-            type="button"
-            aria-label="Move down"
-            title="Move down"
-            disabled={index === section.data.rows.length - 1}
-            onclick={() =>
-              commit(reorderChannelRows(section.data, index, index + 1))}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            title="Remove"
+          <RemoveButton
+            label="Remove channel"
             onclick={() => commit(removeChannelRow(section.data, row.id))}
-          >
-            Remove
-          </button>
+          />
         </td>
       </tr>
     {/each}
@@ -188,6 +185,22 @@
     text-align: center;
   }
 
+  .channel-list__drag {
+    width: 20px;
+    text-align: center;
+  }
+
+  .channel-list__row--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  @media print {
+    .channel-list tbody tr:not(:last-child) td {
+      border-bottom: 1px solid var(--color-border);
+    }
+  }
+
   .channel-list input {
     width: 100%;
     border: 1px solid var(--color-border);
@@ -208,18 +221,18 @@
     white-space: nowrap;
   }
 
-  .channel-list__actions button {
+  .channel-list__stereo-toggle {
     border: 1px solid var(--color-border);
     background: transparent;
-    color: var(--color-text);
+    color: var(--color-text-muted);
     font-size: var(--font-size-label);
     padding: 3px 6px;
     cursor: pointer;
   }
 
-  .channel-list__actions button:disabled {
-    opacity: 0.4;
-    cursor: default;
+  .channel-list__stereo-toggle--active {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
   }
 
   .channel-list__add {

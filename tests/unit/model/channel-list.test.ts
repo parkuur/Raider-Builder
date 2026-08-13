@@ -2,15 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   addChannelRow,
   defaultChannelListData,
-  pairChannelRows,
+  numberChannelRows,
   removeChannelRow,
-  unpairChannelRow,
   updateChannelRow,
 } from "../../../src/lib/model/channel-list";
 import type { ChannelListSectionData } from "../../../src/lib/model/channel-list";
 
 function dataWith(
-  ...rows: { id: string; name?: string; pairedWithId?: string }[]
+  ...rows: { id: string; name?: string; stereo?: boolean }[]
 ): ChannelListSectionData {
   return {
     rows: rows.map((r) => ({
@@ -18,8 +17,8 @@ function dataWith(
       name: r.name ?? "",
       source: "",
       phantom: false,
+      stereo: r.stereo ?? false,
       notes: "",
-      pairedWithId: r.pairedWithId,
     })),
   };
 }
@@ -39,12 +38,19 @@ describe("addChannelRow", () => {
       name: "",
       source: "",
       phantom: false,
+      stereo: false,
       notes: "",
     });
   });
 });
 
 describe("removeChannelRow", () => {
+  it("removes the targeted row", () => {
+    const data = dataWith({ id: "c1" }, { id: "c2" });
+    const result = removeChannelRow(data, "c1");
+    expect(result.rows.map((r) => r.id)).toEqual(["c2"]);
+  });
+
   it("is a no-op for an unknown id (preserves data reference)", () => {
     const data = dataWith({ id: "c1" });
     expect(removeChannelRow(data, "missing")).toBe(data);
@@ -66,21 +72,67 @@ describe("updateChannelRow", () => {
     expect(result.rows[1]!.phantom).toBe(false);
   });
 
+  it("can toggle stereo", () => {
+    const data = dataWith({ id: "c1" });
+    const result = updateChannelRow(data, "c1", { stereo: true });
+    expect(result.rows[0]!.stereo).toBe(true);
+  });
+
   it("is a no-op for an unknown id", () => {
     const data = dataWith({ id: "c1" });
     expect(updateChannelRow(data, "missing", { phantom: true })).toBe(data);
   });
 });
 
-describe("pairChannelRows / unpairChannelRow", () => {
-  it("pairs and unpairs two rows", () => {
-    const data = dataWith({ id: "c1" }, { id: "c2" });
-    const paired = pairChannelRows(data, "c1", "c2");
-    expect(paired.rows[0]!.pairedWithId).toBe("c2");
-    expect(paired.rows[1]!.pairedWithId).toBe("c1");
+describe("numberChannelRows", () => {
+  it("numbers an all-mono list sequentially", () => {
+    const data = dataWith({ id: "a" }, { id: "b" }, { id: "c" });
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1" },
+      { id: "b", label: "2" },
+      { id: "c", label: "3" },
+    ]);
+  });
 
-    const unpaired = unpairChannelRow(paired, "c1");
-    expect(unpaired.rows[0]!.pairedWithId).toBeUndefined();
-    expect(unpaired.rows[1]!.pairedWithId).toBeUndefined();
+  it("gives a stereo row two consecutive numbers and shifts what follows", () => {
+    const data = dataWith({ id: "a" }, { id: "b", stereo: true }, { id: "c" });
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1" },
+      { id: "b", label: "2–3" },
+      { id: "c", label: "4" },
+    ]);
+  });
+
+  it("handles a stereo row at the very start of the list", () => {
+    const data = dataWith({ id: "a", stereo: true }, { id: "b" });
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1–2" },
+      { id: "b", label: "3" },
+    ]);
+  });
+
+  it("handles a stereo row at the very end of the list", () => {
+    const data = dataWith({ id: "a" }, { id: "b", stereo: true });
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1" },
+      { id: "b", label: "2–3" },
+    ]);
+  });
+
+  it("handles consecutive stereo rows without corrupting later numbers", () => {
+    const data = dataWith(
+      { id: "a", stereo: true },
+      { id: "b", stereo: true },
+      { id: "c" },
+    );
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1–2" },
+      { id: "b", label: "3–4" },
+      { id: "c", label: "5" },
+    ]);
+  });
+
+  it("handles an empty list", () => {
+    expect(numberChannelRows(defaultChannelListData())).toEqual([]);
   });
 });

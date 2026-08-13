@@ -1,12 +1,5 @@
 import { createId } from "./id";
-import {
-  addListRow,
-  numberRows,
-  pairListRows,
-  reorderListRows,
-  removeListRow,
-  unpairListRow,
-} from "./row-list";
+import { addListRow, reorderListRows } from "./row-list";
 import type { NumberedRow } from "./row-list";
 
 export interface ChannelRow {
@@ -14,8 +7,8 @@ export interface ChannelRow {
   name: string;
   source: string;
   phantom: boolean;
+  stereo: boolean;
   notes: string;
-  pairedWithId: string | undefined;
 }
 
 export interface ChannelListSectionData {
@@ -32,8 +25,8 @@ function makeChannelRow(): ChannelRow {
     name: "",
     source: "",
     phantom: false,
+    stereo: false,
     notes: "",
-    pairedWithId: undefined,
   };
 }
 
@@ -55,13 +48,17 @@ export function removeChannelRow(
   data: ChannelListSectionData,
   rowId: string,
 ): ChannelListSectionData {
-  return withRows(data, removeListRow(data.rows, rowId));
+  if (!data.rows.some((r) => r.id === rowId)) return data;
+  return withRows(
+    data,
+    data.rows.filter((r) => r.id !== rowId),
+  );
 }
 
 export function updateChannelRow(
   data: ChannelListSectionData,
   rowId: string,
-  patch: Partial<Omit<ChannelRow, "id" | "pairedWithId">>,
+  patch: Partial<Omit<ChannelRow, "id">>,
 ): ChannelListSectionData {
   if (!data.rows.some((r) => r.id === rowId)) return data;
   return {
@@ -78,21 +75,22 @@ export function reorderChannelRows(
   return withRows(data, reorderListRows(data.rows, fromIndex, toIndex));
 }
 
-export function pairChannelRows(
-  data: ChannelListSectionData,
-  idA: string,
-  idB: string,
-): ChannelListSectionData {
-  return withRows(data, pairListRows(data.rows, idA, idB));
-}
-
-export function unpairChannelRow(
-  data: ChannelListSectionData,
-  rowId: string,
-): ChannelListSectionData {
-  return withRows(data, unpairListRow(data.rows, rowId));
-}
-
+/**
+ * A stereo channel is a single row that claims two consecutive numbers
+ * (e.g. "3–4") rather than being linked to a second row — there is no
+ * partner row whose numbering can drift out of sync on reorder or deletion.
+ */
 export function numberChannelRows(data: ChannelListSectionData): NumberedRow[] {
-  return numberRows(data.rows);
+  const result: NumberedRow[] = [];
+  let counter = 1;
+  for (const row of data.rows) {
+    if (row.stereo) {
+      result.push({ id: row.id, label: `${counter}–${counter + 1}` });
+      counter += 2;
+    } else {
+      result.push({ id: row.id, label: String(counter) });
+      counter += 1;
+    }
+  }
+  return result;
 }

@@ -3,6 +3,7 @@ import {
   addContact,
   defaultContactsData,
   removeContact,
+  reorderContacts,
   updateContact,
 } from "../../../src/lib/model/contacts";
 import type { ContactsSectionData } from "../../../src/lib/model/contacts";
@@ -74,5 +75,33 @@ describe("updateContact", () => {
   it("is a no-op for an unknown contact id", () => {
     const data = dataWith([{ id: "c1" }]);
     expect(updateContact(data, "missing", { name: "x" })).toBe(data);
+  });
+});
+
+describe("reorderContacts", () => {
+  const data = dataWith([{ id: "c1" }, { id: "c2" }, { id: "c3" }]);
+
+  it("moves the first contact to last", () => {
+    const result = reorderContacts(data, 0, 2);
+    expect(result.contacts.map((c) => c.id)).toEqual(["c2", "c3", "c1"]);
+  });
+
+  it("moves the last contact to first", () => {
+    const result = reorderContacts(data, 2, 0);
+    expect(result.contacts.map((c) => c.id)).toEqual(["c3", "c1", "c2"]);
+  });
+
+  it("is a no-op when moving to its own index", () => {
+    expect(reorderContacts(data, 1, 1)).toBe(data);
+  });
+
+  it("is a no-op for an out-of-range fromIndex", () => {
+    expect(reorderContacts(data, 5, 0)).toBe(data);
+    expect(reorderContacts(data, -1, 0)).toBe(data);
+  });
+
+  it("clamps an out-of-range toIndex instead of erroring", () => {
+    const result = reorderContacts(data, 0, 99);
+    expect(result.contacts.map((c) => c.id)).toEqual(["c2", "c3", "c1"]);
   });
 });

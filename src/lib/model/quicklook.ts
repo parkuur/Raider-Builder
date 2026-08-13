@@ -21,7 +21,6 @@ export interface QuickLookTableTopic {
   kind: "table";
   iconKey: IconKey;
   title: string;
-  tag: string;
   lines: QuickLookLine[];
 }
 
@@ -44,16 +43,15 @@ export function addQuickLookTopic(
       ? {
           id: createId("topic"),
           kind: "row",
-          iconKey: "zap",
+          iconKey: "circle",
           title: "",
           value: "",
         }
       : {
           id: createId("topic"),
           kind: "table",
-          iconKey: "zap",
+          iconKey: "circle",
           title: "",
-          tag: "",
           lines: [],
         };
   return { ...data, topics: [...data.topics, topic] };
@@ -116,21 +114,6 @@ export function updateQuickLookRowValue(
     ...data,
     topics: data.topics.map((t) =>
       t.id === topicId && t.kind === "row" ? { ...t, value } : t,
-    ),
-  };
-}
-
-export function setQuickLookTableTag(
-  data: QuickLookSectionData,
-  topicId: string,
-  tag: string,
-): QuickLookSectionData {
-  const topic = data.topics.find((t) => t.id === topicId);
-  if (!topic || topic.kind !== "table") return data;
-  return {
-    ...data,
-    topics: data.topics.map((t) =>
-      t.id === topicId && t.kind === "table" ? { ...t, tag } : t,
     ),
   };
 }

@@ -68,9 +68,9 @@ test.describe("print layout", () => {
     await page.getByRole("button", { name: "+ Add Contact" }).click();
     await page.locator(".contacts-section__name").fill("Jamie Rivera");
     await page
-      .locator(".section-frame")
+      .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Pair", exact: true })
+      .getByRole("button", { name: "Add paired section" })
       .click();
     await page
       .getByRole("button", { name: "Quick Look (half)", exact: true })

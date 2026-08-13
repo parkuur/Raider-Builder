@@ -1,5 +1,18 @@
 import type { Action } from "svelte/action";
 
+const FORM_CONTROL_TAGS = new Set(["TEXTAREA", "INPUT", "SELECT", "BUTTON"]);
+
+/**
+ * Pointerdown on a nested form control (the stage-map item label, its
+ * remove button, a resize handle's own controls, ...) must keep its native
+ * focus/click behavior — starting a drag here would call preventDefault()
+ * on the pointerdown, which silently blocks the browser from focusing the
+ * control.
+ */
+function isFormControl(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && FORM_CONTROL_TAGS.has(target.tagName);
+}
+
 export interface PointerDragOptions {
   onStart?: (event: PointerEvent) => void;
   onMove: (dx: number, dy: number, event: PointerEvent) => void;
@@ -41,6 +54,7 @@ export const pointerDrag: Action<HTMLElement, PointerDragOptions> = (
 
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
+    if (isFormControl(e.target)) return;
     e.preventDefault();
     if (current.stopPropagation) e.stopPropagation();
     dragging = true;

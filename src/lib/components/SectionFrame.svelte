@@ -5,21 +5,26 @@
     removeSection,
     setSectionTitle,
     toggleSectionHidden,
-    unpairSection,
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
+  import ChromeIcon from "./icons/ChromeIcon.svelte";
+  import DragHandle from "./DragHandle.svelte";
 
   let {
     rowId,
     section,
     sectionCount,
-    onPairRequest,
+    dragging,
+    onSectionDragStart,
+    onSectionDragEnd,
   }: {
     rowId: string;
     section: Section;
     sectionCount: number;
-    onPairRequest: (rowId: string) => void;
+    dragging: boolean;
+    onSectionDragStart: () => void;
+    onSectionDragEnd: () => void;
   } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
@@ -28,12 +33,21 @@
   // `section` and the looked-up entry are always keyed by the same runtime
   // `type`.
   const Entry = $derived(sectionRegistry[section.type] as SectionRegistryEntry);
-  const canPair = $derived(Entry.half && sectionCount === 1);
-  const canUnpair = $derived(Entry.half && sectionCount === 2);
 </script>
 
-<div class="section-frame" class:hidden-from-print={section.hidden}>
+<div
+  class="section-frame"
+  class:hidden-from-print={section.hidden}
+  class:section-frame--dragging={dragging}
+>
   <div class="section-frame__head">
+    {#if sectionCount === 2}
+      <DragHandle
+        onDragStart={onSectionDragStart}
+        onDragEnd={onSectionDragEnd}
+        label="Drag to move or unpair"
+      />
+    {/if}
     <input
       class="section-frame__title"
       value={section.title}
@@ -41,50 +55,33 @@
       placeholder="Section title"
     />
     <div class="section-frame__actions no-print">
-      {#if canPair}
-        <button
-          type="button"
-          class="section-frame__action"
-          title="Pair"
-          onclick={() => onPairRequest(rowId)}
-        >
-          Pair
-        </button>
-      {/if}
-      {#if canUnpair}
-        <button
-          type="button"
-          class="section-frame__action"
-          title="Unpair"
-          onclick={() => unpairSection(rowId, section.id)}
-        >
-          Unpair
-        </button>
-      {/if}
       <button
         type="button"
         class="section-frame__action"
         aria-pressed={section.hidden}
-        title="Hide from print"
+        aria-label={section.hidden ? "Show section" : "Hide section"}
+        title={section.hidden ? "Show section" : "Hide section"}
         onclick={() => toggleSectionHidden(rowId, section.id)}
       >
-        {section.hidden ? "Hidden" : "Visible"}
+        <ChromeIcon key={section.hidden ? "eye-off" : "eye"} />
       </button>
       <button
         type="button"
         class="section-frame__action"
-        title="Duplicate"
+        aria-label="Duplicate section"
+        title="Duplicate section"
         onclick={() => duplicateSection(rowId, section.id)}
       >
-        Duplicate
+        <ChromeIcon key="copy" />
       </button>
       <button
         type="button"
         class="section-frame__action"
-        title="Delete"
+        aria-label="Delete section"
+        title="Delete section"
         onclick={() => removeSection(rowId, section.id)}
       >
-        Delete
+        <ChromeIcon key="trash" />
       </button>
     </div>
   </div>
@@ -104,6 +101,10 @@
 
   .section-frame.hidden-from-print {
     opacity: 0.6;
+  }
+
+  .section-frame--dragging {
+    opacity: 0.5;
   }
 
   .section-frame__head {
@@ -133,11 +134,15 @@
   }
 
   .section-frame__action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
-    font-size: var(--font-size-label);
-    padding: 4px var(--space-2);
     cursor: pointer;
   }
 </style>

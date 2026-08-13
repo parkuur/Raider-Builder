@@ -16,7 +16,9 @@
   } = $props();
 
   const groups = $derived(
-    groupSectionTypesByWidth(Object.values(sectionRegistry)),
+    groupSectionTypesByWidth(
+      Object.values(sectionRegistry).filter((entry) => entry.addable !== false),
+    ),
   );
   const entries = $derived(
     filterHalfOnly ? groups.half : [...groups.full, ...groups.half],

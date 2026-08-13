@@ -2,6 +2,10 @@ import { sectionRegistry } from "../sections/registry";
 import * as mutations from "../model/document-mutations";
 import { createId } from "../model/id";
 import { createEmptyDocument } from "../model/document-types";
+import {
+  loadDocumentFromLocalStorage,
+  saveDocumentToLocalStorage,
+} from "./local-storage";
 import type { Header, RiderDocument } from "../model/document-types";
 import type { Section, SectionType } from "../model/section-types";
 import type { RequirementsSectionData } from "../model/requirements";
@@ -13,7 +17,18 @@ import type { StageMapSectionData } from "../model/stage-map";
 import type { ContactsSectionData } from "../model/contacts";
 import type { QuickLookSectionData } from "../model/quicklook";
 
-let state = $state<RiderDocument>(createEmptyDocument());
+let state = $state<RiderDocument>(
+  loadDocumentFromLocalStorage(Object.keys(sectionRegistry)) ??
+    createEmptyDocument(),
+);
+
+$effect.root(() => {
+  $effect(() => {
+    const snapshot = state;
+    const timer = setTimeout(() => saveDocumentToLocalStorage(snapshot), 300);
+    return () => clearTimeout(timer);
+  });
+});
 
 export function getDocument(): RiderDocument {
   return state;
@@ -57,8 +72,30 @@ export function pairSections(rowId: string, type: SectionType): void {
   state = mutations.pairSections(state, rowId, buildSection(type));
 }
 
-export function unpairSection(rowId: string, sectionId: string): void {
-  state = mutations.unpairSection(state, rowId, sectionId);
+export function extractSectionToNewRow(
+  sourceRowId: string,
+  sectionId: string,
+  atIndex: number,
+): void {
+  state = mutations.extractSectionToNewRow(
+    state,
+    sourceRowId,
+    sectionId,
+    atIndex,
+  );
+}
+
+export function moveSectionToPair(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+): void {
+  state = mutations.moveSectionToPair(
+    state,
+    sourceRowId,
+    sectionId,
+    targetRowId,
+  );
 }
 
 export function toggleSectionHidden(rowId: string, sectionId: string): void {

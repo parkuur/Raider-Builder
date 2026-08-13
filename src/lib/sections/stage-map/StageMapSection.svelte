@@ -14,6 +14,7 @@
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
 
   let {
     rowId,
@@ -91,6 +92,15 @@
         onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
       }}
     >
+      {#if meta.shape === "triangle"}
+        <svg
+          class="stage-map__triangle-outline"
+          viewBox="0 0 40 36"
+          aria-hidden="true"
+        >
+          <polygon points="20,2 2,34 38,34" />
+        </svg>
+      {/if}
       <span class="stage-map__abbr">{meta.abbreviation}</span>
       {#if meta.resizable}
         <div
@@ -101,22 +111,26 @@
           }}
         ></div>
       {/if}
-      <button
-        type="button"
-        class="stage-map__remove no-print"
-        aria-label="Remove item"
-        onclick={() => commit(removeStageItem(section.data, item.id))}
-      >
-        ×
-      </button>
-      <input
+      <div class="stage-map__remove no-print">
+        <RemoveButton
+          label="Remove item"
+          onclick={() => commit(removeStageItem(section.data, item.id))}
+        />
+      </div>
+      <textarea
         class="stage-map__label"
+        rows={item.label.split("\n").length}
         value={item.label}
         oninput={(e) =>
           commit(
             updateStageItemLabel(section.data, item.id, e.currentTarget.value),
           )}
-      />
+        onkeydown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}></textarea>
     </div>
   {/each}
   <div
@@ -196,9 +210,28 @@
     width: 40px;
     height: 36px;
     border: none;
-    background: var(--color-accent);
-    color: var(--color-background);
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    background: transparent;
+  }
+
+  /*
+   * An outline (not a fill) for consistency with the other shapes, which
+   * are all drawn with a plain border — a CSS border can't itself form a
+   * triangle, and a background-color fill (the earlier approach) doesn't
+   * print reliably since browsers skip background colors by default.
+   * An SVG stroke sidesteps both problems.
+   */
+  .stage-map__triangle-outline {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .stage-map__triangle-outline polygon {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: 1.5;
   }
 
   .stage-map__abbr {
@@ -223,16 +256,8 @@
 
   .stage-map__remove {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 14px;
-    height: 14px;
-    line-height: 1;
-    border: none;
-    background: var(--color-danger);
-    color: #fff;
-    cursor: pointer;
-    font-size: 10px;
+    top: -10px;
+    right: -10px;
   }
 
   .stage-map__label {
@@ -241,10 +266,14 @@
     left: 50%;
     transform: translateX(-50%);
     width: 70px;
+    resize: none;
+    overflow: hidden;
     text-align: center;
+    line-height: 1.3;
     border: none;
     background: transparent;
     color: var(--color-text);
+    font-family: inherit;
     font-size: 9px;
   }
 

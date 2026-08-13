@@ -1,20 +1,42 @@
 <script lang="ts">
   import SectionFrame from "./SectionFrame.svelte";
+  import PairSlot from "./PairSlot.svelte";
+  import { sectionRegistry } from "../sections/registry";
+  import type { SectionRegistryEntry } from "../sections/registry";
   import type { Row } from "../model/document-types";
 
   let {
     row,
     dragging,
+    draggingSectionId,
+    pairDropActive,
     onDragStart,
     onDragEnd,
+    onSectionDragStart,
+    onSectionDragEnd,
     onPairRequest,
+    onPairDragOver,
+    onPairDrop,
   }: {
     row: Row;
     dragging: boolean;
+    draggingSectionId: string | null;
+    pairDropActive: boolean;
     onDragStart: () => void;
     onDragEnd: () => void;
+    onSectionDragStart: (sectionId: string) => void;
+    onSectionDragEnd: () => void;
     onPairRequest: (rowId: string) => void;
+    onPairDragOver: (e: DragEvent) => void;
+    onPairDrop: (e: DragEvent) => void;
   } = $props();
+
+  const soleEntry = $derived(
+    row.sections.length === 1
+      ? (sectionRegistry[row.sections[0]!.type] as SectionRegistryEntry)
+      : undefined,
+  );
+  const showPairSlot = $derived(soleEntry?.half === true);
 </script>
 
 <div class="row-view" class:row-view--dragging={dragging}>
@@ -36,9 +58,19 @@
         rowId={row.id}
         {section}
         sectionCount={row.sections.length}
-        {onPairRequest}
+        dragging={draggingSectionId === section.id}
+        onSectionDragStart={() => onSectionDragStart(section.id)}
+        {onSectionDragEnd}
       />
     {/each}
+    {#if showPairSlot}
+      <PairSlot
+        onClick={() => onPairRequest(row.id)}
+        active={pairDropActive}
+        onDragOver={onPairDragOver}
+        onDrop={onPairDrop}
+      />
+    {/if}
   </div>
 </div>
 

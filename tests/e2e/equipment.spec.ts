@@ -90,4 +90,38 @@ test.describe("Equipment section", () => {
       page.locator(".equipment-section__item-name").first(),
     ).toBeVisible();
   });
+
+  test("printed items show a rule between rows but not below the last row", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Equipment", exact: true }).click();
+
+    const addFirstListItem = page
+      .getByRole("button", { name: "+ Add item" })
+      .first();
+    await addFirstListItem.click();
+    await addFirstListItem.click();
+
+    await page.emulateMedia({ media: "print" });
+
+    const items = page
+      .locator(".equipment-section__list")
+      .first()
+      .locator(".equipment-section__item");
+    await expect(items).toHaveCount(2);
+
+    const firstBorder = await items
+      .nth(0)
+      .evaluate((el) => getComputedStyle(el).borderBottomStyle);
+    expect(firstBorder).toBe("solid");
+
+    const lastBorder = await items
+      .nth(1)
+      .evaluate((el) => getComputedStyle(el).borderBottomStyle);
+    expect(lastBorder).toBe("none");
+  });
 });

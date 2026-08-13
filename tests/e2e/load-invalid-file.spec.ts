@@ -14,7 +14,9 @@ test.describe("loading an invalid file", () => {
     await page
       .getByRole("button", { name: "+ Add your first section" })
       .click();
-    await page.getByRole("button", { name: "Section", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
 
     await page
       .locator('input[type="file"]')

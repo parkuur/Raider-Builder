@@ -25,12 +25,9 @@ test.describe("Requirements section", () => {
     await headings.nth(1).fill("Parking");
     await texts.nth(1).fill("One van space near load-in.");
 
-    // Move the second group above the first.
-    await page
-      .locator(".requirements-section__group")
-      .nth(1)
-      .getByRole("button", { name: "Move up" })
-      .click();
+    // Drag the second group above the first.
+    const groups = page.locator(".requirements-section__group");
+    await groups.nth(1).locator(".drag-handle").dragTo(groups.nth(0));
     await expect(headings.nth(0)).toHaveValue("Parking");
     await expect(headings.nth(1)).toHaveValue("Power");
 
@@ -66,5 +63,12 @@ test.describe("Requirements section", () => {
     await expect(page.getByRole("button", { name: "+ Add Item" })).toBeHidden();
     await expect(page.locator(".requirements-section__heading")).toBeVisible();
     await expect(page.locator(".requirements-section__text")).toBeVisible();
+
+    // Regression: the textarea's resize handle must not render in print,
+    // even though it's resizable on screen.
+    const resize = await page
+      .locator(".requirements-section__text")
+      .evaluate((el) => getComputedStyle(el).resize);
+    expect(resize).toBe("none");
   });
 });

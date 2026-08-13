@@ -26,7 +26,7 @@
   }
 
   textarea {
-    resize: none;
+    resize: none !important;
   }
 
   table tr {
@@ -35,5 +35,13 @@
 
   table thead {
     display: table-header-group;
+  }
+
+  .section-frame {
+    break-inside: avoid;
+  }
+
+  .section-frame__head {
+    break-after: avoid;
   }
 }

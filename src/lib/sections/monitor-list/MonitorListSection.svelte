@@ -11,6 +11,9 @@
   import { numberRows } from "../../model/row-list";
   import { setMonitorListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import DragHandle from "../../components/DragHandle.svelte";
+  import RemoveButton from "../../components/RemoveButton.svelte";
+  import { DragReorderState } from "../../components/drag-reorder.svelte";
 
   let {
     rowId,
@@ -26,6 +29,8 @@
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
   }
+
+  const drag = new DragReorderState();
 </script>
 
 {#if section.data.rows.length === 0}
@@ -34,9 +39,10 @@
 <table class="monitor-list">
   <thead>
     <tr>
+      <th class="no-print"></th>
       <th class="monitor-list__num">Mon</th>
       <th>Player</th>
-      <th>Type</th>
+      <th class="monitor-list__type">Type</th>
       <th>Mix Notes</th>
       <th class="no-print"></th>
     </tr>
@@ -44,7 +50,27 @@
   <tbody>
     {#each section.data.rows as row, index (row.id)}
       {@const next = section.data.rows[index + 1]}
-      <tr>
+      <tr
+        class:monitor-list__row--drag-over={drag.isOver(row.id)}
+        ondragover={(e) => {
+          e.preventDefault();
+          drag.over(row.id);
+        }}
+        ondrop={(e) => {
+          e.preventDefault();
+          const move = drag.resolveDrop(
+            section.data.rows.map((r) => r.id),
+            row.id,
+          );
+          if (move) commit(reorderMonitorRows(section.data, move[0], move[1]));
+        }}
+      >
+        <td class="monitor-list__drag no-print">
+          <DragHandle
+            onDragStart={() => drag.start(row.id)}
+            onDragEnd={() => drag.end()}
+          />
+        </td>
         <td class="monitor-list__num">{labelFor(row.id)}</td>
         <td>
           <input
@@ -59,7 +85,7 @@
               )}
           />
         </td>
-        <td>
+        <td class="monitor-list__type">
           <input
             value={row.type}
             placeholder="Wedge / IEM"
@@ -102,33 +128,10 @@
               Pair
             </button>
           {/if}
-          <button
-            type="button"
-            aria-label="Move up"
-            title="Move up"
-            disabled={index === 0}
-            onclick={() =>
-              commit(reorderMonitorRows(section.data, index, index - 1))}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            aria-label="Move down"
-            title="Move down"
-            disabled={index === section.data.rows.length - 1}
-            onclick={() =>
-              commit(reorderMonitorRows(section.data, index, index + 1))}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            title="Remove"
+          <RemoveButton
+            label="Remove monitor"
             onclick={() => commit(removeMonitorRow(section.data, row.id))}
-          >
-            Remove
-          </button>
+          />
         </td>
       </tr>
     {/each}
@@ -168,6 +171,20 @@
     text-align: center;
     font-family: var(--font-heading);
     font-weight: 600;
+  }
+
+  .monitor-list__drag {
+    width: 20px;
+    text-align: center;
+  }
+
+  .monitor-list__type {
+    width: 80px;
+  }
+
+  .monitor-list__row--drag-over {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
   }
 
   .monitor-list input {

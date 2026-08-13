@@ -36,7 +36,29 @@ test.describe("Band Members section", () => {
     expect(await rowCounts()).toEqual([3, 3, 3]);
   });
 
-  test("editing a member's name updates the initials fallback avatar", async ({
+  test("member cards are centered horizontally within each row", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Band Members", exact: true })
+      .click();
+
+    const addMember = page.getByRole("button", { name: "+ Add Member" });
+    // A row with fewer cards than the widest row makes centering visible.
+    for (let i = 0; i < 5; i++) await addMember.click();
+
+    const justifyContent = await page
+      .locator(".band-members__row")
+      .first()
+      .evaluate((el) => getComputedStyle(el).justifyContent);
+    expect(justifyContent).toBe("center");
+  });
+
+  test("avatar circle only appears once photos are enabled, with an initials fallback", async ({
     page,
   }) => {
     await page.goto("/");
@@ -47,8 +69,12 @@ test.describe("Band Members section", () => {
       .getByRole("button", { name: "Band Members", exact: true })
       .click();
     await page.getByRole("button", { name: "+ Add Member" }).click();
-
     await page.locator(".band-members__name").fill("Jimi Hendrix");
+
+    // No photo toggle yet — no avatar circle on the card at all.
+    await expect(page.locator(".band-members__avatar")).toHaveCount(0);
+
+    await page.getByText("Show member photos").click();
     await expect(page.locator(".band-members__avatar span")).toHaveText("JH");
 
     await page.getByRole("button", { name: "Remove member" }).click();

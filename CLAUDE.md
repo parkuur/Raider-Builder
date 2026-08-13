@@ -80,12 +80,16 @@ invariants stay enforced as the app grows.
 These are directly targeted at four confirmed defects in the reference prototype. Do not reintroduce
 their root causes:
 
-- **Stereo pairing is a first-class relationship between two specific row IDs** — never inferred from
-  array adjacency or a single boolean flag with a "skip the next label" counter. The prototype's
-  `numberWithLinks` treated `linked: true` on a row as "blank whatever row happens to come next,"
-  which breaks the moment rows are reordered, one side of a pair is deleted, or a `linked` row has no
-  real partner. A correct model must know, explicitly, which two rows are paired, and degrade
-  predictably (never silently) when a pairing is incomplete.
+- **A relationship between two rows, if a data model has one at all, must be a first-class link
+  between two specific row IDs** — never inferred from array adjacency or a single boolean flag with a
+  "skip the next label" counter. The prototype's `numberWithLinks` treated `linked: true` on a row as
+  "blank whatever row happens to come next," which breaks the moment rows are reordered, one side of a
+  pair is deleted, or a `linked` row has no real partner. Where a two-row link is used (the Monitor
+  List's Pair/Unpair), the model must know, explicitly, which two rows are paired, and degrade
+  predictably (never silently) when a pairing is incomplete. The Channel List sidesteps this problem
+  class entirely: stereo is a `stereo: boolean` on a single row, and a stereo row simply claims two
+  consecutive numbers (e.g. "3–4") in `numberChannelRows` — there is no second row to keep in sync, so
+  reordering or deleting rows can never desynchronize a pairing that was never created.
 - **Stacking/z-order is an explicit field on each item, independent of array or creation order.** The
   prototype always appended new stage-map items to the end of the array and rendered in array order,
   so an item added earlier stayed visually beneath everything added later, permanently — clicking or
