@@ -95,8 +95,7 @@
     flex: 1;
     min-width: 0;
     position: relative;
-    border: 1px solid var(--color-border);
-    padding: var(--space-4) var(--space-4);
+    padding: var(--space-4) 0;
   }
 
   .section-frame.hidden-from-print {

@@ -7,6 +7,7 @@
 
   let {
     row,
+    first,
     dragging,
     draggingSectionId,
     pairDropActive,
@@ -19,6 +20,7 @@
     onPairDrop,
   }: {
     row: Row;
+    first: boolean;
     dragging: boolean;
     draggingSectionId: string | null;
     pairDropActive: boolean;
@@ -37,9 +39,14 @@
       : undefined,
   );
   const showPairSlot = $derived(soleEntry?.half === true);
+  const paired = $derived(row.sections.length === 2);
 </script>
 
-<div class="row-view" class:row-view--dragging={dragging}>
+<div
+  class="row-view"
+  class:row-view--first={first}
+  class:row-view--dragging={dragging}
+>
   <div
     class="row-view__handle no-print"
     draggable="true"
@@ -52,7 +59,7 @@
   >
     ⠿
   </div>
-  <div class="row-view__sections">
+  <div class="row-view__sections" class:row-view__sections--paired={paired}>
     {#each row.sections as section (section.id)}
       <SectionFrame
         rowId={row.id}
@@ -79,7 +86,12 @@
     display: flex;
     gap: var(--space-2);
     align-items: flex-start;
-    margin-bottom: var(--space-1);
+  }
+
+  .row-view:not(.row-view--first) {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
   }
 
   .row-view--dragging {
@@ -103,5 +115,14 @@
     gap: var(--space-4);
     align-items: flex-start;
     min-width: 0;
+  }
+
+  .row-view__sections--paired {
+    gap: var(--space-2);
+  }
+
+  .row-view__sections--paired > :global(.section-frame) + :global(.section-frame) {
+    border-left: 1px solid var(--color-divider-subtle);
+    padding-left: var(--space-2);
   }
 </style>

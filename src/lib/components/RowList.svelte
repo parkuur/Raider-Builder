@@ -152,6 +152,7 @@
     {#each getDocument().rows as row, i (row.id)}
       <RowView
         {row}
+        first={i === 0}
         dragging={dragSource?.kind === "row" && dragSource.rowId === row.id}
         draggingSectionId={dragSource?.kind === "section" &&
         dragSource.rowId === row.id
