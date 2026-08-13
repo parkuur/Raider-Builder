@@ -7,6 +7,7 @@ import type { PageBreakSectionData } from "./page-break";
 import type { QuickLookSectionData } from "./quicklook";
 import type { RequirementsSectionData } from "./requirements";
 import type { StageMapSectionData } from "./stage-map";
+import type { TextSectionData } from "./text";
 
 export interface PlaceholderSectionData {
   note: string;
@@ -23,6 +24,7 @@ export interface SectionDataMap {
   contacts: ContactsSectionData;
   quicklook: QuickLookSectionData;
   "page-break": PageBreakSectionData;
+  text: TextSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;

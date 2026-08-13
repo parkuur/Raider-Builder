@@ -14,6 +14,7 @@ import StageMapSection from "./stage-map/StageMapSection.svelte";
 import ContactsSection from "./contacts/ContactsSection.svelte";
 import QuickLookSection from "./quicklook/QuickLookSection.svelte";
 import PageBreakSection from "./page-break/PageBreakSection.svelte";
+import TextSection from "./text/TextSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
@@ -23,6 +24,7 @@ import { defaultStageMapData } from "../model/stage-map";
 import { defaultContactsData } from "../model/contacts";
 import { defaultQuickLookData } from "../model/quicklook";
 import { defaultPageBreakData } from "../model/page-break";
+import { defaultTextData } from "../model/text";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -115,5 +117,12 @@ export const sectionRegistry: SectionRegistry = {
     hideTitle: true,
     defaultData: defaultPageBreakData,
     component: PageBreakSection,
+  },
+  text: {
+    type: "text",
+    label: "Text",
+    half: true,
+    defaultData: defaultTextData,
+    component: TextSection,
   },
 };

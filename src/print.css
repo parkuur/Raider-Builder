@@ -50,6 +50,18 @@
   }
 
   /*
+   * An untitled section's title input is an empty box with nothing to show
+   * — :placeholder-shown matches exactly when the input's value is empty,
+   * so this drops the input (and the space it would occupy) rather than
+   * printing a blank line. Applies to the one shared title element, so
+   * every section type benefits, not just Text (the type this was added
+   * for, since it's the one most often left untitled).
+   */
+  .section-frame__title:placeholder-shown {
+    display: none;
+  }
+
+  /*
    * A paired row's two sections and Equipment's two lists always print
    * side-by-side/two-column, regardless of the screen-only mobile stacking
    * in RowView.svelte / EquipmentSection.svelte (those rules are already
