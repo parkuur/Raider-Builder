@@ -193,29 +193,6 @@ export function moveSectionToNewRow(
   return { ...doc, rows };
 }
 
-/**
- * Copy counterpart to `moveSectionToPair` — pairs a clone of the section
- * into `targetRowId`, leaving the source row untouched.
- */
-export function duplicateSectionIntoPair(
-  doc: RiderDocument,
-  sourceRowId: string,
-  sectionId: string,
-  targetRowId: string,
-): RiderDocument {
-  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
-  const source = sourceRow?.sections.find((s) => s.id === sectionId);
-  const targetRow = doc.rows.find((r) => r.id === targetRowId);
-  if (!source || !targetRow || targetRow.sections.length !== 1) return doc;
-  const copy = cloneSection(source);
-  const rows = doc.rows.map((r) =>
-    r.id === targetRowId
-      ? ({ ...r, sections: [r.sections[0]!, copy] } as Row)
-      : r,
-  );
-  return { ...doc, rows };
-}
-
 export function reorderRows(
   doc: RiderDocument,
   fromIndex: number,
@@ -230,7 +207,13 @@ export function reorderRows(
   return { ...doc, rows };
 }
 
-export function pairSections(
+/**
+ * Promotes a `FullRow` into a `SplitRow`: a brand-new section joins the
+ * row's existing solo section as the second column. No-op unless `rowId`
+ * currently names a `FullRow` — this is how a solo split section first
+ * becomes an actual split layout.
+ */
+export function createSplitRow(
   doc: RiderDocument,
   rowId: string,
   section: Section,
@@ -238,38 +221,81 @@ export function pairSections(
   const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
   if (rowIndex === -1) return doc;
   const row = doc.rows[rowIndex]!;
-  if (row.sections.length !== 1) return doc;
+  if (row.kind !== "full") return doc;
   const rows = [...doc.rows];
-  rows[rowIndex] = { ...row, sections: [row.sections[0], section] };
+  rows[rowIndex] = {
+    id: row.id,
+    kind: "split",
+    columns: [[row.section], [section]],
+  };
   return { ...doc, rows };
 }
 
-export function moveSectionToPair(
+/**
+ * Moves any section — solo or embedded in a split layout's column — onto a
+ * `FullRow` target, promoting the target into a `SplitRow`. No-op if the
+ * source and target are the same row (nothing to move onto itself) or the
+ * target isn't currently a `FullRow`.
+ */
+export function moveSectionToSplitRow(
   doc: RiderDocument,
   sourceRowId: string,
   sectionId: string,
   targetRowId: string,
 ): RiderDocument {
   if (sourceRowId === targetRowId) return doc;
-  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
-  const targetRow = doc.rows.find((r) => r.id === targetRowId);
-  if (!sourceRow || !targetRow) return doc;
-  if (targetRow.sections.length !== 1) return doc;
-  const moved = sourceRow.sections.find((s) => s.id === sectionId);
+  const sourceIndex = doc.rows.findIndex((r) => r.id === sourceRowId);
+  const targetIndex = doc.rows.findIndex((r) => r.id === targetRowId);
+  if (sourceIndex === -1 || targetIndex === -1) return doc;
+  const sourceRow = doc.rows[sourceIndex]!;
+  const targetRow = doc.rows[targetIndex]!;
+  if (targetRow.kind !== "full") return doc;
+  const moved = findSectionInRow(sourceRow, sectionId);
   if (!moved) return doc;
-  const sourceRemaining = sourceRow.sections.filter((s) => s.id !== sectionId);
-  let rows = doc.rows.map((r) => {
-    if (r.id === targetRowId) {
-      return { ...r, sections: [targetRow.sections[0], moved] } as Row;
-    }
-    if (r.id === sourceRowId && sourceRemaining.length > 0) {
-      return { ...r, sections: sourceRemaining as [Section] };
-    }
-    return r;
-  });
-  if (sourceRemaining.length === 0) {
-    rows = rows.filter((r) => r.id !== sourceRowId);
+
+  const rows = [...doc.rows];
+  rows[targetIndex] = {
+    id: targetRow.id,
+    kind: "split",
+    columns: [[targetRow.section], [moved]],
+  };
+
+  if (sourceRow.kind === "full") {
+    rows.splice(sourceIndex, 1);
+    return { ...doc, rows };
   }
+  const located = locateInSplitRow(sourceRow, sectionId)!;
+  const columns = sourceRow.columns.map((column, i) =>
+    i === located.column ? column.filter((s) => s.id !== sectionId) : column,
+  ) as [Section[], Section[]];
+  rows[sourceIndex] = { ...sourceRow, columns };
+  return { ...doc, rows: collapseIfEmptied(rows, sourceIndex) };
+}
+
+/**
+ * Copy counterpart to `moveSectionToSplitRow` — clones the section into a
+ * new column alongside `targetRowId`'s existing solo section, leaving the
+ * source untouched. `sourceRowId === targetRowId` is allowed on purpose:
+ * that's how a solo section gets split with a copy of itself.
+ */
+export function duplicateSectionToSplitRow(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+): RiderDocument {
+  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
+  const source = sourceRow && findSectionInRow(sourceRow, sectionId);
+  const targetIndex = doc.rows.findIndex((r) => r.id === targetRowId);
+  const targetRow = doc.rows[targetIndex];
+  if (!source || !targetRow || targetRow.kind !== "full") return doc;
+  const copy = cloneSection(source);
+  const rows = [...doc.rows];
+  rows[targetIndex] = {
+    id: targetRow.id,
+    kind: "split",
+    columns: [[targetRow.section], [copy]],
+  };
   return { ...doc, rows };
 }
 

@@ -74,12 +74,12 @@ export function duplicateSectionToNewRow(
   );
 }
 
-export function duplicateSectionIntoPair(
+export function duplicateSectionToSplitRow(
   sourceRowId: string,
   sectionId: string,
   targetRowId: string,
 ): void {
-  state = mutations.duplicateSectionIntoPair(
+  state = mutations.duplicateSectionToSplitRow(
     $state.snapshot(state),
     sourceRowId,
     sectionId,
@@ -91,8 +91,8 @@ export function reorderRows(fromIndex: number, toIndex: number): void {
   state = mutations.reorderRows(state, fromIndex, toIndex);
 }
 
-export function pairSections(rowId: string, type: SectionType): void {
-  state = mutations.pairSections(state, rowId, buildSection(type));
+export function createSplitRow(rowId: string, type: SectionType): void {
+  state = mutations.createSplitRow(state, rowId, buildSection(type));
 }
 
 export function moveSectionToNewRow(
@@ -103,12 +103,12 @@ export function moveSectionToNewRow(
   state = mutations.moveSectionToNewRow(state, sourceRowId, sectionId, atIndex);
 }
 
-export function moveSectionToPair(
+export function moveSectionToSplitRow(
   sourceRowId: string,
   sectionId: string,
   targetRowId: string,
 ): void {
-  state = mutations.moveSectionToPair(
+  state = mutations.moveSectionToSplitRow(
     state,
     sourceRowId,
     sectionId,

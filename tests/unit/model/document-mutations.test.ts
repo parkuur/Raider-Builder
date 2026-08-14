@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   addRow,
+  createSplitRow,
   duplicateSectionToNewRow,
+  duplicateSectionToSplitRow,
   moveSectionToNewRow,
+  moveSectionToSplitRow,
   removeSection,
   reorderRows,
   setHeaderField,
@@ -244,6 +247,145 @@ describe("moveSectionToNewRow", () => {
     const doc = docWithRows(makeFullRow("r1", makeSection("s1")));
     expect(moveSectionToNewRow(doc, "missing", "s1", 0)).toBe(doc);
     expect(moveSectionToNewRow(doc, "r1", "missing", 0)).toBe(doc);
+  });
+});
+
+describe("createSplitRow", () => {
+  it("promotes a FullRow into a SplitRow, existing section first", () => {
+    const doc = docWithRows(makeFullRow("r1", makeSection("s1")));
+    const result = createSplitRow(doc, "r1", makeSection("s2"));
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0] as SplitRow;
+    expect(row.kind).toBe("split");
+    expect(row.columns[0].map((s) => s.id)).toEqual(["s1"]);
+    expect(row.columns[1].map((s) => s.id)).toEqual(["s2"]);
+  });
+
+  it("is a no-op for an unknown row id", () => {
+    const doc = docWithRows(makeFullRow("r1", makeSection("s1")));
+    expect(createSplitRow(doc, "missing", makeSection("s2"))).toBe(doc);
+  });
+
+  it("is a no-op when the row is already a split layout", () => {
+    const doc = docWithRows(
+      makeSplitRow("r1", [makeSection("s1")], [makeSection("s2")]),
+    );
+    expect(createSplitRow(doc, "r1", makeSection("s3"))).toBe(doc);
+  });
+});
+
+describe("moveSectionToSplitRow", () => {
+  it("moves a solo section onto another FullRow, promoting it to split", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeFullRow("r2", makeSection("s2")),
+    );
+    const result = moveSectionToSplitRow(doc, "r1", "s1", "r2");
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0] as SplitRow;
+    expect(row.id).toBe("r2");
+    expect(row.columns[0].map((s) => s.id)).toEqual(["s2"]);
+    expect(row.columns[1].map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("moves an embedded column item onto a FullRow without collapsing when the column survives", () => {
+    const doc = docWithRows(
+      makeSplitRow(
+        "r1",
+        [makeSection("s1"), makeSection("s2")],
+        [makeSection("s3")],
+      ),
+      makeFullRow("r2", makeSection("s4")),
+    );
+    const result = moveSectionToSplitRow(doc, "r1", "s1", "r2");
+    expect(result.rows).toHaveLength(2);
+    const splitSource = result.rows[0] as SplitRow;
+    expect(splitSource.columns[0].map((s) => s.id)).toEqual(["s2"]);
+    const promoted = result.rows[1] as SplitRow;
+    expect(promoted.columns[0].map((s) => s.id)).toEqual(["s4"]);
+    expect(promoted.columns[1].map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("collapses the source split row when moving its column's last item away", () => {
+    const doc = docWithRows(
+      makeSplitRow("r1", [makeSection("s1")], [makeSection("s2")]),
+      makeFullRow("r2", makeSection("s3")),
+    );
+    const result = moveSectionToSplitRow(doc, "r1", "s1", "r2");
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]!.kind).toBe("full");
+    expect((result.rows[0] as FullRow).section.id).toBe("s2");
+    const promoted = result.rows[1] as SplitRow;
+    expect(promoted.columns[1].map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("is a no-op when the source and target row are the same", () => {
+    const doc = docWithRows(makeFullRow("r1", makeSection("s1")));
+    expect(moveSectionToSplitRow(doc, "r1", "s1", "r1")).toBe(doc);
+  });
+
+  it("is a no-op when the target row is already a split layout", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeSplitRow("r2", [makeSection("s2")], [makeSection("s3")]),
+    );
+    expect(moveSectionToSplitRow(doc, "r1", "s1", "r2")).toBe(doc);
+  });
+
+  it("is a no-op for unknown ids", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeFullRow("r2", makeSection("s2")),
+    );
+    expect(moveSectionToSplitRow(doc, "missing", "s1", "r2")).toBe(doc);
+    expect(moveSectionToSplitRow(doc, "r1", "missing", "r2")).toBe(doc);
+    expect(moveSectionToSplitRow(doc, "r1", "s1", "missing")).toBe(doc);
+  });
+});
+
+describe("duplicateSectionToSplitRow", () => {
+  it("clones the source into the target's second column, leaving the source untouched", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1", "a")),
+      makeFullRow("r2", makeSection("s2", "b")),
+    );
+    const result = duplicateSectionToSplitRow(doc, "r1", "s1", "r2");
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]).toBe(doc.rows[0]);
+    const row = result.rows[1] as SplitRow;
+    expect(row.columns[0].map((s) => s.id)).toEqual(["s2"]);
+    const copy = row.columns[1][0]!;
+    expect(copy.id).not.toBe("s1");
+    expect(copy.data).toEqual({ note: "a" });
+  });
+
+  it("promotes a solo section by splitting it with a copy of itself", () => {
+    const doc = docWithRows(makeFullRow("r1", makeSection("s1", "a")));
+    const result = duplicateSectionToSplitRow(doc, "r1", "s1", "r1");
+    expect(result.rows).toHaveLength(1);
+    const row = result.rows[0] as SplitRow;
+    expect(row.columns[0].map((s) => s.id)).toEqual(["s1"]);
+    const copy = row.columns[1][0]!;
+    expect(copy.id).not.toBe("s1");
+    expect(copy.data).toEqual({ note: "a" });
+  });
+
+  it("is a no-op when the target row is already a split layout", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeSplitRow("r2", [makeSection("s2")], [makeSection("s3")]),
+    );
+    expect(duplicateSectionToSplitRow(doc, "r1", "s1", "r2")).toBe(doc);
+  });
+
+  it("is a no-op for unknown ids", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeFullRow("r2", makeSection("s2")),
+    );
+    expect(duplicateSectionToSplitRow(doc, "missing", "s1", "r2")).toBe(doc);
+    expect(duplicateSectionToSplitRow(doc, "r1", "missing", "r2")).toBe(doc);
+    expect(duplicateSectionToSplitRow(doc, "r1", "s1", "missing")).toBe(doc);
   });
 });
 
