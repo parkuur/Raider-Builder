@@ -81,3 +81,17 @@ one onto the other.
   positions; the row still has exactly two sections afterward.
 - Covered by a Playwright case in `half-width-pairing.spec.ts` driving the full lift → drop →
   swap flow through the UI.
+
+### Story: Quick Look text topic aligns with table topic fields
+
+**Acceptance criteria**
+- A Text topic's body left edge lines up with a Table topic's Label field left edge, and its
+  right edge lines up with a Table topic's Value field right edge, on screen and in print.
+- Covered by a Playwright case in `quicklook.spec.ts` asserting the alignment in both media.
+
+### Story: Band Members avatar circle sized to balance its card
+
+**Acceptance criteria**
+- The avatar circle's side gaps (to the card's left/right edge) match its top gap (to the
+  card's top edge), instead of the circle reading as small and off-center.
+- Covered by a Playwright case in `band-members.spec.ts` asserting the three gaps match.
