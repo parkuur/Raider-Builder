@@ -61,11 +61,25 @@
   }
 
   /*
+   * An empty field's placeholder is instructional UI chrome, not content the
+   * user actually entered — leaving it out of print is what "left blank on
+   * purpose" should mean. `visibility: hidden` (not `display: none`) keeps
+   * the field's box in place, so table/grid columns (Channel List, Monitor
+   * List, Band Members, Contacts, ...) don't reflow just because one cell
+   * was left empty.
+   */
+  input:placeholder-shown,
+  textarea:placeholder-shown {
+    visibility: hidden;
+  }
+
+  /*
    * An untitled section's title input is an empty box with nothing to show
    * — :placeholder-shown matches exactly when the input's value is empty,
    * so this drops the input (and the space it would occupy) rather than
-   * printing a blank line. Applies to the one shared title element, so
-   * every section type benefits, not just Text (the type this was added
+   * printing a blank line. More specific than the general rule above, so it
+   * still wins for this one field. Applies to the one shared title element,
+   * so every section type benefits, not just Text (the type this was added
    * for, since it's the one most often left untitled).
    */
   .section-frame__title:placeholder-shown {
