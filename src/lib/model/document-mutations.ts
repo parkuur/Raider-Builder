@@ -6,10 +6,77 @@ import type { Section, SectionDataMap, SectionType } from "./section-types";
 /**
  * Every function here is immutable and no-ops by returning the exact same
  * `doc` reference (checkable via `result === doc`) whenever a precondition
- * fails — unknown id, out-of-range index, pairing an already-paired row,
- * unpairing a row that isn't paired. Invalid calls degrade predictably
+ * fails — unknown id, out-of-range index, promoting an already-split row,
+ * targeting a row of the wrong kind. Invalid calls degrade predictably
  * instead of throwing or silently producing a malformed document.
  */
+
+/** Finds a Section by id regardless of which row kind/column holds it. */
+function findSectionInRow(row: Row, sectionId: string): Section | null {
+  if (row.kind === "full") {
+    return row.section.id === sectionId ? row.section : null;
+  }
+  return (
+    row.columns[0].find((s) => s.id === sectionId) ??
+    row.columns[1].find((s) => s.id === sectionId) ??
+    null
+  );
+}
+
+/** Locates which column/index of a SplitRow holds a given section id. */
+function locateInSplitRow(
+  row: Row & { kind: "split" },
+  sectionId: string,
+): { column: 0 | 1; index: number } | null {
+  for (const column of [0, 1] as const) {
+    const index = row.columns[column].findIndex((s) => s.id === sectionId);
+    if (index !== -1) return { column, index };
+  }
+  return null;
+}
+
+/** Applies `updater` to whichever section (in either row kind) has this id. */
+function replaceSectionInRow(
+  row: Row,
+  sectionId: string,
+  updater: (section: Section) => Section,
+): Row {
+  if (row.kind === "full") {
+    return row.section.id === sectionId
+      ? { ...row, section: updater(row.section) }
+      : row;
+  }
+  const located = locateInSplitRow(row, sectionId);
+  if (!located) return row;
+  const columns = row.columns.map((column, i) =>
+    i === located.column
+      ? column.map((s) => (s.id === sectionId ? updater(s) : s))
+      : column,
+  ) as [Section[], Section[]];
+  return { ...row, columns };
+}
+
+/**
+ * A split layout exists only while both columns are non-empty (see the
+ * CLAUDE.md glossary). Whenever a mutation could shrink a column to zero,
+ * it calls this afterward: if one column emptied, the row is replaced by
+ * one new solo FullRow per section still in the surviving column, in
+ * order, at the row's former position — collapse is symmetric with the
+ * lazy promotion that created the split layout in the first place.
+ */
+function collapseIfEmptied(rows: Row[], rowIndex: number): Row[] {
+  const row = rows[rowIndex]!;
+  if (row.kind !== "split") return rows;
+  const [columnA, columnB] = row.columns;
+  if (columnA.length > 0 && columnB.length > 0) return rows;
+  const survivors = columnA.length > 0 ? columnA : columnB;
+  const replacement: Row[] = survivors.map((section) => ({
+    id: createId("row"),
+    kind: "full",
+    section,
+  }));
+  return [...rows.slice(0, rowIndex), ...replacement, ...rows.slice(rowIndex + 1)];
+}
 
 export function addRow(
   doc: RiderDocument,
@@ -17,7 +84,7 @@ export function addRow(
   section: Section,
 ): RiderDocument {
   const index = clamp(atIndex, 0, doc.rows.length);
-  const row: Row = { id: createId("row"), sections: [section] };
+  const row: Row = { id: createId("row"), kind: "full", section };
   const rows = [...doc.rows.slice(0, index), row, ...doc.rows.slice(index)];
   return { ...doc, rows };
 }
@@ -30,44 +97,30 @@ export function removeSection(
   const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
   if (rowIndex === -1) return doc;
   const row = doc.rows[rowIndex]!;
-  if (!row.sections.some((s) => s.id === sectionId)) return doc;
-  const remaining = row.sections.filter((s) => s.id !== sectionId);
-  const rows = [...doc.rows];
-  if (remaining.length === 0) {
+  if (row.kind === "full") {
+    if (row.section.id !== sectionId) return doc;
+    const rows = [...doc.rows];
     rows.splice(rowIndex, 1);
-  } else {
-    rows[rowIndex] = { ...row, sections: remaining as [Section] };
+    return { ...doc, rows };
   }
-  return { ...doc, rows };
+  const located = locateInSplitRow(row, sectionId);
+  if (!located) return doc;
+  const columns = row.columns.map((column, i) =>
+    i === located.column ? column.filter((s) => s.id !== sectionId) : column,
+  ) as [Section[], Section[]];
+  const rows = [...doc.rows];
+  rows[rowIndex] = { ...row, columns };
+  return { ...doc, rows: collapseIfEmptied(rows, rowIndex) };
 }
 
 function cloneSection(source: Section): Section {
   return { ...structuredClone(source), id: createId("section") };
 }
 
-export function duplicateSection(
-  doc: RiderDocument,
-  rowId: string,
-  sectionId: string,
-): RiderDocument {
-  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
-  if (rowIndex === -1) return doc;
-  const source = doc.rows[rowIndex]!.sections.find((s) => s.id === sectionId);
-  if (!source) return doc;
-  const copy = cloneSection(source);
-  const newRow: Row = { id: createId("row"), sections: [copy] };
-  const rows = [
-    ...doc.rows.slice(0, rowIndex + 1),
-    newRow,
-    ...doc.rows.slice(rowIndex + 1),
-  ];
-  return { ...doc, rows };
-}
-
 /**
- * Copy counterpart to `extractSectionToNewRow` — inserts a clone of the
- * section as a new standalone row at `atIndex`, leaving the source row (and
- * its pairing, if any) completely untouched.
+ * Inserts a clone of the section as a new standalone row at `atIndex`,
+ * leaving the source row completely untouched — the source can be a solo
+ * section or one embedded in a split layout's column, either way.
  */
 export function duplicateSectionToNewRow(
   doc: RiderDocument,
@@ -76,12 +129,67 @@ export function duplicateSectionToNewRow(
   atIndex: number,
 ): RiderDocument {
   const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
-  const source = sourceRow?.sections.find((s) => s.id === sectionId);
+  const source = sourceRow && findSectionInRow(sourceRow, sectionId);
   if (!source) return doc;
   const copy = cloneSection(source);
-  const newRow: Row = { id: createId("row"), sections: [copy] };
+  const newRow: Row = { id: createId("row"), kind: "full", section: copy };
   const index = clamp(atIndex, 0, doc.rows.length);
   const rows = [...doc.rows.slice(0, index), newRow, ...doc.rows.slice(index)];
+  return { ...doc, rows };
+}
+
+/**
+ * Moves any section — solo or embedded in a split layout's column — into a
+ * brand-new standalone row at `atIndex`. `atIndex` is interpreted against
+ * the *original* `doc.rows` (the gap before the row currently at that
+ * index); since removing/collapsing the source row can turn its one slot
+ * into zero, one, or several rows, any insertion point that fell after the
+ * source row is shifted by however many net rows that change produced.
+ */
+export function moveSectionToNewRow(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  atIndex: number,
+): RiderDocument {
+  const sourceIndex = doc.rows.findIndex((r) => r.id === sourceRowId);
+  if (sourceIndex === -1) return doc;
+  const sourceRow = doc.rows[sourceIndex]!;
+  const section = findSectionInRow(sourceRow, sectionId);
+  if (!section) return doc;
+
+  let rowsAfterRemoval: Row[];
+  if (sourceRow.kind === "full") {
+    rowsAfterRemoval = [
+      ...doc.rows.slice(0, sourceIndex),
+      ...doc.rows.slice(sourceIndex + 1),
+    ];
+  } else {
+    const located = locateInSplitRow(sourceRow, sectionId)!;
+    const columns = sourceRow.columns.map((column, i) =>
+      i === located.column ? column.filter((s) => s.id !== sectionId) : column,
+    ) as [Section[], Section[]];
+    rowsAfterRemoval = collapseIfEmptied(
+      [
+        ...doc.rows.slice(0, sourceIndex),
+        { ...sourceRow, columns },
+        ...doc.rows.slice(sourceIndex + 1),
+      ],
+      sourceIndex,
+    );
+  }
+
+  const producedCount = rowsAfterRemoval.length - (doc.rows.length - 1);
+  const shifted =
+    atIndex > sourceIndex ? atIndex + producedCount - 1 : atIndex;
+  const insertIndex = clamp(shifted, 0, rowsAfterRemoval.length);
+
+  const newRow: Row = { id: createId("row"), kind: "full", section };
+  const rows = [
+    ...rowsAfterRemoval.slice(0, insertIndex),
+    newRow,
+    ...rowsAfterRemoval.slice(insertIndex),
+  ];
   return { ...doc, rows };
 }
 
@@ -136,27 +244,6 @@ export function pairSections(
   return { ...doc, rows };
 }
 
-export function extractSectionToNewRow(
-  doc: RiderDocument,
-  sourceRowId: string,
-  sectionId: string,
-  atIndex: number,
-): RiderDocument {
-  const rowIndex = doc.rows.findIndex((r) => r.id === sourceRowId);
-  if (rowIndex === -1) return doc;
-  const row = doc.rows[rowIndex]!;
-  if (row.sections.length !== 2) return doc;
-  const removed = row.sections.find((s) => s.id === sectionId);
-  const remaining = row.sections.find((s) => s.id !== sectionId);
-  if (!removed || !remaining) return doc;
-  const rows = [...doc.rows];
-  rows[rowIndex] = { ...row, sections: [remaining] };
-  const newRow: Row = { id: createId("row"), sections: [removed] };
-  const insertIndex = clamp(atIndex, 0, rows.length);
-  rows.splice(insertIndex, 0, newRow);
-  return { ...doc, rows };
-}
-
 export function moveSectionToPair(
   doc: RiderDocument,
   sourceRowId: string,
@@ -207,14 +294,12 @@ export function toggleSectionHidden(
   const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
   if (rowIndex === -1) return doc;
   const row = doc.rows[rowIndex]!;
-  if (!row.sections.some((s) => s.id === sectionId)) return doc;
+  if (!findSectionInRow(row, sectionId)) return doc;
   const rows = [...doc.rows];
-  rows[rowIndex] = {
-    ...row,
-    sections: row.sections.map((s) =>
-      s.id === sectionId ? { ...s, hidden: !s.hidden } : s,
-    ) as [Section] | [Section, Section],
-  };
+  rows[rowIndex] = replaceSectionInRow(row, sectionId, (s) => ({
+    ...s,
+    hidden: !s.hidden,
+  }));
   return { ...doc, rows };
 }
 
@@ -227,14 +312,12 @@ export function setSectionTitle(
   const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
   if (rowIndex === -1) return doc;
   const row = doc.rows[rowIndex]!;
-  if (!row.sections.some((s) => s.id === sectionId)) return doc;
+  if (!findSectionInRow(row, sectionId)) return doc;
   const rows = [...doc.rows];
-  rows[rowIndex] = {
-    ...row,
-    sections: row.sections.map((s) =>
-      s.id === sectionId ? { ...s, title } : s,
-    ) as [Section] | [Section, Section],
-  };
+  rows[rowIndex] = replaceSectionInRow(row, sectionId, (s) => ({
+    ...s,
+    title,
+  }));
   return { ...doc, rows };
 }
 
@@ -248,15 +331,14 @@ export function setSectionData<T extends SectionType>(
   const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
   if (rowIndex === -1) return doc;
   const row = doc.rows[rowIndex]!;
-  const section = row.sections.find((s) => s.id === sectionId);
+  const section = findSectionInRow(row, sectionId);
   if (!section || section.type !== type) return doc;
   const rows = [...doc.rows];
-  rows[rowIndex] = {
-    ...row,
-    sections: row.sections.map((s) =>
-      s.id === sectionId ? ({ ...s, data } as Section) : s,
-    ) as [Section] | [Section, Section],
-  };
+  rows[rowIndex] = replaceSectionInRow(
+    row,
+    sectionId,
+    (s) => ({ ...s, data }) as Section,
+  );
   return { ...doc, rows };
 }
 
