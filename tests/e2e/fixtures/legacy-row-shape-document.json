@@ -1,0 +1,23 @@
+{
+  "header": {
+    "title": "Old Format Rider",
+    "band": "Legacy Band",
+    "metaFields": [],
+    "logos": [],
+    "creditHidden": false
+  },
+  "rows": [
+    {
+      "id": "row-1",
+      "sections": [
+        {
+          "id": "section-1",
+          "type": "placeholder",
+          "title": "Old Section",
+          "hidden": false,
+          "data": { "note": "" }
+        }
+      ]
+    }
+  ]
+}

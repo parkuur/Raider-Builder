@@ -64,16 +64,16 @@ test.describe("print layout", () => {
       .first()
       .fill("PA System With Subwoofers");
 
-    await addSection(page, "Contacts (half)");
+    await addSection(page, "Contacts (split)");
     await page.getByRole("button", { name: "+ Add Contact" }).click();
     await page.locator(".contacts-section__name").fill("Jamie Rivera");
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
     await page.getByRole("button", { name: "+ Add Topic" }).click();
     await page.getByRole("menuitem", { name: "Row", exact: true }).click();
@@ -120,18 +120,18 @@ test.describe("print layout", () => {
     expect(rowCounts).toEqual([4, 3]);
   });
 
-  test("hiding one side of a paired row drops the divider in print, and hiding both hides the row", async ({
+  test("hiding one side of a split row drops the divider in print, and hiding both hides the row", async ({
     page,
   }) => {
     await page.goto("/");
-    await addFirstSection(page, "Contacts (half)");
+    await addFirstSection(page, "Contacts (split)");
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     const row = page
@@ -139,10 +139,19 @@ test.describe("print layout", () => {
       .filter({ has: page.locator(".contacts-section") });
     const contactsFrame = row.locator(".section-frame").first();
     const quicklookFrame = row.locator(".section-frame").nth(1);
+    const firstColumn = row.locator(".row-view__column").nth(0);
+    const secondColumn = row.locator(".row-view__column").nth(1);
 
     await contactsFrame.getByRole("button", { name: "Hide section" }).click();
     await page.emulateMedia({ media: "print" });
-    await expect(quicklookFrame).toHaveCSS("border-left-style", "none");
+    await expect(secondColumn).toHaveCSS("border-left-style", "none");
+    // The now-empty first column shouldn't still claim half the row's
+    // width — the surviving column should expand to fill it.
+    await expect(firstColumn).toBeHidden();
+    const rowWidth = (await row.locator(".row-view__sections").boundingBox())!
+      .width;
+    const secondColumnWidth = (await secondColumn.boundingBox())!.width;
+    expect(secondColumnWidth).toBeCloseTo(rowWidth, 0);
 
     await page.emulateMedia({ media: "screen" });
     await quicklookFrame.getByRole("button", { name: "Hide section" }).click();

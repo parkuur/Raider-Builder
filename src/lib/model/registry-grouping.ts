@@ -1,19 +1,19 @@
 export interface SectionTypeSummary {
   type: string;
   label: string;
-  half: boolean;
+  split: boolean;
 }
 
 export interface SectionTypeGroups {
   full: SectionTypeSummary[];
-  half: SectionTypeSummary[];
+  split: SectionTypeSummary[];
 }
 
 export function groupSectionTypesByWidth(
   entries: SectionTypeSummary[],
 ): SectionTypeGroups {
   return {
-    full: entries.filter((entry) => !entry.half),
-    half: entries.filter((entry) => entry.half),
+    full: entries.filter((entry) => !entry.split),
+    split: entries.filter((entry) => entry.split),
   };
 }

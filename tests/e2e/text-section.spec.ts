@@ -7,7 +7,7 @@ test.describe("Text section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Text (half)", exact: true })
+      .getByRole("button", { name: "Text (split)", exact: true })
       .click();
     await page
       .locator(".text-section__body")
@@ -30,23 +30,21 @@ test.describe("Text section", () => {
     );
   });
 
-  test("pairs side-by-side with another half-width section", async ({
-    page,
-  }) => {
+  test("splits side-by-side with another split section", async ({ page }) => {
     await page.goto("/");
     await page
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
-      .getByRole("button", { name: "Text (half)", exact: true })
+      .getByRole("button", { name: "Text (split)", exact: true })
       .click();
 
     const row = page
@@ -64,7 +62,7 @@ test.describe("Text section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Text (half)", exact: true })
+      .getByRole("button", { name: "Text (split)", exact: true })
       .click();
 
     const title = page.locator(".section-frame__title");
@@ -91,7 +89,7 @@ test.describe("Text section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Text (half)", exact: true })
+      .getByRole("button", { name: "Text (split)", exact: true })
       .click();
 
     const body = page.locator(".text-section__body");

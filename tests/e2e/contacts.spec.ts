@@ -8,7 +8,7 @@ test.describe("Contacts section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
 
     const addButton = page.getByRole("button", { name: "+ Add Contact" });
@@ -51,7 +51,7 @@ test.describe("Contacts section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
 
     const addButton = page.getByRole("button", { name: "+ Add Contact" });
@@ -80,7 +80,7 @@ test.describe("Contacts section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page.getByRole("button", { name: "+ Add Contact" }).click();
     await page.locator(".contacts-section__name").fill("Jamie Rivera");

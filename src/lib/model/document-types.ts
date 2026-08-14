@@ -12,16 +12,27 @@ export interface Header {
 }
 
 /**
- * Two Sections being members of the same Row's `sections` tuple IS the
- * pairing relationship between them — there is no separate boolean/ID
- * field to keep in sync, and nothing is inferred from position in a
- * flatter list. Reordering Rows can never desynchronize a pair, because
- * both Sections always move together as one Row.
+ * A split layout is two independently growable columns, not a fixed pair —
+ * `SplitRow.columns` holds an unbounded stack of Sections on each side.
+ * A Row starts out (and stays, if never split) a FullRow regardless of
+ * whether its lone Section happens to be split-eligible; it only becomes a
+ * SplitRow once a second split Section actually joins it, and it collapses
+ * back into standalone FullRows the moment either column empties out. See
+ * the CLAUDE.md glossary for "split layout"/"solo"/"embedded".
  */
-export interface Row {
+export interface FullRow {
   id: string;
-  sections: [Section] | [Section, Section];
+  kind: "full";
+  section: Section;
 }
+
+export interface SplitRow {
+  id: string;
+  kind: "split";
+  columns: [Section[], Section[]];
+}
+
+export type Row = FullRow | SplitRow;
 
 export interface RiderDocument {
   header: Header;

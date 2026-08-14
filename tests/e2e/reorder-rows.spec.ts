@@ -85,3 +85,32 @@ test("clicking outside the lift/place controls cancels an in-progress lift", asy
   await expect(titles.nth(0)).toHaveValue("Row A");
   await expect(titles.nth(1)).toHaveValue("Row B");
 });
+
+test("lifting a full-width row and dropping it on another full-width row swaps their positions", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Add your first section" }).click();
+  await page.getByRole("button", { name: "Requirements", exact: true }).click();
+  await page.getByRole("button", { name: "Add Section" }).last().click();
+  await page.getByRole("button", { name: "Equipment", exact: true }).click();
+
+  const rows = page.locator(".row-view");
+  await expect(rows.nth(0).locator(".requirements-section")).toHaveCount(1);
+  await expect(rows.nth(1).locator(".equipment-section")).toHaveCount(1);
+
+  // No swap affordance appears until a lift is in progress.
+  await expect(
+    rows.getByRole("button", { name: "Swap places with this section" }),
+  ).toHaveCount(0);
+
+  await rows.nth(0).getByRole("button", { name: "Move this section" }).click();
+  const swapTarget = rows
+    .nth(1)
+    .getByRole("button", { name: "Swap places with this section" });
+  await expect(swapTarget).toBeVisible();
+  await swapTarget.click();
+
+  await expect(rows.nth(0).locator(".equipment-section")).toHaveCount(1);
+  await expect(rows.nth(1).locator(".requirements-section")).toHaveCount(1);
+});

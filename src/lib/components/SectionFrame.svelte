@@ -7,7 +7,6 @@
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
-  import LinkIcon from "phosphor-svelte/lib/LinkIcon";
   import ArrowsOutCardinalIcon from "phosphor-svelte/lib/ArrowsOutCardinalIcon";
   import EyeIcon from "phosphor-svelte/lib/EyeIcon";
   import EyeSlashIcon from "phosphor-svelte/lib/EyeSlashIcon";
@@ -17,8 +16,6 @@
   let {
     rowId,
     section,
-    sectionCount,
-    showPairBadge,
     liftedMode,
     swapAvailable,
     onToggleMoveLift,
@@ -27,8 +24,6 @@
   }: {
     rowId: string;
     section: Section;
-    sectionCount: number;
-    showPairBadge: boolean;
     liftedMode: "move" | "copy" | null;
     swapAvailable: boolean;
     onToggleMoveLift: () => void;
@@ -46,9 +41,7 @@
   // standard toggle-button pattern) rather than a name that itself changes
   // to "Cancel move" when active — a changing name breaks identifying the
   // same control across the toggle, for assistive tech and tests alike.
-  const moveLabel = $derived(
-    sectionCount === 2 ? "Move or unpair this section" : "Move this section",
-  );
+  const moveLabel = "Move this section";
   const copyLabel = "Copy this section";
 </script>
 
@@ -121,11 +114,6 @@
   <div class="section-frame__body">
     <Entry.component {rowId} {section} />
   </div>
-  {#if showPairBadge}
-    <div class="section-frame__pair-badge no-print" aria-hidden="true">
-      <LinkIcon size={12} />
-    </div>
-  {/if}
   {#if swapAvailable}
     <button
       type="button"
@@ -202,50 +190,11 @@
   }
 
   /*
-   * Sits on top of the paired-divider rule (RowView.svelte), which is a
-   * full-height/width border, not shortened to meet it — offset in from
-   * the line's true end (rather than centered exactly on it) by 5mm plus
-   * its own radius, so a 5mm tail of the line still shows past the badge
-   * down to the actual corner. Anchoring to this box's own corner, rather
-   * than to the shared row container, keeps the badge correctly on the
-   * rule regardless of how tall either paired section actually is.
-   */
-  .section-frame__pair-badge {
-    position: absolute;
-    left: 0;
-    bottom: calc(5mm + 10px);
-    transform: translate(-50%, 50%);
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 1.5px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
-    background: var(--color-background);
-    color: var(--color-accent);
-  }
-
-  @media screen and (max-width: 640px) {
-    /*
-     * Same idea rotated 90°: the mobile stacked divider is a full-width top
-     * border, and the badge sits offset in from its left end by the same
-     * 5mm-plus-radius amount, leaving a 5mm tail to its left.
-     */
-    .section-frame__pair-badge {
-      left: calc(5mm + 10px);
-      top: 0;
-      bottom: auto;
-      transform: translate(-50%, -50%);
-    }
-  }
-
-  /*
-   * Covers this section's own box so dropping the lifted sibling anywhere
-   * on it reads as "swap with this section," rather than needing a
-   * separate narrow drop target — matches PairSlot's "available" styling
-   * (solid accent border/tint) so the two drop-target affordances read as
-   * the same interaction language.
+   * Covers this section's own box so dropping the lifted candidate
+   * anywhere on it reads as "swap with this section," rather than needing
+   * a separate narrow drop target — matches the split-edge-slot/column-gap
+   * "available" styling (solid accent border/tint) so every drop-target
+   * affordance reads as the same interaction language.
    */
   .section-frame__swap-target {
     position: absolute;
@@ -255,8 +204,8 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-accent);
-    /* Mostly opaque (unlike PairSlot's lighter tint) so the section's own
-       content underneath doesn't show through and clash with the label. */
+    /* Mostly opaque (unlike SplitEdgeSlot's lighter tint) so the section's
+       own content underneath doesn't show through and clash with the label. */
     background: color-mix(
       in srgb,
       var(--color-background) 92%,

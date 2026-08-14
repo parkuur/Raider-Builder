@@ -5,39 +5,74 @@
   import EmptyState from "./EmptyState.svelte";
   import {
     addRow,
-    duplicateSectionIntoPair,
+    createSplitRow,
+    duplicateSectionIntoColumn,
     duplicateSectionToNewRow,
-    extractSectionToNewRow,
+    duplicateSectionToSplitRow,
     getDocument,
-    moveSectionToPair,
-    pairSections,
+    insertSectionIntoColumn,
+    moveSectionIntoColumn,
+    moveSectionToNewRow,
+    moveSectionToSplitRow,
     reorderRows,
-    swapPairedSections,
+    reorderSectionWithinColumn,
+    swapSections,
   } from "../state/document.svelte";
   import { sectionRegistry } from "../sections/registry";
   import type { SectionRegistryEntry } from "../sections/registry";
-  import type { Row } from "../model/document-types";
-  import type { Section } from "../model/section-types";
+  import type { SwapCategory, SwapContext } from "./swap-context";
   import type { SectionType } from "../model/section-types";
+  import type { Row } from "../model/document-types";
 
   type MenuRequest =
-    { kind: "insert"; index: number } | { kind: "pair"; rowId: string };
+    | { kind: "insert"; index: number }
+    | { kind: "split-edge"; rowId: string }
+    | { kind: "column-insert"; rowId: string; column: 0 | 1; atIndex: number };
 
   type LiftMode = "move" | "copy";
 
+  // A row-kind lift (kind: "row") always means "this is a FullRow's own
+  // section" — never inferred from column-emptiness, since a solo split
+  // section is structurally just a FullRow like any other. A section-kind
+  // lift always means "an item embedded in a SplitRow's column."
   type LiftedSource =
-    | { kind: "row"; rowId: string; mode: LiftMode }
-    | { kind: "section"; rowId: string; sectionId: string; mode: LiftMode };
+    | {
+        kind: "row";
+        rowId: string;
+        sectionId: string;
+        mode: LiftMode;
+        category: "full" | "solo";
+      }
+    | {
+        kind: "section";
+        rowId: string;
+        column: 0 | 1;
+        sectionId: string;
+        mode: LiftMode;
+        category: "embedded";
+      };
 
   let menuRequest = $state<MenuRequest | null>(null);
   let liftedSource = $state<LiftedSource | null>(null);
+
+  function splitEligible(type: SectionType): boolean {
+    return (sectionRegistry[type] as SectionRegistryEntry).split === true;
+  }
 
   function openInsertMenu(index: number): void {
     menuRequest = { kind: "insert", index };
   }
 
-  function openPairMenu(rowId: string): void {
-    menuRequest = { kind: "pair", rowId };
+  function openSplitEdgeMenu(rowId: string): void {
+    menuRequest = { kind: "split-edge", rowId };
+  }
+
+  function openColumnInsertMenu(
+    rowId: string,
+    column: 0 | 1,
+    atIndex: number,
+  ): void {
+    menuRequest = { kind: "column-insert", rowId, column, atIndex };
   }
 
   function closeMenu(): void {
@@ -48,58 +83,49 @@
     if (!menuRequest) return;
     if (menuRequest.kind === "insert") {
       addRow(type, menuRequest.index);
+    } else if (menuRequest.kind === "split-edge") {
+      createSplitRow(menuRequest.rowId, type);
     } else {
-      pairSections(menuRequest.rowId, type);
+      insertSectionIntoColumn(
+        menuRequest.rowId,
+        menuRequest.column,
+        menuRequest.atIndex,
+        type,
+      );
     }
     closeMenu();
   }
 
-  // Resolves the lifted item's underlying Section, regardless of whether the
-  // lift started on a lone section (kind "row" — moving/copying it moves/
-  // copies its whole one-section row) or on one side of a paired row (kind
-  // "section").
-  function liftedSectionOf(source: LiftedSource): Section | null {
-    const row = getDocument().rows.find((r) => r.id === source.rowId);
-    if (!row) return null;
-    if (source.kind === "row") {
-      return row.sections.length === 1 ? row.sections[0]! : null;
-    }
-    return row.sections.find((s) => s.id === source.sectionId) ?? null;
-  }
-
-  function canPairWith(targetRowId: string): boolean {
-    if (!liftedSource) return false;
-    // Moving a section onto a pair slot on its own row is a meaningless
-    // no-op (there's nothing to move — moveSectionToPair guards this too),
-    // but copying a solo half-width section onto its own row's pair slot
-    // is exactly how you pair it with a copy of itself, so only move mode
-    // is excluded here.
-    if (liftedSource.rowId === targetRowId && liftedSource.mode === "move")
-      return false;
-    const section = liftedSectionOf(liftedSource);
-    if (!section) return false;
-    const entry = sectionRegistry[section.type] as SectionRegistryEntry;
-    return entry.half === true;
-  }
-
   // The single entry point for both the move and copy triggers on a
-  // section: which underlying mutation kind applies (whole row vs. one side
-  // of a pair) is derived from the row's current section count, not tracked
-  // separately by the caller.
-  function toggleLift(row: Row, sectionId: string, mode: LiftMode): void {
+  // section: whether this is a row-kind or section-kind lift is derived
+  // from the row's own kind, not tracked separately by the caller.
+  function toggleLift(
+    row: Row,
+    sectionId: string,
+    column: 0 | 1 | null,
+    mode: LiftMode,
+  ): void {
     const isSameLift =
-      liftedSource?.mode === mode &&
-      (liftedSource.kind === "row"
-        ? liftedSource.rowId === row.id
-        : liftedSource.sectionId === sectionId);
+      liftedSource?.mode === mode && liftedSource?.sectionId === sectionId;
     if (isSameLift) {
       liftedSource = null;
       return;
     }
-    liftedSource =
-      row.sections.length === 1
-        ? { kind: "row", rowId: row.id, mode }
-        : { kind: "section", rowId: row.id, sectionId, mode };
+    if (row.kind === "full") {
+      const category: "full" | "solo" = splitEligible(row.section.type)
+        ? "solo"
+        : "full";
+      liftedSource = { kind: "row", rowId: row.id, sectionId, mode, category };
+    } else {
+      liftedSource = {
+        kind: "section",
+        rowId: row.id,
+        column: column!,
+        sectionId,
+        mode,
+        category: "embedded",
+      };
+    }
   }
 
   function placeAtZone(zoneIndex: number): void {
@@ -107,9 +133,7 @@
     liftedSource = null;
     if (!source) return;
     if (source.mode === "copy") {
-      const section = liftedSectionOf(source);
-      if (!section) return;
-      duplicateSectionToNewRow(source.rowId, section.id, zoneIndex);
+      duplicateSectionToNewRow(source.rowId, source.sectionId, zoneIndex);
       return;
     }
     if (source.kind === "row") {
@@ -123,34 +147,93 @@
       const finalIndex = zoneIndex > fromIndex ? zoneIndex - 1 : zoneIndex;
       reorderRows(fromIndex, finalIndex);
     } else {
-      extractSectionToNewRow(source.rowId, source.sectionId, zoneIndex);
+      moveSectionToNewRow(source.rowId, source.sectionId, zoneIndex);
     }
   }
 
-  function placeAtPair(targetRowId: string): void {
+  // A FullRow's split-edge slot is only a meaningful move target when the
+  // lifted section is itself split-eligible (solo or embedded); moving it
+  // onto its own row in move mode would be a no-op (nothing to place next
+  // to itself), but copying a solo section onto its own slot is exactly
+  // how it gets split with a copy of itself, so only move mode is excluded.
+  function splitSlotAvailable(targetRowId: string): boolean {
+    if (!liftedSource || liftedSource.category === "full") return false;
+    if (liftedSource.rowId === targetRowId && liftedSource.mode === "move") {
+      return false;
+    }
+    return true;
+  }
+
+  function placeAtSplitEdge(targetRowId: string): void {
     const source = liftedSource;
-    const eligible = canPairWith(targetRowId);
+    const eligible = splitSlotAvailable(targetRowId);
     liftedSource = null;
     if (!source || !eligible) return;
-    const section = liftedSectionOf(source);
-    if (!section) return;
     if (source.mode === "copy") {
-      duplicateSectionIntoPair(source.rowId, section.id, targetRowId);
+      duplicateSectionToSplitRow(source.rowId, source.sectionId, targetRowId);
     } else {
-      moveSectionToPair(source.rowId, section.id, targetRowId);
+      moveSectionToSplitRow(source.rowId, source.sectionId, targetRowId);
     }
   }
 
-  // Dropping a lifted half onto its own row's other half swaps the two
-  // sections' positions — a distinct target from `placeAtPair` (which
-  // pairs onto a *different* row's single-section pair slot).
-  function placeAtSwap(rowId: string): void {
+  function placeAtColumn(
+    targetRowId: string,
+    column: 0 | 1,
+    atIndex: number,
+  ): void {
     const source = liftedSource;
     liftedSource = null;
-    if (!source || source.kind !== "section" || source.mode !== "move") return;
-    if (source.rowId !== rowId) return;
-    swapPairedSections(rowId);
+    if (!source || source.category === "full") return;
+    if (source.mode === "copy") {
+      duplicateSectionIntoColumn(
+        source.rowId,
+        source.sectionId,
+        targetRowId,
+        column,
+        atIndex,
+      );
+      return;
+    }
+    if (
+      source.kind === "section" &&
+      source.rowId === targetRowId &&
+      source.column === column
+    ) {
+      const row = getDocument().rows.find((r) => r.id === targetRowId);
+      const fromIndex =
+        row?.kind === "split"
+          ? row.columns[column].findIndex((s) => s.id === source.sectionId)
+          : -1;
+      if (fromIndex === -1) return;
+      const finalIndex = atIndex > fromIndex ? atIndex - 1 : atIndex;
+      reorderSectionWithinColumn(targetRowId, column, fromIndex, finalIndex);
+      return;
+    }
+    moveSectionIntoColumn(
+      source.rowId,
+      source.sectionId,
+      targetRowId,
+      column,
+      atIndex,
+    );
   }
+
+  function placeAtSwap(targetRowId: string, targetSectionId: string): void {
+    const source = liftedSource;
+    liftedSource = null;
+    if (!source || source.mode !== "move") return;
+    swapSections(source.rowId, source.sectionId, targetRowId, targetSectionId);
+  }
+
+  const splitAvailable = $derived(
+    liftedSource !== null && liftedSource.category !== "full",
+  );
+  const splitMode = $derived(liftedSource?.mode ?? null);
+  const swapContext = $derived.by((): SwapContext => {
+    if (!liftedSource || liftedSource.mode !== "move") return { active: false };
+    const category: SwapCategory = liftedSource.category;
+    return { active: true, category, excludeSectionId: liftedSource.sectionId };
+  });
 
   // Clicking or tapping anywhere outside the lift/drop-target controls
   // cancels an in-progress lift without otherwise interrupting the click —
@@ -192,20 +275,31 @@
       <RowView
         {row}
         liftedSectionId={liftedSource && liftedSource.rowId === row.id
-          ? liftedSource.kind === "row"
-            ? row.sections[0]!.id
-            : liftedSource.sectionId
+          ? liftedSource.sectionId
+          : null}
+        liftedColumn={liftedSource &&
+        liftedSource.kind === "section" &&
+        liftedSource.rowId === row.id
+          ? liftedSource.column
           : null}
         liftedMode={liftedSource && liftedSource.rowId === row.id
           ? liftedSource.mode
           : null}
-        pairAvailable={canPairWith(row.id)}
-        pairMode={liftedSource?.mode ?? null}
-        onToggleMoveLift={(sectionId) => toggleLift(row, sectionId, "move")}
-        onToggleCopyLift={(sectionId) => toggleLift(row, sectionId, "copy")}
-        onPairAdd={() => openPairMenu(row.id)}
-        onPairPlace={() => placeAtPair(row.id)}
-        onSwapPlace={() => placeAtSwap(row.id)}
+        splitSlotAvailable={splitSlotAvailable(row.id)}
+        {splitAvailable}
+        {splitMode}
+        {swapContext}
+        onToggleMoveLift={(sectionId, column) =>
+          toggleLift(row, sectionId, column, "move")}
+        onToggleCopyLift={(sectionId, column) =>
+          toggleLift(row, sectionId, column, "copy")}
+        onSplitSlotAdd={() => openSplitEdgeMenu(row.id)}
+        onSplitSlotPlace={() => placeAtSplitEdge(row.id)}
+        onColumnAdd={(column, atIndex) =>
+          openColumnInsertMenu(row.id, column, atIndex)}
+        onColumnPlace={(column, atIndex) =>
+          placeAtColumn(row.id, column, atIndex)}
+        onSwapPlace={(sectionId) => placeAtSwap(row.id, sectionId)}
       />
       <RowGap
         available={liftedSource !== null}
@@ -220,7 +314,7 @@
 
 <AddSectionMenu
   open={menuRequest !== null}
-  filterHalfOnly={menuRequest?.kind === "pair"}
+  filterSplitOnly={menuRequest !== null && menuRequest.kind !== "insert"}
   onPick={pickType}
   onClose={closeMenu}
 />

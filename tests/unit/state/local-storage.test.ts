@@ -39,7 +39,8 @@ describe("saveDocumentToLocalStorage / loadDocumentFromLocalStorage", () => {
       rows: [
         {
           id: "row-1",
-          sections: [makeSection("section-1", "hello")] as [Section],
+          kind: "full" as const,
+          section: makeSection("section-1", "hello"),
         },
       ],
     };

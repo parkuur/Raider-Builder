@@ -52,3 +52,55 @@ test("save then load round-trips the document unchanged", async ({ page }) => {
     "Second Section",
   );
 });
+
+test("save then load round-trips a split layout with a multi-item column unchanged", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "+ Add your first section" }).click();
+  await page
+    .getByRole("button", { name: "Contacts (split)", exact: true })
+    .click();
+  await page
+    .locator(".row-view")
+    .first()
+    .locator(".split-edge-slot__button")
+    .click();
+  await page
+    .getByRole("button", { name: "Quick Look (split)", exact: true })
+    .click();
+
+  const column0 = page.locator(".row-view__column").nth(0);
+  await column0.locator(".row-gap__button").last().click();
+  await page.getByRole("button", { name: "Text (split)", exact: true }).click();
+  await page.locator(".text-section__body").fill("Stacked note");
+
+  await expect(column0.locator(".section-frame")).toHaveCount(2);
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Save" }).click();
+  const download = await downloadPromise;
+  const downloadPath = await download.path();
+  expect(downloadPath).toBeTruthy();
+
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "+ Add your first section" }),
+  ).toBeVisible();
+
+  await page
+    .locator(".save-load-controls__file-input")
+    .setInputFiles(downloadPath as string);
+
+  await expect(page.locator(".row-view")).toHaveCount(1);
+  await expect(page.locator(".row-view__column")).toHaveCount(2);
+  await expect(
+    page.locator(".row-view__column").nth(0).locator(".section-frame"),
+  ).toHaveCount(2);
+  await expect(
+    page.locator(".row-view__column").nth(1).locator(".section-frame"),
+  ).toHaveCount(1);
+  await expect(page.locator(".text-section__body")).toHaveValue("Stacked note");
+});

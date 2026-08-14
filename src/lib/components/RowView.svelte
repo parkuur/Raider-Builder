@@ -1,74 +1,123 @@
 <script lang="ts">
   import SectionFrame from "./SectionFrame.svelte";
-  import PairSlot from "./PairSlot.svelte";
+  import SplitEdgeSlot from "./SplitEdgeSlot.svelte";
+  import ColumnView from "./ColumnView.svelte";
+  import SquareSplitHorizontalIcon from "phosphor-svelte/lib/SquareSplitHorizontalIcon";
   import { sectionRegistry } from "../sections/registry";
   import type { SectionRegistryEntry } from "../sections/registry";
   import type { Row } from "../model/document-types";
+  import { isSwapTarget } from "./swap-context";
+  import type { SwapCategory, SwapContext } from "./swap-context";
 
   let {
     row,
     liftedSectionId,
+    liftedColumn,
     liftedMode,
-    pairAvailable,
-    pairMode,
+    splitSlotAvailable,
+    splitAvailable,
+    splitMode,
+    swapContext,
     onToggleMoveLift,
     onToggleCopyLift,
-    onPairAdd,
-    onPairPlace,
+    onSplitSlotAdd,
+    onSplitSlotPlace,
+    onColumnAdd,
+    onColumnPlace,
     onSwapPlace,
   }: {
     row: Row;
     liftedSectionId: string | null;
+    liftedColumn: 0 | 1 | null;
     liftedMode: "move" | "copy" | null;
-    pairAvailable: boolean;
-    pairMode: "move" | "copy" | null;
-    onToggleMoveLift: (sectionId: string) => void;
-    onToggleCopyLift: (sectionId: string) => void;
-    onPairAdd: () => void;
-    onPairPlace: () => void;
-    onSwapPlace: () => void;
+    splitSlotAvailable: boolean;
+    splitAvailable: boolean;
+    splitMode: "move" | "copy" | null;
+    swapContext: SwapContext;
+    onToggleMoveLift: (sectionId: string, column: 0 | 1 | null) => void;
+    onToggleCopyLift: (sectionId: string, column: 0 | 1 | null) => void;
+    onSplitSlotAdd: () => void;
+    onSplitSlotPlace: () => void;
+    onColumnAdd: (column: 0 | 1, atIndex: number) => void;
+    onColumnPlace: (column: 0 | 1, atIndex: number) => void;
+    onSwapPlace: (sectionId: string) => void;
   } = $props();
 
-  const soleEntry = $derived(
-    row.sections.length === 1
-      ? (sectionRegistry[row.sections[0]!.type] as SectionRegistryEntry)
+  // A FullRow's own section is either a genuinely full-width type (never
+  // split-eligible) or a "solo" split section — one not currently part of
+  // a split layout. Solo sections show the trailing add-split-section
+  // affordance and are swap-compatible with everything (see swap-context.ts).
+  const fullEntry = $derived(
+    row.kind === "full"
+      ? (sectionRegistry[row.section.type] as SectionRegistryEntry)
       : undefined,
   );
-  const showPairSlot = $derived(soleEntry?.half === true);
-  const paired = $derived(row.sections.length === 2);
-  // `liftedSectionId`/`liftedMode` only arrive non-null when the lift
-  // originated in this very row (RowList scopes them per-row), so a
-  // non-null id here already means "one of this row's own two sections is
-  // lifted" once `paired` is true — no extra check needed against `row.id`.
-  const swapAvailable = $derived(
-    paired && liftedMode === "move" && liftedSectionId !== null,
+  const showSplitSlot = $derived(fullEntry?.split === true);
+  const fullCategory = $derived<SwapCategory>(
+    fullEntry?.split === true ? "solo" : "full",
   );
 </script>
 
 <div class="row-view">
-  <div class="row-view__sections" class:row-view__sections--paired={paired}>
-    {#each row.sections as section, sectionIndex (section.id)}
+  {#if row.kind === "full"}
+    <div class="row-view__sections">
       <SectionFrame
         rowId={row.id}
-        {section}
-        sectionCount={row.sections.length}
-        showPairBadge={paired && sectionIndex === 1}
-        liftedMode={liftedSectionId === section.id ? liftedMode : null}
-        swapAvailable={swapAvailable && liftedSectionId !== section.id}
-        onToggleMoveLift={() => onToggleMoveLift(section.id)}
-        onToggleCopyLift={() => onToggleCopyLift(section.id)}
-        {onSwapPlace}
+        section={row.section}
+        liftedMode={liftedSectionId === row.section.id ? liftedMode : null}
+        swapAvailable={isSwapTarget(swapContext, fullCategory, row.section.id)}
+        onToggleMoveLift={() => onToggleMoveLift(row.section.id, null)}
+        onToggleCopyLift={() => onToggleCopyLift(row.section.id, null)}
+        onSwapPlace={() => onSwapPlace(row.section.id)}
       />
-    {/each}
-    {#if showPairSlot}
-      <PairSlot
-        available={pairAvailable}
-        mode={pairMode}
-        onAddClick={onPairAdd}
-        onPlaceClick={onPairPlace}
-      />
-    {/if}
-  </div>
+      {#if showSplitSlot}
+        <SplitEdgeSlot
+          available={splitSlotAvailable}
+          mode={splitMode}
+          onAddClick={onSplitSlotAdd}
+          onPlaceClick={onSplitSlotPlace}
+        />
+      {/if}
+    </div>
+  {:else}
+    <div class="row-view__sections row-view__sections--split">
+      <div class="row-view__column">
+        <ColumnView
+          rowId={row.id}
+          items={row.columns[0]}
+          liftedSectionId={liftedColumn === 0 ? liftedSectionId : null}
+          liftedMode={liftedColumn === 0 ? liftedMode : null}
+          gapAvailable={splitAvailable}
+          gapMode={splitMode}
+          {swapContext}
+          onToggleMoveLift={(sectionId) => onToggleMoveLift(sectionId, 0)}
+          onToggleCopyLift={(sectionId) => onToggleCopyLift(sectionId, 0)}
+          onAdd={(atIndex) => onColumnAdd(0, atIndex)}
+          onPlace={(atIndex) => onColumnPlace(0, atIndex)}
+          {onSwapPlace}
+        />
+      </div>
+      <div class="row-view__column">
+        <span class="row-view__split-badge no-print" aria-hidden="true">
+          <SquareSplitHorizontalIcon size={12} />
+        </span>
+        <ColumnView
+          rowId={row.id}
+          items={row.columns[1]}
+          liftedSectionId={liftedColumn === 1 ? liftedSectionId : null}
+          liftedMode={liftedColumn === 1 ? liftedMode : null}
+          gapAvailable={splitAvailable}
+          gapMode={splitMode}
+          {swapContext}
+          onToggleMoveLift={(sectionId) => onToggleMoveLift(sectionId, 1)}
+          onToggleCopyLift={(sectionId) => onToggleCopyLift(sectionId, 1)}
+          onAdd={(atIndex) => onColumnAdd(1, atIndex)}
+          onPlace={(atIndex) => onColumnPlace(1, atIndex)}
+          {onSwapPlace}
+        />
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -79,41 +128,59 @@
     min-width: 0;
   }
 
-  .row-view__sections--paired {
+  .row-view__sections--split {
     gap: var(--space-2);
     /*
-     * Overrides the container's own `align-items: flex-start` above: each
-     * `.section-frame` is otherwise only as tall as its own content, so a
-     * border on the shorter one (below) would stop short of the taller
-     * one's bottom. Stretching both to the container's height — which is
-     * already exactly the taller section's height, container height being
-     * the max of its children's regardless of align-items — makes the
-     * border-carrying section always exactly as tall as its partner. Safe
-     * because no half-width section (Contacts/Quick Look/Text) relies on
-     * its own box height for internal layout.
+     * Each `.row-view__column` is otherwise only as tall as its own
+     * content, so the divider on the second column would stop short of
+     * the taller one's bottom. Stretching both to the container's
+     * height — already exactly the taller column's height, container
+     * height being the max of its children's regardless of
+     * `align-items` — makes the divider always exactly as tall as the
+     * taller column, including its own gap affordances.
      */
     align-items: stretch;
   }
 
+  .row-view__column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+
   /*
-   * Paired sections get an accent-colored (not neutral-gray) rule between
-   * them so pairing reads as a distinct signal — every other seam in the
-   * document (RowGap, between unrelated rows) uses the neutral border
-   * color, so hue alone marks "these two belong together." The rule itself
-   * stays subtle; the link badge (SectionFrame.svelte) carries the signal
-   * and sits on top of it, offset in from the line's true end (rather than
-   * exactly at it) so a short tail of the full-length line still shows
-   * past the badge.
+   * A split layout's two columns get an accent-colored (not neutral-gray)
+   * rule between them so a split reads as a distinct signal — every other
+   * seam in the document (RowGap, between unrelated rows) uses the neutral
+   * border color, so hue alone marks "these two columns belong together."
+   * The badge sits on top of the divider, offset in from its true bottom
+   * (rather than centered exactly on the end) so a short tail of the
+   * full-length line still shows past the badge down to the actual corner —
+   * flush with the corner instead reads as the line stopping abruptly at
+   * the badge rather than the badge marking a point on a continuous line.
    */
-  .row-view__sections--paired
-    > :global(.section-frame)
-    + :global(.section-frame) {
+  .row-view__column + .row-view__column {
+    position: relative;
     border-left: 1px solid
       color-mix(in srgb, var(--color-accent) 35%, transparent);
-    /* Wider than the usual paired gap (space-2) — the badge's own circle
-       (~11.5px radius including its border) is wider than that, so content
-       would otherwise start before the badge visually clears the line. */
     padding-left: var(--space-4);
+  }
+
+  .row-view__split-badge {
+    position: absolute;
+    left: 0;
+    bottom: 14px;
+    transform: translate(-50%, 50%);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+    background: var(--color-background);
+    color: var(--color-accent);
   }
 
   @media screen and (max-width: 640px) {
@@ -126,18 +193,37 @@
       align-items: stretch;
     }
 
-    .row-view__sections--paired {
+    /*
+     * Stacked, a split layout's two columns look like two ordinary
+     * full-width sections in a row — the divider between them (below) is
+     * the only signal, and it doesn't appear until you've scrolled past
+     * everything in the first column. A subtle background tint over the
+     * whole stack, from its very first item, marks "this is one split
+     * layout" immediately, without needing the divider to explain it.
+     */
+    .row-view__sections--split {
       gap: var(--space-2);
+      background: color-mix(
+        in srgb,
+        var(--color-accent) 6%,
+        var(--color-background)
+      );
+      padding: var(--space-2);
     }
 
-    .row-view__sections--paired
-      > :global(.section-frame)
-      + :global(.section-frame) {
+    .row-view__column + .row-view__column {
       border-left: none;
       padding-left: 0;
       border-top: 1px solid
         color-mix(in srgb, var(--color-accent) 35%, transparent);
       padding-top: var(--space-4);
+    }
+
+    .row-view__split-badge {
+      left: calc(5mm + 10px);
+      top: 0;
+      bottom: auto;
+      transform: translate(-50%, -50%);
     }
   }
 </style>

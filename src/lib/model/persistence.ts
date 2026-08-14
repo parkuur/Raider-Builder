@@ -198,20 +198,55 @@ function validateRow(
     errors.push(`${path}: expected an object`);
     return null;
   }
-  const { id, sections } = value;
+  const { id, kind } = value;
   if (typeof id !== "string") {
     errors.push(`${path}.id: expected a string`);
     return null;
   }
-  if (!Array.isArray(sections) || sections.length < 1 || sections.length > 2) {
-    errors.push(`${path}.sections: expected an array of 1 or 2 sections`);
-    return null;
+  if (kind === "full") {
+    const section = validateSection(
+      value.section,
+      `${path}.section`,
+      knownSectionTypes,
+      errors,
+    );
+    return section ? { id, kind: "full", section } : null;
   }
-  const validatedSections = sections.map((s: unknown, i: number) =>
-    validateSection(s, `${path}.sections[${i}]`, knownSectionTypes, errors),
-  );
-  if (validatedSections.some((s) => s === null)) return null;
-  return { id, sections: validatedSections as [Section] | [Section, Section] };
+  if (kind === "split") {
+    const columnsValue = value.columns;
+    if (!Array.isArray(columnsValue) || columnsValue.length !== 2) {
+      errors.push(`${path}.columns: expected an array of exactly 2 columns`);
+      return null;
+    }
+    const columns = columnsValue.map((column: unknown, ci: number) => {
+      if (!Array.isArray(column)) {
+        errors.push(`${path}.columns[${ci}]: expected an array`);
+        return null;
+      }
+      const validated = column.map((s: unknown, i: number) =>
+        validateSection(
+          s,
+          `${path}.columns[${ci}][${i}]`,
+          knownSectionTypes,
+          errors,
+        ),
+      );
+      return validated.every((s) => s !== null)
+        ? (validated as Section[])
+        : null;
+    });
+    if (columns.some((column) => column === null)) return null;
+    const [columnA, columnB] = columns as [Section[], Section[]];
+    if (columnA.length === 0 && columnB.length === 0) {
+      errors.push(
+        `${path}.columns: a split row must have at least one section`,
+      );
+      return null;
+    }
+    return { id, kind: "split", columns: [columnA, columnB] };
+  }
+  errors.push(`${path}.kind: unknown row kind ${JSON.stringify(kind)}`);
+  return null;
 }
 
 export function validateDocumentShape(

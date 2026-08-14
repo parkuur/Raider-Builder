@@ -50,7 +50,7 @@ describe("deriveFileName", () => {
 });
 
 describe("serializeDocument / parseDocumentJson round-trip", () => {
-  it("preserves a document with a paired row exactly", () => {
+  it("preserves a document with a full row and a split row exactly", () => {
     const doc: RiderDocument = {
       header: {
         title: "Rider",
@@ -64,9 +64,32 @@ describe("serializeDocument / parseDocumentJson round-trip", () => {
         creditHidden: true,
       },
       rows: [
+        { id: "r1", kind: "full", section: makeSection("s0", "solo") },
+        {
+          id: "r2",
+          kind: "split",
+          columns: [[makeSection("s1", "a")], [makeSection("s2", "b")]],
+        },
+      ],
+    };
+    const result = parseDocumentJson(serializeDocument(doc), KNOWN_TYPES);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document).toEqual(doc);
+    }
+  });
+
+  it("preserves a split row with 3+ items stacked in one column", () => {
+    const doc: RiderDocument = {
+      header: createEmptyHeader(),
+      rows: [
         {
           id: "r1",
-          sections: [makeSection("s1", "a"), makeSection("s2", "b")],
+          kind: "split",
+          columns: [
+            [makeSection("s1"), makeSection("s2"), makeSection("s3")],
+            [makeSection("s4")],
+          ],
         },
       ],
     };
@@ -100,28 +123,77 @@ describe("validateDocumentShape rejection cases", () => {
     ).toBe(false);
   });
 
-  it("rejects a row with zero sections", () => {
+  it("rejects a row with an unknown or missing kind", () => {
+    expect(
+      validateDocumentShape({ header: {}, rows: [{ id: "r1" }] }, KNOWN_TYPES)
+        .ok,
+    ).toBe(false);
+    expect(
+      validateDocumentShape(
+        { header: {}, rows: [{ id: "r1", kind: "bogus" }] },
+        KNOWN_TYPES,
+      ).ok,
+    ).toBe(false);
+  });
+
+  it("rejects a full row with a malformed section", () => {
     const result = validateDocumentShape(
-      { header: {}, rows: [{ id: "r1", sections: [] }] },
+      { header: {}, rows: [{ id: "r1", kind: "full", section: {} }] },
       KNOWN_TYPES,
     );
     expect(result.ok).toBe(false);
   });
 
-  it("rejects a row with three sections", () => {
+  it("rejects a split row whose columns field isn't an array of exactly 2 columns", () => {
+    expect(
+      validateDocumentShape(
+        { header: {}, rows: [{ id: "r1", kind: "split", columns: [] }] },
+        KNOWN_TYPES,
+      ).ok,
+    ).toBe(false);
+    expect(
+      validateDocumentShape(
+        {
+          header: {},
+          rows: [{ id: "r1", kind: "split", columns: [[], [], []] }],
+        },
+        KNOWN_TYPES,
+      ).ok,
+    ).toBe(false);
+    expect(
+      validateDocumentShape(
+        {
+          header: {},
+          rows: [{ id: "r1", kind: "split", columns: [[], "nope"] }],
+        },
+        KNOWN_TYPES,
+      ).ok,
+    ).toBe(false);
+  });
+
+  it("rejects a split row where both columns are empty", () => {
+    const result = validateDocumentShape(
+      { header: {}, rows: [{ id: "r1", kind: "split", columns: [[], []] }] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("accepts a split row with one empty column", () => {
     const result = validateDocumentShape(
       {
         header: {},
         rows: [
           {
             id: "r1",
-            sections: [makeSection("s1"), makeSection("s2"), makeSection("s3")],
+            kind: "split",
+            columns: [[makeSection("s1")], []],
           },
         ],
       },
       KNOWN_TYPES,
     );
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
   });
 
   it("rejects a section with a type not in knownSectionTypes", () => {
@@ -129,7 +201,11 @@ describe("validateDocumentShape rejection cases", () => {
       {
         header: {},
         rows: [
-          { id: "r1", sections: [{ ...makeSection("s1"), type: "bogus" }] },
+          {
+            id: "r1",
+            kind: "full",
+            section: { ...makeSection("s1"), type: "bogus" },
+          },
         ],
       },
       KNOWN_TYPES,
@@ -144,9 +220,13 @@ describe("validateDocumentShape rejection cases", () => {
         rows: [
           {
             id: "r1",
-            sections: [
-              { type: "placeholder", title: "t", hidden: false, data: {} },
-            ],
+            kind: "full",
+            section: {
+              type: "placeholder",
+              title: "t",
+              hidden: false,
+              data: {},
+            },
           },
         ],
       },
@@ -160,9 +240,8 @@ describe("validateDocumentShape rejection cases", () => {
         rows: [
           {
             id: "r1",
-            sections: [
-              { id: "s1", type: "placeholder", hidden: false, data: {} },
-            ],
+            kind: "full",
+            section: { id: "s1", type: "placeholder", hidden: false, data: {} },
           },
         ],
       },
@@ -176,7 +255,8 @@ describe("validateDocumentShape rejection cases", () => {
         rows: [
           {
             id: "r1",
-            sections: [{ id: "s1", type: "placeholder", title: "t", data: {} }],
+            kind: "full",
+            section: { id: "s1", type: "placeholder", title: "t", data: {} },
           },
         ],
       },
@@ -190,9 +270,13 @@ describe("validateDocumentShape rejection cases", () => {
         rows: [
           {
             id: "r1",
-            sections: [
-              { id: "s1", type: "placeholder", title: "t", hidden: false },
-            ],
+            kind: "full",
+            section: {
+              id: "s1",
+              type: "placeholder",
+              title: "t",
+              hidden: false,
+            },
           },
         ],
       },

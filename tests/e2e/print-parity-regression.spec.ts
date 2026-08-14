@@ -53,17 +53,17 @@ async function buildDocument(page: Page): Promise<void> {
 
   await page.getByRole("button", { name: "Add Section" }).last().click();
   await page
-    .getByRole("button", { name: "Contacts (half)", exact: true })
+    .getByRole("button", { name: "Contacts (split)", exact: true })
     .click();
   await page.getByRole("button", { name: "+ Add Contact" }).click();
   await page.locator(".contacts-section__name").fill("Jamie Rivera");
   await page
     .locator(".row-view")
     .filter({ has: page.locator(".contacts-section") })
-    .getByRole("button", { name: "Add paired section" })
+    .locator(".split-edge-slot__button")
     .click();
   await page
-    .getByRole("button", { name: "Quick Look (half)", exact: true })
+    .getByRole("button", { name: "Quick Look (split)", exact: true })
     .click();
   await page.getByRole("button", { name: "+ Add Topic" }).click();
   await page.getByRole("menuitem", { name: "Row", exact: true }).click();
@@ -71,7 +71,7 @@ async function buildDocument(page: Page): Promise<void> {
 
 interface PrintFingerprint {
   anySectionBordered: boolean;
-  pairedRowFlexDirection: string;
+  splitRowFlexDirection: string;
   equipmentColumnCount: number;
   stageMapTransform: string;
   visibleNoPrintCount: number;
@@ -87,11 +87,9 @@ async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
       return style.borderStyle !== "none" && parseFloat(style.borderWidth) > 0;
     });
 
-    const pairedSections = document.querySelector(
-      ".row-view__sections--paired",
-    );
-    const pairedRowFlexDirection = pairedSections
-      ? getComputedStyle(pairedSections).flexDirection
+    const splitSections = document.querySelector(".row-view__sections--split");
+    const splitRowFlexDirection = splitSections
+      ? getComputedStyle(splitSections).flexDirection
       : "";
 
     const equipment = document.querySelector(".equipment-section");
@@ -112,7 +110,7 @@ async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
 
     return {
       anySectionBordered,
-      pairedRowFlexDirection,
+      splitRowFlexDirection,
       equipmentColumnCount,
       stageMapTransform,
       visibleNoPrintCount,
@@ -139,7 +137,7 @@ test("print layout is identical whether the document was opened at a mobile or a
   // one — not two viewports agreeing on a broken layout.
   expect(mobileOriginated).toEqual({
     anySectionBordered: false,
-    pairedRowFlexDirection: "row",
+    splitRowFlexDirection: "row",
     equipmentColumnCount: 2,
     stageMapTransform: "none",
     visibleNoPrintCount: 0,

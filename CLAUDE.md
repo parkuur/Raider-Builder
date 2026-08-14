@@ -65,8 +65,9 @@ keeps each section type's logic contained to its own file.
 ## 5. State management rules
 
 - One central document store holds the header and the row/section tree.
-- All mutations (add/remove/duplicate/reorder rows, edit a field, toggle a flag, pair sections, etc.)
-  go through pure, named functions in `src/lib/model/`, not inline closures built at render time.
+- All mutations (add/remove/duplicate/reorder rows, edit a field, toggle a flag, split a row into a
+  layout, etc.) go through pure, named functions in `src/lib/model/`, not inline closures built at
+  render time.
 - Components call these functions; they do not reimplement mutation logic themselves.
 
 This matters because the prototype's hardest bugs (stereo-channel numbering, stage-map stacking order)
@@ -120,8 +121,8 @@ their root causes:
 
 ## 8. Unit/component testing requirements
 
-- Every pure function in `src/lib/model/` (numbering, pairing, balanced-grid layout, z-order, document
-  mutations) needs Vitest unit tests, including edge cases — not just the happy path.
+- Every pure function in `src/lib/model/` (numbering, split-layout columns, balanced-grid layout,
+  z-order, document mutations) needs Vitest unit tests, including edge cases — not just the happy path.
 - New logic without a test is not done, regardless of whether the UI "looks right" manually.
 
 ## 9. End-to-end testing (Playwright)
@@ -130,7 +131,7 @@ E2e testing gets its own standing requirement, separate from unit testing:
 
 - Every section type has at least one Playwright spec that drives it through the real browser UI
   (add the section, edit its fields, remove/reorder), not just a component-level test.
-- A standing e2e suite covers full user flows: add/reorder/pair rows, JSON save → load round-trip
+- A standing e2e suite covers full user flows: add/reorder/split rows, JSON save → load round-trip
   (data survives unchanged), and print-preview layout (via Playwright's print-media emulation).
 - The four fixed defects from §6 each get a regression e2e spec exercising them through real
   interaction, not just their unit-level pure functions:
@@ -189,3 +190,17 @@ A story is done when:
 4. New logic has Vitest unit tests; new interactive/drag/multi-step flows have Playwright e2e coverage.
 5. It has been manually exercised in the browser via the dev server.
 6. The acceptance criteria listed in its `docs/backlog/epic-*.md` story are all satisfied.
+
+## 13. Glossary
+
+- **Split layout**: a document row containing two independently growable columns, each an ordered
+  stack of split sections, rendered side by side.
+- **Split section** (interchangeable with "split element"): a section type eligible to appear in a
+  split layout (registry flag `SectionRegistryEntry.split: boolean`), as opposed to a section type
+  that is always full width.
+- **Solo** (a split section not currently part of any split layout): renders nearly full width in
+  the main document flow, with a slim "add split section" affordance at its trailing edge.
+  Structurally identical to a full-width row — split-eligibility is a property of the section type,
+  not of the row.
+- **Embedded** (a split section currently living in a split layout's column): only reachable once a
+  split layout actually exists at that position.

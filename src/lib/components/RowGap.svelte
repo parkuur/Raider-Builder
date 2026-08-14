@@ -5,12 +5,14 @@
     available,
     mode,
     showRule,
+    addLabel = "Add Section",
     onAdd,
     onPlace,
   }: {
     available: boolean;
     mode: "move" | "copy" | null;
     showRule: boolean;
+    addLabel?: string;
     onAdd: () => void;
     onPlace: () => void;
   } = $props();
@@ -26,14 +28,14 @@
     class="row-gap__button"
     class:row-gap__button--available={available}
     data-lift-ui
-    aria-label={available ? placeLabel : "Add section"}
+    aria-label={available ? placeLabel : addLabel}
     onclick={available ? onPlace : onAdd}
   >
     {#if available}
       {placeLabel}
     {:else}
       <PlusIcon size={12} />
-      Add Section
+      {addLabel}
     {/if}
   </button>
 </div>

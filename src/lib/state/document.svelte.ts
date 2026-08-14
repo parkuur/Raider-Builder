@@ -61,14 +61,6 @@ export function removeSection(rowId: string, sectionId: string): void {
   state = mutations.removeSection(state, rowId, sectionId);
 }
 
-export function duplicateSection(rowId: string, sectionId: string): void {
-  // Svelte's deep-reactive $state wraps nested objects in proxies that
-  // structuredClone (used inside this mutation) can't clone directly — take
-  // a plain snapshot first so the pure mutation layer never has to know
-  // about Svelte's reactivity at all.
-  state = mutations.duplicateSection($state.snapshot(state), rowId, sectionId);
-}
-
 export function duplicateSectionToNewRow(
   sourceRowId: string,
   sectionId: string,
@@ -82,12 +74,12 @@ export function duplicateSectionToNewRow(
   );
 }
 
-export function duplicateSectionIntoPair(
+export function duplicateSectionToSplitRow(
   sourceRowId: string,
   sectionId: string,
   targetRowId: string,
 ): void {
-  state = mutations.duplicateSectionIntoPair(
+  state = mutations.duplicateSectionToSplitRow(
     $state.snapshot(state),
     sourceRowId,
     sectionId,
@@ -99,29 +91,24 @@ export function reorderRows(fromIndex: number, toIndex: number): void {
   state = mutations.reorderRows(state, fromIndex, toIndex);
 }
 
-export function pairSections(rowId: string, type: SectionType): void {
-  state = mutations.pairSections(state, rowId, buildSection(type));
+export function createSplitRow(rowId: string, type: SectionType): void {
+  state = mutations.createSplitRow(state, rowId, buildSection(type));
 }
 
-export function extractSectionToNewRow(
+export function moveSectionToNewRow(
   sourceRowId: string,
   sectionId: string,
   atIndex: number,
 ): void {
-  state = mutations.extractSectionToNewRow(
-    state,
-    sourceRowId,
-    sectionId,
-    atIndex,
-  );
+  state = mutations.moveSectionToNewRow(state, sourceRowId, sectionId, atIndex);
 }
 
-export function moveSectionToPair(
+export function moveSectionToSplitRow(
   sourceRowId: string,
   sectionId: string,
   targetRowId: string,
 ): void {
-  state = mutations.moveSectionToPair(
+  state = mutations.moveSectionToSplitRow(
     state,
     sourceRowId,
     sectionId,
@@ -129,8 +116,77 @@ export function moveSectionToPair(
   );
 }
 
-export function swapPairedSections(rowId: string): void {
-  state = mutations.swapPairedSections(state, rowId);
+export function insertSectionIntoColumn(
+  rowId: string,
+  columnIndex: 0 | 1,
+  atIndex: number,
+  type: SectionType,
+): void {
+  state = mutations.insertSectionIntoColumn(
+    state,
+    rowId,
+    columnIndex,
+    atIndex,
+    buildSection(type),
+  );
+}
+
+export function moveSectionIntoColumn(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+  targetColumnIndex: 0 | 1,
+  targetAtIndex: number,
+): void {
+  state = mutations.moveSectionIntoColumn(
+    state,
+    sourceRowId,
+    sectionId,
+    targetRowId,
+    targetColumnIndex,
+    targetAtIndex,
+  );
+}
+
+export function duplicateSectionIntoColumn(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+  targetColumnIndex: 0 | 1,
+  targetAtIndex: number,
+): void {
+  state = mutations.duplicateSectionIntoColumn(
+    $state.snapshot(state),
+    sourceRowId,
+    sectionId,
+    targetRowId,
+    targetColumnIndex,
+    targetAtIndex,
+  );
+}
+
+export function reorderSectionWithinColumn(
+  rowId: string,
+  columnIndex: 0 | 1,
+  fromIndex: number,
+  toIndex: number,
+): void {
+  state = mutations.reorderSectionWithinColumn(
+    state,
+    rowId,
+    columnIndex,
+    fromIndex,
+    toIndex,
+  );
+}
+
+export function swapSections(
+  rowIdA: string,
+  sectionIdA: string,
+  rowIdB: string,
+  sectionIdB: string,
+): void {
+  state = mutations.swapSections(state, rowIdA, sectionIdA, rowIdB, sectionIdB);
 }
 
 export function toggleSectionHidden(rowId: string, sectionId: string): void {

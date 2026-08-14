@@ -103,7 +103,7 @@
   }
 
   /*
-   * A paired row's two sections and Equipment's two lists always print
+   * A split layout's two columns and Equipment's two lists always print
    * side-by-side/two-column, regardless of the screen-only mobile stacking
    * in RowView.svelte / EquipmentSection.svelte (those rules are already
    * scoped to `@media screen`, so they can't apply here — this is a
@@ -119,15 +119,28 @@
   }
 
   /*
-   * The paired divider (RowView.svelte) is a plain adjacent-sibling CSS
-   * selector, so it doesn't know about a section's `hidden` state — hiding
-   * the first of a pair still leaves display:none in the DOM, and the
-   * sibling combinator still matches, so the still-visible partner would
-   * otherwise keep a divider pointing at nothing.
+   * A column with nothing visible in it (every section inside individually
+   * hidden-from-print) shouldn't still claim its `flex: 1` half of the
+   * row — an empty flex item reserves its share of the width regardless of
+   * whether it has visible content, which would otherwise leave the
+   * surviving column stuck at half width with blank space beside it.
+   * Removing the empty column from the layout entirely lets the sibling's
+   * `flex: 1` absorb the full row width instead.
    */
-  .row-view__sections--paired
-    > .section-frame.hidden-from-print
-    + .section-frame {
+  .row-view__column:not(:has(.section-frame:not(.hidden-from-print))) {
+    display: none !important;
+  }
+
+  /*
+   * The split-layout divider (RowView.svelte) lives on the column-wrapper
+   * boundary, not on individual sections, so it doesn't know about a
+   * section's `hidden` state on its own — if every section in the first
+   * column is hidden-from-print, the second column's divider would
+   * otherwise still point at an empty (now display:none, per the rule
+   * above) column.
+   */
+  .row-view__column:not(:has(.section-frame:not(.hidden-from-print)))
+    + .row-view__column {
     border-left: none !important;
     padding-left: 0 !important;
   }
@@ -135,8 +148,8 @@
   /*
    * Explicit invariant, not just a consequence of the per-section
    * hidden-from-print rule above: a row with no visible sections at all
-   * (a hidden solo section, or both sides of a hidden pair) contributes no
-   * space to the printed page.
+   * (a hidden solo section, or every section in both columns of a split
+   * layout hidden) contributes no space to the printed page.
    */
   .row-view:not(:has(.section-frame:not(.hidden-from-print))) {
     display: none !important;
