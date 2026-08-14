@@ -279,6 +279,8 @@
     display: block;
     resize: none;
     overflow: hidden;
+    /* See the identical comment in ChannelListSection.svelte. */
+    field-sizing: content;
   }
 
   .monitor-list__actions-cell {

@@ -5,6 +5,7 @@
   import { getDocument, setDocument } from "../state/document.svelte";
   import { clearDocumentFromLocalStorage } from "../state/local-storage";
   import { createEmptyDocument } from "../model/document-types";
+  import { resizeAllAutosizedTextareas } from "../actions/autosize-textarea";
   import ListIcon from "phosphor-svelte/lib/ListIcon";
   import UploadSimpleIcon from "phosphor-svelte/lib/UploadSimpleIcon";
   import DownloadSimpleIcon from "phosphor-svelte/lib/DownloadSimpleIcon";
@@ -31,6 +32,10 @@
 
   function print(): void {
     closeMenu();
+    // Force every autosized textarea to re-measure synchronously first —
+    // see resizeAllAutosizedTextareas' doc comment for why this can't be
+    // left to a ResizeObserver callback's own timing for a real print.
+    resizeAllAutosizedTextareas();
     window.print();
   }
 

@@ -151,6 +151,8 @@
     font-size: var(--font-size-body);
     padding: var(--space-2);
     box-sizing: border-box;
+    /* See the comment on .channel-list textarea (ChannelListSection.svelte). */
+    field-sizing: content;
   }
 
   .requirements-section__add {

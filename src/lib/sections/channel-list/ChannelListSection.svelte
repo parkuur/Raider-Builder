@@ -398,6 +398,15 @@
     display: block;
     resize: none;
     overflow: hidden;
+    /*
+     * Where supported, this sizes height to content purely through layout
+     * — no JS involved — which is the only sizing path guaranteed to
+     * reflect real print's page width (autosizeTextarea's JS/ResizeObserver
+     * fallback below can't rely on getting a turn to run before an actual
+     * print pass captures the page, confirmed against a real print-to-PDF
+     * output). Unsupported browsers keep relying on the JS fallback.
+     */
+    field-sizing: content;
   }
 
   .channel-list__actions-cell {
