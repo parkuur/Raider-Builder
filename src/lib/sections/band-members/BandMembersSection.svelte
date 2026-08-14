@@ -14,6 +14,7 @@
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import CameraIcon from "phosphor-svelte/lib/CameraIcon";
 
   let {
     rowId,
@@ -108,20 +109,46 @@
             />
           </div>
           {#if section.data.photoEnabled}
-            <div class="band-members__avatar">
-              {#if member.photoData}
-                <img src={member.photoData} alt="" />
-              {:else}
-                <span>{memberInitials(member.name)}</span>
+            <div class="band-members__avatar-wrap">
+              <div class="band-members__avatar">
+                {#if member.photoData}
+                  <img src={member.photoData} alt="" />
+                  <!-- Filled: a full-circle hover overlay, so switching photos
+                       doesn't need a permanently visible control sitting on
+                       top of the photo itself. -->
+                  <label
+                    class="band-members__avatar-edit band-members__avatar-edit--overlay no-print"
+                  >
+                    <CameraIcon size={18} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      class="band-members__photo-input"
+                      aria-label="Change photo"
+                      onchange={(e) => onPhotoSelected(member.id, e)}
+                    />
+                  </label>
+                {:else}
+                  <span>{memberInitials(member.name)}</span>
+                {/if}
+              </div>
+              {#if !member.photoData}
+                <!-- Empty: a small always-visible badge, since there's
+                     nothing to hover to discover it otherwise. -->
+                <label
+                  class="band-members__avatar-edit band-members__avatar-edit--badge no-print"
+                >
+                  <CameraIcon size={12} />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="band-members__photo-input"
+                    aria-label="Add photo"
+                    onchange={(e) => onPhotoSelected(member.id, e)}
+                  />
+                </label>
               {/if}
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              class="band-members__photo-input no-print"
-              aria-label="Upload photo"
-              onchange={(e) => onPhotoSelected(member.id, e)}
-            />
           {/if}
           <input
             class="band-members__name"
@@ -211,6 +238,16 @@
   }
 
   /*
+   * A separate non-clipping wrapper around the circle itself: the circle
+   * needs `overflow: hidden` to mask a photo into a circle, but the empty
+   * -state edit badge deliberately overlaps the circle's own edge, so it
+   * has to live outside that clipped box or it would be cut off.
+   */
+  .band-members__avatar-wrap {
+    position: relative;
+  }
+
+  /*
    * Sized so the gap beside the circle (from its edge to the card's own
    * left/right edge) matches the gap above it (from its edge to the
    * card's top edge) — 13px each, both derived from .band-members__card's
@@ -219,6 +256,7 @@
    * reads at this size.
    */
   .band-members__avatar {
+    position: relative;
     width: 98px;
     height: 98px;
     border-radius: 50%;
@@ -237,9 +275,55 @@
     object-fit: cover;
   }
 
+  /* Visually hidden but still focusable/clickable via its wrapping
+     <label> — the native file-input chrome (Choose File/no file chosen)
+     is replaced entirely by the camera-icon affordance around it. */
   .band-members__photo-input {
-    width: 100%;
-    font-size: 9px;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .band-members__avatar-edit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+  }
+
+  /* Filled state: covers the whole circle but stays invisible until
+     hovered/focused, so the photo itself isn't obstructed at rest. */
+  .band-members__avatar-edit--overlay {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, #000 45%, transparent);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .band-members__avatar:hover .band-members__avatar-edit--overlay,
+  .band-members__avatar-edit--overlay:focus-within {
+    opacity: 1;
+  }
+
+  /* Empty state: a small persistent badge — nothing to hover to reveal
+     otherwise, since there's no photo yet to add a hover affordance to. */
+  .band-members__avatar-edit--badge {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    border: 2px solid var(--color-background);
   }
 
   .band-members__name,

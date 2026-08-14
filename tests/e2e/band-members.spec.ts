@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { fileURLToPath } from "node:url";
 import { pointerDragTo } from "./utils/pointer-drag";
+
+const fixturePhoto = fileURLToPath(
+  new URL("../../public/fs-logo.png", import.meta.url),
+);
 
 test.describe("Band Members section", () => {
   test("cards are grouped into balanced rows as members are added", async ({
@@ -123,6 +128,50 @@ test.describe("Band Members section", () => {
 
     await page.getByRole("button", { name: "Remove member" }).click();
     await expect(page.locator(".band-members__card")).toHaveCount(0);
+  });
+
+  test("selecting a photo replaces the initials, and the edit control switches from a badge to a hover overlay", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Band Members", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Member" }).click();
+    await page.locator(".band-members__name").fill("Jimi Hendrix");
+    await page.getByText("Show member photos").click();
+
+    // Empty state: initials, and an always-visible "Add photo" badge.
+    await expect(page.locator(".band-members__avatar span")).toHaveText("JH");
+    await expect(
+      page.locator(".band-members__avatar-edit--badge"),
+    ).toBeVisible();
+    await expect(page.locator(".band-members__avatar img")).toHaveCount(0);
+    await expect(page.getByLabel("Add photo", { exact: true })).toHaveCount(1);
+
+    await page
+      .locator(".band-members__photo-input")
+      .setInputFiles(fixturePhoto);
+
+    // Filled state: an image, no initials span, and the badge is replaced
+    // by a hover-only "Change photo" overlay covering the whole circle.
+    await expect(page.locator(".band-members__avatar img")).toBeVisible();
+    await expect(page.locator(".band-members__avatar span")).toHaveCount(0);
+    await expect(page.locator(".band-members__avatar-edit--badge")).toHaveCount(
+      0,
+    );
+    const overlay = page.locator(".band-members__avatar-edit--overlay");
+    await expect(overlay).toHaveCount(1);
+    await expect(page.getByLabel("Change photo", { exact: true })).toHaveCount(
+      1,
+    );
+    await expect(overlay).toHaveCSS("opacity", "0");
+
+    await page.locator(".band-members__avatar").hover();
+    await expect(overlay).toHaveCSS("opacity", "1");
   });
 
   test("the avatar circle's side gaps match its top gap, so it isn't off-center in its card", async ({
