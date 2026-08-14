@@ -37,6 +37,20 @@
   let scrollEl: HTMLDivElement | undefined = $state();
   const selectedIds = new SvelteSet<string>();
 
+  // A click inside the canvas already clears the selection through its own
+  // pointerDrag (an empty-rect marquee, see finishMarquee below) — this
+  // covers everywhere else on the page, which that handler never sees.
+  $effect(() => {
+    function handleWindowPointerDown(event: PointerEvent): void {
+      if (selectedIds.size === 0) return;
+      if (canvasEl?.contains(event.target as Node)) return;
+      selectedIds.clear();
+    }
+    window.addEventListener("pointerdown", handleWindowPointerDown);
+    return () =>
+      window.removeEventListener("pointerdown", handleWindowPointerDown);
+  });
+
   // Ctrl/Cmd+click toggles an item's own membership. A plain click replaces
   // the selection with just that item — unless it's already part of a
   // multi-item selection, in which case the whole selection is left intact

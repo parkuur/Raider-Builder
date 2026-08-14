@@ -68,6 +68,30 @@ test.describe("Stage Map section", () => {
     await expect(itemB).toHaveClass(selected);
   });
 
+  test("clicking outside the stage map clears the selection", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const item = page.locator('[data-category="mic"]');
+    const selected = /stage-map__item--selected/;
+
+    await item.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await expect(item).toHaveClass(selected);
+
+    // The page's very top-left corner, outside the Stage Map section (and
+    // its palette) entirely.
+    await page.mouse.click(5, 5);
+
+    await expect(item).not.toHaveClass(selected);
+  });
+
   test("dragging a marquee over several items selects them; clicking empty canvas clears the selection", async ({
     page,
   }) => {
