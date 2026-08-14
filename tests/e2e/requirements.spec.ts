@@ -109,6 +109,37 @@ test.describe("Requirements section", () => {
     expect(await noClipping()).toBe(true);
   });
 
+  test("detail text sizes itself via CSS alone on a field-sizing-supporting browser, with no inline height set", async ({
+    page,
+  }) => {
+    // Regression: an explicit inline `height` fully overrides `field-sizing:
+    // content` even while the property is active — confirmed directly by
+    // forcing one and watching the box ignore its own scrollHeight. A JS
+    // fallback that always sets `style.height` (the previous approach)
+    // therefore permanently defeats the one sizing path that's actually
+    // reliable for real print, which doesn't reliably give a JS callback a
+    // turn to run before it captures the page. The action must step aside
+    // entirely on browsers that support field-sizing.
+    await page.goto("/");
+    const supportsFieldSizing = await page.evaluate(() =>
+      CSS.supports("field-sizing", "content"),
+    );
+    test.skip(!supportsFieldSizing, "browser doesn't support field-sizing");
+
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Item" }).click();
+
+    const text = page.locator(".requirements-section__text");
+    await text.fill("Line one.\nLine two.\nLine three.\nLine four.");
+
+    expect(await text.evaluate((el) => el.style.height)).toBe("");
+  });
+
   test("detail text re-grows when its own width changes, not just on input", async ({
     page,
   }) => {

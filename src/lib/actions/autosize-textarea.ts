@@ -1,10 +1,33 @@
 import type { Action } from "svelte/action";
 
 /**
+ * An explicit inline `height` (which the JS fallback below sets) fully
+ * overrides `field-sizing: content` — confirmed directly: forcing a stale
+ * inline height on a field-sizing: content textarea keeps it at that
+ * height, ignoring scrollHeight entirely, even though the property is
+ * active. So the JS fallback must never write to `style.height` on a
+ * browser that honors field-sizing, or it permanently defeats the one
+ * sizing path that's actually reliable for real print (see below) —
+ * confirmed real: a printed PDF still showed clipped content with the JS
+ * path active, even though it passed under Playwright's print-media
+ * emulation, which (unlike real printing) never gives the JS path a
+ * reason to fail in the first place.
+ */
+const supportsFieldSizing =
+  typeof CSS !== "undefined" && CSS.supports("field-sizing", "content");
+
+/**
  * Grows a textarea's height to fit its content instead of scrolling
  * internally — a scrollable textarea would clip its overflow in print
  * output, so wrapping stretch columns (Channel List Notes, Monitor List Mix
  * Notes) need their full text visible via height, not a scrollbar.
+ *
+ * This is the fallback path for browsers without `field-sizing: content`
+ * support (declared alongside this action's usage in each section's CSS).
+ * Where that's supported, this action is a no-op — CSS alone sizes the
+ * textarea, with no JS involved and therefore no dependency on any event's
+ * timing relative to when a real print pass captures the page, which is
+ * the one thing this JS-only approach can't guarantee.
  */
 function resize(node: HTMLTextAreaElement): void {
   // scrollHeight measures the content+padding box, but box-sizing:
@@ -19,23 +42,13 @@ function resize(node: HTMLTextAreaElement): void {
   node.style.height = `${node.scrollHeight + borderHeight}px`;
 }
 
-// Every currently-mounted autosized textarea, so a real print (see below)
-// can force every one of them to re-measure in one synchronous pass,
-// regardless of which one(s) actually changed width.
+// Every currently-mounted fallback-path textarea, so a real print can force
+// every one of them to re-measure in one synchronous pass, regardless of
+// which one(s) actually changed width. Only populated on the fallback path
+// — field-sizing-supporting browsers never need this.
 const mountedNodes = new Set<HTMLTextAreaElement>();
 
-/**
- * Real printing (window.print(), including the OS/browser print dialog and
- * "Save as PDF") doesn't reliably give a pending ResizeObserver callback a
- * turn to run before it captures the page — confirmed directly: a document
- * printed to PDF still showed stale, clipped heights even though the same
- * scenario re-measured correctly under Playwright's `emulateMedia("print")`
- * (which only toggles CSS on the live page, unlike a real print pass).
- * Calling this right before `window.print()` (see SaveLoadControls.svelte)
- * forces every textarea to re-measure synchronously, in the same call
- * stack, so nothing depends on an async callback's timing relative to the
- * print snapshot.
- */
+/** See resizeAllAutosizedTextareas' call site in SaveLoadControls.svelte. */
 export function resizeAllAutosizedTextareas(): void {
   for (const node of mountedNodes) resize(node);
 }
@@ -43,6 +56,11 @@ export function resizeAllAutosizedTextareas(): void {
 export const autosizeTextarea: Action<HTMLTextAreaElement, unknown> = (
   node,
 ) => {
+  if (supportsFieldSizing) {
+    // Deliberately does nothing — see the module doc comment above.
+    return {};
+  }
+
   resize(node);
   mountedNodes.add(node);
   const onInput = () => resize(node);
