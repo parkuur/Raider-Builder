@@ -189,3 +189,17 @@ A story is done when:
 4. New logic has Vitest unit tests; new interactive/drag/multi-step flows have Playwright e2e coverage.
 5. It has been manually exercised in the browser via the dev server.
 6. The acceptance criteria listed in its `docs/backlog/epic-*.md` story are all satisfied.
+
+## 13. Glossary
+
+- **Split layout**: a document row containing two independently growable columns, each an ordered
+  stack of split sections, rendered side by side.
+- **Split section** (interchangeable with "split element"): a section type eligible to appear in a
+  split layout (registry flag `SectionRegistryEntry.split: boolean`), as opposed to a section type
+  that is always full width.
+- **Solo** (a split section not currently part of any split layout): renders nearly full width in
+  the main document flow, with a slim "add split section" affordance at its trailing edge.
+  Structurally identical to a full-width row — split-eligibility is a property of the section type,
+  not of the row.
+- **Embedded** (a split section currently living in a split layout's column): only reachable once a
+  split layout actually exists at that position.
