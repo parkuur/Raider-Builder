@@ -204,8 +204,8 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--color-accent);
-    /* Mostly opaque (unlike PairSlot's lighter tint) so the section's own
-       content underneath doesn't show through and clash with the label. */
+    /* Mostly opaque (unlike SplitEdgeSlot's lighter tint) so the section's
+       own content underneath doesn't show through and clash with the label. */
     background: color-mix(
       in srgb,
       var(--color-background) 92%,

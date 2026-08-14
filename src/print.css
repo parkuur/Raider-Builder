@@ -134,8 +134,8 @@
   /*
    * Explicit invariant, not just a consequence of the per-section
    * hidden-from-print rule above: a row with no visible sections at all
-   * (a hidden solo section, or both sides of a hidden pair) contributes no
-   * space to the printed page.
+   * (a hidden solo section, or every section in both columns of a split
+   * layout hidden) contributes no space to the printed page.
    */
   .row-view:not(:has(.section-frame:not(.hidden-from-print))) {
     display: none !important;

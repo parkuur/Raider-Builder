@@ -3,7 +3,7 @@
  * "full" is a genuinely full-width row, "solo" is a split-eligible section
  * not currently part of a split layout, "embedded" is a split section
  * living in an established split layout's column. The only disallowed
- * swap pairing is a full-width row with an embedded split section — a
+ * swap combination is a full-width row with an embedded split section — a
  * solo section is compatible with everything, since structurally it's
  * just a row like any other.
  */
