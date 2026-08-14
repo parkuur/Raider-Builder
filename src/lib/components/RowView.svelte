@@ -193,8 +193,22 @@
       align-items: stretch;
     }
 
+    /*
+     * Stacked, a split layout's two columns look like two ordinary
+     * full-width sections in a row — the divider between them (below) is
+     * the only signal, and it doesn't appear until you've scrolled past
+     * everything in the first column. A subtle background tint over the
+     * whole stack, from its very first item, marks "this is one split
+     * layout" immediately, without needing the divider to explain it.
+     */
     .row-view__sections--split {
       gap: var(--space-2);
+      background: color-mix(
+        in srgb,
+        var(--color-accent) 6%,
+        var(--color-background)
+      );
+      padding: var(--space-2);
     }
 
     .row-view__column + .row-view__column {

@@ -458,3 +458,51 @@ test.describe("document-wide swap", () => {
     ).toHaveCount(1);
   });
 });
+
+test.describe("mobile affordances", () => {
+  test("column gaps are labeled 'Add split section', distinct from the main flow's 'Add Section'", async ({
+    page,
+  }) => {
+    await addFirstSection(page, "Requirements");
+    await addSection(page, "Contacts (split)");
+    await clickEdgeSlot(page, page.locator(".row-view").nth(1));
+    await page
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
+      .click();
+
+    await expect(page.getByRole("button", { name: "Add Section" })).toHaveCount(
+      3,
+    ); // one more gap than rows: top, between, and trailing
+    await expect(
+      page.getByRole("button", { name: "Add split section" }),
+    ).toHaveCount(4); // two column gaps (top + bottom) per side
+  });
+
+  test.describe("at a narrow viewport", () => {
+    test.use({ viewport: { width: 375, height: 900 } });
+
+    test("a split layout gets a background tint from its very first item, distinguishing it from ordinary stacked rows", async ({
+      page,
+    }) => {
+      await addFirstSection(page, "Contacts (split)");
+      const row = page.locator(".row-view").first();
+      await clickEdgeSlot(page, row);
+      await page
+        .getByRole("button", { name: "Quick Look (split)", exact: true })
+        .click();
+      await addSection(page, "Requirements");
+
+      const splitBackground = await row
+        .locator(".row-view__sections--split")
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+      const plainRowBackground = await page
+        .locator(".row-view")
+        .nth(1)
+        .locator(".row-view__sections")
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+      expect(splitBackground).not.toBe(plainRowBackground);
+      expect(splitBackground).not.toBe("rgba(0, 0, 0, 0)");
+    });
+  });
+});

@@ -39,6 +39,7 @@
     available={gapAvailable}
     mode={gapMode}
     showRule={false}
+    addLabel="Add split section"
     onAdd={() => onAdd(0)}
     onPlace={() => onPlace(0)}
   />
@@ -56,6 +57,7 @@
       available={gapAvailable}
       mode={gapMode}
       showRule={index < items.length - 1}
+      addLabel="Add split section"
       onAdd={() => onAdd(index + 1)}
       onPlace={() => onPlace(index + 1)}
     />
