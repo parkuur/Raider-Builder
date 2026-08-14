@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Section } from "../../model/section-types";
+  import { SvelteSet } from "svelte/reactivity";
   import { pointerDrag } from "../../actions/pointer-drag";
   import {
     STAGE_ITEM_CATEGORIES,
@@ -30,6 +31,23 @@
 
   let canvasEl: HTMLDivElement | undefined = $state();
   let scrollEl: HTMLDivElement | undefined = $state();
+  const selectedIds = new SvelteSet<string>();
+
+  // Ctrl/Cmd+click toggles an item's own membership. A plain click replaces
+  // the selection with just that item — unless it's already part of a
+  // multi-item selection, in which case the whole selection is left intact
+  // so a drag starting from it can move the group.
+  function resolveClickSelection(item: StageItem, event: PointerEvent): void {
+    if (event.ctrlKey || event.metaKey) {
+      if (selectedIds.has(item.id)) selectedIds.delete(item.id);
+      else selectedIds.add(item.id);
+      return;
+    }
+    if (!selectedIds.has(item.id)) {
+      selectedIds.clear();
+      selectedIds.add(item.id);
+    }
+  }
 
   const categories: StageItemCategory[] = [
     "mic",
@@ -135,6 +153,7 @@
         <div
           class="stage-map__item stage-map__item--{meta.shape}"
           class:stage-map__item--dashed={meta.dashed}
+          class:stage-map__item--selected={selectedIds.has(item.id)}
           style:left="{item.x}%"
           style:top="{item.y}%"
           style:width={item.w ? `${item.w}px` : undefined}
@@ -143,7 +162,10 @@
           data-item-id={item.id}
           data-category={item.category}
           use:pointerDrag={{
-            onStart: () => commit(bringStageItemToFront(section.data, item.id)),
+            onStart: (event) => {
+              resolveClickSelection(item, event);
+              commit(bringStageItemToFront(section.data, item.id));
+            },
             onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
           }}
         >
@@ -278,6 +300,11 @@
       width: 100% !important;
       height: auto !important;
     }
+
+    /* Selection is an editing affordance only, never printed. */
+    .stage-map__item--selected {
+      outline: none !important;
+    }
   }
 
   .stage-map__palette {
@@ -352,6 +379,11 @@
 
   .stage-map__item--dashed {
     border-style: dashed;
+  }
+
+  .stage-map__item--selected {
+    outline: 2px solid #d64545;
+    outline-offset: 2px;
   }
 
   .stage-map__item--rectangle {

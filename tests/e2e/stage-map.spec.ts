@@ -37,6 +37,37 @@ test.describe("Stage Map section", () => {
     expect(await zIndexOf(itemA)).toBeGreaterThan(await zIndexOf(itemB));
   });
 
+  test("click selects an item; Ctrl+click adds/removes items from the selection", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+    const selected = /stage-map__item--selected/;
+
+    await itemA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await expect(itemA).toHaveClass(selected);
+    await expect(itemB).not.toHaveClass(selected);
+
+    await itemB.dispatchEvent("pointerdown", { button: 0, ctrlKey: true });
+    await page.mouse.up();
+    await expect(itemA).toHaveClass(selected);
+    await expect(itemB).toHaveClass(selected);
+
+    await itemA.dispatchEvent("pointerdown", { button: 0, ctrlKey: true });
+    await page.mouse.up();
+    await expect(itemA).not.toHaveClass(selected);
+    await expect(itemB).toHaveClass(selected);
+  });
+
   test("dragging an item repositions it on the canvas", async ({ page }) => {
     await page.goto("/");
     await page
