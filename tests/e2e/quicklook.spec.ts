@@ -284,6 +284,41 @@ test.describe("Quick Look section", () => {
     );
   });
 
+  test("a text topic's body aligns with a table topic's Label/Value fields, on screen and in print", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await addTopic(page, "Table");
+    await page.getByRole("button", { name: "+ Add Line" }).click();
+    await addTopic(page, "Text");
+
+    const label = page.locator(".quicklook-section__line-label").first();
+    const value = page.locator(".quicklook-section__line-value").first();
+    const textBody = page.locator(".quicklook-section__text-body").first();
+
+    const checkAligned = async () => {
+      const labelBox = (await label.boundingBox())!;
+      const valueBox = (await value.boundingBox())!;
+      const textBox = (await textBody.boundingBox())!;
+      expect(textBox.x).toBeCloseTo(labelBox.x, 0);
+      expect(textBox.x + textBox.width).toBeCloseTo(
+        valueBox.x + valueBox.width,
+        0,
+      );
+    };
+
+    await checkAligned();
+    await page.emulateMedia({ media: "print" });
+    await checkAligned();
+  });
+
   test("all three topic kinds are reachable through the Add Topic dropdown", async ({
     page,
   }) => {
