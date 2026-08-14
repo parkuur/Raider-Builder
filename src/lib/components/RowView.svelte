@@ -70,6 +70,18 @@
 
   .row-view__sections--paired {
     gap: var(--space-2);
+    /*
+     * Overrides the container's own `align-items: flex-start` above: each
+     * `.section-frame` is otherwise only as tall as its own content, so a
+     * border on the shorter one (below) would stop short of the taller
+     * one's bottom. Stretching both to the container's height — which is
+     * already exactly the taller section's height, container height being
+     * the max of its children's regardless of align-items — makes the
+     * border-carrying section always exactly as tall as its partner. Safe
+     * because no half-width section (Contacts/Quick Look/Text) relies on
+     * its own box height for internal layout.
+     */
+    align-items: stretch;
   }
 
   /*

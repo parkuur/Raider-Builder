@@ -120,6 +120,45 @@ test.describe("half-width pairing UI", () => {
     await expect(page.locator(".pair-slot")).toHaveCount(2);
   });
 
+  test("the divider between paired sections spans the taller section, not just the shorter one", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .click();
+    await page
+      .locator(".row-view")
+      .getByRole("button", { name: "Add paired section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    const frames = page.locator(".row-view").first().locator(".section-frame");
+    const shortHeight = (await frames.nth(0).boundingBox())!.height;
+
+    // Make the second (Quick Look) section much taller than the first
+    // (Contacts, left empty) by giving it several topics.
+    for (let i = 0; i < 6; i++) {
+      await page.getByRole("button", { name: "+ Add Topic" }).click();
+      await page.getByRole("menuitem", { name: "Row", exact: true }).click();
+    }
+
+    const contactsHeight = (await frames.nth(0).boundingBox())!.height;
+    const quicklookHeight = (await frames.nth(1).boundingBox())!.height;
+    expect(quicklookHeight).toBeGreaterThan(shortHeight);
+    // The shorter (Contacts) section's own box is stretched to match its
+    // taller partner, so the divider border on the second section — which
+    // spans that section's own box height — ends up exactly as tall as the
+    // taller side, not stopping short at the empty Contacts section's
+    // natural content height.
+    expect(contactsHeight).toBeCloseTo(quicklookHeight, 0);
+  });
+
   test("lifting a standalone half section and placing it on another's pair slot pairs them", async ({
     page,
   }) => {
