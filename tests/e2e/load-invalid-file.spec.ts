@@ -19,7 +19,7 @@ test.describe("loading an invalid file", () => {
       .click();
 
     await page
-      .locator('input[type="file"]')
+      .locator(".save-load-controls__file-input")
       .setInputFiles(fixture("not-json.txt"));
 
     await expect(page.getByRole("alert")).toBeVisible();
@@ -36,7 +36,7 @@ test.describe("loading an invalid file", () => {
     await page.locator(".document-header__title").fill("Keep Me Too");
 
     await page
-      .locator('input[type="file"]')
+      .locator(".save-load-controls__file-input")
       .setInputFiles(fixture("invalid-document.json"));
 
     await expect(page.getByRole("alert")).toBeVisible();

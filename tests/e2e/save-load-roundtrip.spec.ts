@@ -34,7 +34,7 @@ test("save then load round-trips the document unchanged", async ({ page }) => {
   await expect(page.locator(".document-header__title")).toHaveValue("");
 
   await page
-    .locator('input[type="file"]')
+    .locator(".save-load-controls__file-input")
     .setInputFiles(downloadPath as string);
 
   await expect(page.locator(".document-header__title")).toHaveValue("My Rider");

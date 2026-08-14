@@ -5,7 +5,12 @@
   import { getDocument, setDocument } from "../state/document.svelte";
   import { clearDocumentFromLocalStorage } from "../state/local-storage";
   import { createEmptyDocument } from "../model/document-types";
-  import ChromeIcon from "./icons/ChromeIcon.svelte";
+  import { resizeAllAutosizedTextareas } from "../actions/autosize-textarea";
+  import ListIcon from "phosphor-svelte/lib/ListIcon";
+  import UploadSimpleIcon from "phosphor-svelte/lib/UploadSimpleIcon";
+  import DownloadSimpleIcon from "phosphor-svelte/lib/DownloadSimpleIcon";
+  import TrashIcon from "phosphor-svelte/lib/TrashIcon";
+  import PrinterIcon from "phosphor-svelte/lib/PrinterIcon";
 
   let fileInput: HTMLInputElement | undefined = $state();
   let error = $state<string | null>(null);
@@ -27,6 +32,10 @@
 
   function print(): void {
     closeMenu();
+    // Force every autosized textarea to re-measure synchronously first —
+    // see resizeAllAutosizedTextareas' doc comment for why this can't be
+    // left to a ResizeObserver callback's own timing for a real print.
+    resizeAllAutosizedTextareas();
     window.print();
   }
 
@@ -61,7 +70,7 @@
   aria-expanded={menuOpen}
   onclick={() => (menuOpen = !menuOpen)}
 >
-  <ChromeIcon key="menu" size={18} />
+  <ListIcon size={18} />
 </button>
 
 {#if menuOpen}
@@ -90,11 +99,11 @@
     class="save-load-controls__button"
     onclick={triggerLoad}
   >
-    <ChromeIcon key="upload" size={16} />
+    <UploadSimpleIcon size={16} />
     Load
   </button>
   <button type="button" class="save-load-controls__button" onclick={save}>
-    <ChromeIcon key="download" size={16} />
+    <DownloadSimpleIcon size={16} />
     Save
   </button>
   <button
@@ -102,7 +111,7 @@
     class="save-load-controls__button save-load-controls__button--danger"
     onclick={clear}
   >
-    <ChromeIcon key="trash" size={16} />
+    <TrashIcon size={16} />
     Clear
   </button>
   <button
@@ -110,7 +119,7 @@
     class="save-load-controls__button save-load-controls__button--primary"
     onclick={print}
   >
-    <ChromeIcon key="printer" size={16} />
+    <PrinterIcon size={16} />
     Print / PDF
   </button>
 </div>

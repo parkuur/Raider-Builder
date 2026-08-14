@@ -1,39 +1,189 @@
 <script lang="ts">
   import { getDocument, setHeaderField } from "../state/document.svelte";
+  import {
+    addHeaderMetaField,
+    removeHeaderMetaField,
+    setHeaderMetaFieldLabel,
+    setHeaderMetaFieldValue,
+  } from "../model/header-meta";
+  import type { HeaderMetaFieldKind } from "../model/header-meta";
+  import { addHeaderLogo, removeHeaderLogo } from "../model/header-logos";
+  import RemoveButton from "./RemoveButton.svelte";
+  import HeaderLogos from "./HeaderLogos.svelte";
+  import PlusIcon from "phosphor-svelte/lib/PlusIcon";
+  import EyeIcon from "phosphor-svelte/lib/EyeIcon";
+  import EyeSlashIcon from "phosphor-svelte/lib/EyeSlashIcon";
+
+  const header = $derived(getDocument().header);
+
+  function commitFields(next: typeof header.metaFields) {
+    setHeaderField("metaFields", next);
+  }
+
+  let topRowEl: HTMLDivElement | undefined = $state();
+  let topRowWidth = $state(0);
+  let titlesHeight = $state(0);
+
+  $effect(() => {
+    if (!topRowEl) return;
+    const observer = new ResizeObserver((entries) => {
+      topRowWidth = entries[0]!.contentRect.width;
+    });
+    observer.observe(topRowEl);
+    return () => observer.disconnect();
+  });
+
+  // Logos may grow up to 50% taller than the title/band text block beside
+  // them, unless the 50%-of-header-width budget forces them shorter — a
+  // fallback of 44 (a little taller than the title's own line box) covers
+  // the brief window before the title block's real height is measured.
+  const logoMaxHeight = $derived(titlesHeight > 0 ? titlesHeight * 1.5 : 44);
+
+  let addMenuOpen = $state(false);
+
+  function addField(kind: HeaderMetaFieldKind): void {
+    commitFields(addHeaderMetaField(header.metaFields, kind));
+    addMenuOpen = false;
+  }
+
+  const ADD_FIELD_OPTIONS: { kind: HeaderMetaFieldKind; label: string }[] = [
+    { kind: "keyvalue", label: "Key : Value" },
+    { kind: "date", label: "Date" },
+    { kind: "text", label: "Text" },
+  ];
 </script>
 
 <header class="document-header">
   <div class="document-header__fields">
-    <input
-      class="document-header__title"
-      value={getDocument().header.title}
-      oninput={(e) => setHeaderField("title", e.currentTarget.value)}
-      placeholder="Technical Rider"
-    />
-    <input
-      class="document-header__band"
-      value={getDocument().header.band}
-      oninput={(e) => setHeaderField("band", e.currentTarget.value)}
-      placeholder="Band / Act Name"
-    />
+    <div class="document-header__top" bind:this={topRowEl}>
+      <div class="document-header__titles" bind:clientHeight={titlesHeight}>
+        <input
+          class="document-header__title"
+          value={header.title}
+          oninput={(e) => setHeaderField("title", e.currentTarget.value)}
+          placeholder="Technical Rider"
+        />
+        <input
+          class="document-header__band"
+          value={header.band}
+          oninput={(e) => setHeaderField("band", e.currentTarget.value)}
+          placeholder="Band / Act Name"
+        />
+      </div>
+      <HeaderLogos
+        logos={header.logos}
+        maxHeight={logoMaxHeight}
+        maxTotalWidth={topRowWidth * 0.5}
+        onAdd={(dataUrl) =>
+          setHeaderField("logos", addHeaderLogo(header.logos, dataUrl))}
+        onRemove={(id) =>
+          setHeaderField("logos", removeHeaderLogo(header.logos, id))}
+      />
+    </div>
     <div class="document-header__meta">
-      <label class="document-header__meta-field">
-        <span class="document-header__meta-label">Rev</span>
-        <input
-          class="document-header__meta-input"
-          value={getDocument().header.revision}
-          oninput={(e) => setHeaderField("revision", e.currentTarget.value)}
-        />
-      </label>
-      <label class="document-header__meta-field">
-        <span class="document-header__meta-label">Date</span>
-        <input
-          class="document-header__meta-input"
-          type="date"
-          value={getDocument().header.date}
-          oninput={(e) => setHeaderField("date", e.currentTarget.value)}
-        />
-      </label>
+      {#each header.metaFields as field (field.id)}
+        <div class="document-header__meta-field">
+          {#if field.kind !== "text"}
+            <input
+              class="document-header__meta-label"
+              value={field.label}
+              placeholder="Label"
+              oninput={(e) =>
+                commitFields(
+                  setHeaderMetaFieldLabel(
+                    header.metaFields,
+                    field.id,
+                    e.currentTarget.value,
+                  ),
+                )}
+            />
+          {/if}
+          <input
+            class="document-header__meta-input"
+            type={field.kind === "date" ? "date" : "text"}
+            value={field.value}
+            oninput={(e) =>
+              commitFields(
+                setHeaderMetaFieldValue(
+                  header.metaFields,
+                  field.id,
+                  e.currentTarget.value,
+                ),
+              )}
+          />
+          <RemoveButton
+            label="Remove field"
+            onclick={() =>
+              commitFields(removeHeaderMetaField(header.metaFields, field.id))}
+          />
+        </div>
+      {/each}
+      <div class="document-header__add-field no-print">
+        <button
+          type="button"
+          class="document-header__add-field-trigger"
+          aria-haspopup="true"
+          aria-expanded={addMenuOpen}
+          aria-label="Add field"
+          title="Add field"
+          onclick={() => (addMenuOpen = !addMenuOpen)}
+        >
+          <PlusIcon size={14} />
+        </button>
+        {#if addMenuOpen}
+          <div
+            class="document-header__add-field-backdrop"
+            role="button"
+            tabindex="-1"
+            onclick={() => (addMenuOpen = false)}
+            onkeydown={(e) => e.key === "Escape" && (addMenuOpen = false)}
+          ></div>
+          <div
+            class="document-header__add-field-popover"
+            role="menu"
+            aria-label="Add field"
+          >
+            {#each ADD_FIELD_OPTIONS as option (option.kind)}
+              <button
+                type="button"
+                role="menuitem"
+                onclick={() => addField(option.kind)}
+              >
+                {option.label}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </div>
+    <div class="document-header__credit">
+      {#if header.creditHidden}
+        <span class="document-header__credit-nudge no-print">
+          Please consider leaving the message in to support my work
+        </span>
+        <button
+          type="button"
+          class="no-print"
+          aria-label="Show credit line"
+          title="Show credit line"
+          onclick={() => setHeaderField("creditHidden", false)}
+        >
+          <EyeSlashIcon size={14} />
+        </button>
+      {:else}
+        <span class="document-header__credit-text">
+          Generated with Frosty Sound rider builder rider.frostysound.fi
+        </span>
+        <button
+          type="button"
+          class="no-print"
+          aria-label="Hide credit line"
+          title="Hide credit line"
+          onclick={() => setHeaderField("creditHidden", true)}
+        >
+          <EyeIcon size={14} />
+        </button>
+      {/if}
     </div>
   </div>
 </header>
@@ -45,11 +195,25 @@
 
   .document-header__title,
   .document-header__band,
+  .document-header__meta-label,
   .document-header__meta-input {
     border: none;
     background: transparent;
     color: var(--color-text);
     padding: 0;
+  }
+
+  .document-header__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+
+  .document-header__titles {
+    flex: 1;
+    min-width: 0;
   }
 
   .document-header__title {
@@ -66,11 +230,12 @@
     width: 100%;
     font-size: var(--font-size-body);
     color: var(--color-accent);
-    margin-bottom: var(--space-2);
   }
 
   .document-header__meta {
     display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
     gap: var(--space-5);
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-2);
@@ -87,10 +252,106 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-text-muted);
+    field-sizing: content;
+    min-width: 3ch;
   }
 
   .document-header__meta-input {
     font-size: var(--font-size-body);
-    width: 70px;
+    field-sizing: content;
+    min-width: 1ch;
+  }
+
+  .document-header__add-field {
+    position: relative;
+    display: inline-flex;
+    align-self: center;
+  }
+
+  .document-header__add-field-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px dashed var(--color-border);
+    background: transparent;
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .document-header__add-field-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: transparent;
+  }
+
+  .document-header__add-field-popover {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 101;
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
+    box-shadow: 0 4px 12px color-mix(in srgb, #000 25%, transparent);
+  }
+
+  .document-header__add-field-popover button {
+    padding: var(--space-2);
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+    cursor: pointer;
+    font-size: var(--font-size-body);
+  }
+
+  .document-header__add-field-popover button:hover {
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  }
+
+  .document-header__credit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+  }
+
+  .document-header__credit-text,
+  .document-header__credit-nudge {
+    /* Sibling of the button (not nested inside it) so the two always stay
+     * on the same flex row — text alone may still wrap onto multiple
+     * lines, but that never pushes the button down with it. */
+    flex: 1;
+    min-width: 0;
+  }
+
+  .document-header__credit-nudge {
+    opacity: 0.7;
+  }
+
+  .document-header__credit button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .document-header__credit button:hover {
+    color: var(--color-accent);
   }
 </style>

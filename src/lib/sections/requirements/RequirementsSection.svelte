@@ -11,6 +11,7 @@
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { autosizeTextarea } from "../../actions/autosize-textarea";
 
   let {
     rowId,
@@ -70,6 +71,8 @@
       </div>
       <textarea
         class="requirements-section__text"
+        use:autosizeTextarea={group.text}
+        rows="1"
         value={group.text}
         placeholder="Details…"
         oninput={(e) =>
@@ -136,15 +139,20 @@
   }
 
   .requirements-section__text {
+    display: block;
     width: 100%;
     min-height: 56px;
-    resize: vertical;
+    resize: none;
+    overflow: hidden;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
     font-family: var(--font-body);
     font-size: var(--font-size-body);
     padding: var(--space-2);
+    box-sizing: border-box;
+    /* See the comment on .channel-list textarea (ChannelListSection.svelte). */
+    field-sizing: content;
   }
 
   .requirements-section__add {

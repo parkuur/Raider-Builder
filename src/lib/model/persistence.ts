@@ -1,5 +1,8 @@
 import type { Header, RiderDocument, Row } from "./document-types";
 import type { Section } from "./section-types";
+import type { HeaderMetaField } from "./header-meta";
+import { legacyHeaderMetaFields } from "./header-meta";
+import type { HeaderLogo } from "./header-logos";
 
 export function deriveFileName(header: Header): string {
   const base = (header.band || header.title || "technical-rider")
@@ -20,13 +23,114 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function validateHeaderMetaField(
+  value: unknown,
+  path: string,
+  errors: string[],
+): HeaderMetaField | null {
+  if (!isPlainObject(value)) {
+    errors.push(`${path}: expected an object`);
+    return null;
+  }
+  const { id, kind, label, value: fieldValue } = value;
+  if (typeof id !== "string") {
+    errors.push(`${path}.id: expected a string`);
+    return null;
+  }
+  if (typeof fieldValue !== "string") {
+    errors.push(`${path}.value: expected a string`);
+    return null;
+  }
+  if (kind === "keyvalue" || kind === "date") {
+    if (typeof label !== "string") {
+      errors.push(`${path}.label: expected a string`);
+      return null;
+    }
+    return { id, kind, label, value: fieldValue };
+  }
+  if (kind === "text") {
+    return { id, kind, value: fieldValue };
+  }
+  errors.push(`${path}.kind: unknown meta field kind ${JSON.stringify(kind)}`);
+  return null;
+}
+
+/**
+ * Documents saved before `metaFields` existed have the old fixed
+ * `revision`/`date` strings instead — synthesized here as the two
+ * equivalent (now-editable, now-deletable) meta fields so those documents
+ * keep showing the same two fields on load.
+ */
+function validateHeaderMetaFields(
+  input: Record<string, unknown>,
+  errors: string[],
+): HeaderMetaField[] {
+  if (input.metaFields === undefined) {
+    const revision = typeof input.revision === "string" ? input.revision : "";
+    const date = typeof input.date === "string" ? input.date : "";
+    return legacyHeaderMetaFields(revision, date);
+  }
+  if (!Array.isArray(input.metaFields)) {
+    errors.push("header.metaFields: expected an array");
+    return [];
+  }
+  const validated = input.metaFields.map((f: unknown, i: number) =>
+    validateHeaderMetaField(f, `header.metaFields[${i}]`, errors),
+  );
+  return validated.every((f) => f !== null)
+    ? (validated as HeaderMetaField[])
+    : [];
+}
+
+function validateHeaderLogo(
+  value: unknown,
+  path: string,
+  errors: string[],
+): HeaderLogo | null {
+  if (!isPlainObject(value)) {
+    errors.push(`${path}: expected an object`);
+    return null;
+  }
+  const { id, dataUrl } = value;
+  if (typeof id !== "string") {
+    errors.push(`${path}.id: expected a string`);
+    return null;
+  }
+  if (typeof dataUrl !== "string") {
+    errors.push(`${path}.dataUrl: expected a string`);
+    return null;
+  }
+  return { id, dataUrl };
+}
+
+function validateHeaderLogos(
+  input: Record<string, unknown>,
+  errors: string[],
+): HeaderLogo[] {
+  if (input.logos === undefined) return [];
+  if (!Array.isArray(input.logos)) {
+    errors.push("header.logos: expected an array");
+    return [];
+  }
+  const validated = input.logos.map((l: unknown, i: number) =>
+    validateHeaderLogo(l, `header.logos[${i}]`, errors),
+  );
+  return validated.every((l) => l !== null) ? (validated as HeaderLogo[]) : [];
+}
+
 function validateHeader(value: unknown, errors: string[]): Header {
   if (value !== undefined && !isPlainObject(value)) {
     errors.push("header: expected an object");
   }
   const input = isPlainObject(value) ? value : {};
-  const header: Header = { title: "", band: "", revision: "", date: "" };
-  for (const field of ["title", "band", "revision", "date"] as const) {
+  const header: Header = {
+    title: "",
+    band: "",
+    metaFields: [],
+    logos: [],
+    creditHidden: false,
+  };
+  for (const field of ["title", "band"] as const) {
     const fieldValue = input[field];
     if (fieldValue === undefined) {
       header[field] = "";
@@ -35,6 +139,15 @@ function validateHeader(value: unknown, errors: string[]): Header {
     } else {
       errors.push(`header.${field}: expected a string`);
     }
+  }
+  header.metaFields = validateHeaderMetaFields(input, errors);
+  header.logos = validateHeaderLogos(input, errors);
+  if (input.creditHidden === undefined) {
+    header.creditHidden = false;
+  } else if (typeof input.creditHidden === "boolean") {
+    header.creditHidden = input.creditHidden;
+  } else {
+    errors.push("header.creditHidden: expected a boolean");
   }
   return header;
 }

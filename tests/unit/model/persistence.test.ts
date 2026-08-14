@@ -55,8 +55,13 @@ describe("serializeDocument / parseDocumentJson round-trip", () => {
       header: {
         title: "Rider",
         band: "Band",
-        revision: "2.0",
-        date: "2026-01-01",
+        metaFields: [
+          { id: "meta_1", kind: "keyvalue", label: "Rev", value: "2.0" },
+          { id: "meta_2", kind: "date", label: "Date", value: "2026-01-01" },
+          { id: "meta_3", kind: "text", value: "Free text" },
+        ],
+        logos: [{ id: "logo_1", dataUrl: "data:image/png;base64,abc" }],
+        creditHidden: true,
       },
       rows: [
         {
@@ -211,12 +216,167 @@ describe("validateDocumentShape rejection cases", () => {
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.document.header).toEqual({
-        title: "Rider",
-        band: "Band",
-        revision: "",
-        date: "",
-      });
+      expect(result.document.header.title).toBe("Rider");
+      expect(result.document.header.band).toBe("Band");
+      expect(result.document.header.metaFields).toEqual([
+        {
+          id: expect.any(String),
+          kind: "keyvalue",
+          label: "Rev",
+          value: "",
+        },
+        { id: expect.any(String), kind: "date", label: "Date", value: "" },
+      ]);
     }
+  });
+
+  it("migrates a legacy header (revision/date strings, no metaFields) into two meta fields", () => {
+    const result = validateDocumentShape(
+      {
+        header: {
+          title: "Rider",
+          band: "Band",
+          revision: "3.1",
+          date: "2026-02-01",
+        },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.metaFields).toEqual([
+        {
+          id: expect.any(String),
+          kind: "keyvalue",
+          label: "Rev",
+          value: "3.1",
+        },
+        {
+          id: expect.any(String),
+          kind: "date",
+          label: "Date",
+          value: "2026-02-01",
+        },
+      ]);
+    }
+  });
+
+  it("round-trips a present metaFields array unchanged", () => {
+    const metaFields = [
+      { id: "meta_1", kind: "text" as const, value: "Custom note" },
+    ];
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band", metaFields }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.metaFields).toEqual(metaFields);
+    }
+  });
+
+  it("rejects a malformed metaFields entry", () => {
+    const result = validateDocumentShape(
+      {
+        header: {
+          title: "Rider",
+          band: "Band",
+          metaFields: [{ id: "meta_1", kind: "keyvalue", value: "no label" }],
+        },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects a metaFields entry with an unknown kind", () => {
+    const result = validateDocumentShape(
+      {
+        header: {
+          title: "Rider",
+          band: "Band",
+          metaFields: [{ id: "meta_1", kind: "bogus", value: "x" }],
+        },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("defaults logos to an empty array when absent", () => {
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band" }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.logos).toEqual([]);
+    }
+  });
+
+  it("round-trips a present logos array unchanged", () => {
+    const logos = [{ id: "logo_1", dataUrl: "data:image/png;base64,abc" }];
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band", logos }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.logos).toEqual(logos);
+    }
+  });
+
+  it("rejects a malformed logos entry", () => {
+    const result = validateDocumentShape(
+      {
+        header: {
+          title: "Rider",
+          band: "Band",
+          logos: [{ id: "logo_1" }],
+        },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("defaults creditHidden to false when absent", () => {
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band" }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.creditHidden).toBe(false);
+    }
+  });
+
+  it("preserves an explicit creditHidden value", () => {
+    const result = validateDocumentShape(
+      {
+        header: { title: "Rider", band: "Band", creditHidden: true },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.creditHidden).toBe(true);
+    }
+  });
+
+  it("rejects a non-boolean creditHidden", () => {
+    const result = validateDocumentShape(
+      {
+        header: { title: "Rider", band: "Band", creditHidden: "yes" },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
   });
 });

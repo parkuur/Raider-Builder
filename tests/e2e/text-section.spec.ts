@@ -22,7 +22,7 @@ test.describe("Text section", () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await page
-      .locator('input[type="file"]')
+      .locator(".save-load-controls__file-input")
       .setInputFiles(downloadPath as string);
 
     await expect(page.locator(".text-section__body")).toHaveValue(
@@ -76,5 +76,36 @@ test.describe("Text section", () => {
     await title.fill("Notes");
     await page.emulateMedia({ media: "print" });
     await expect(title).toBeVisible();
+  });
+
+  test("body text auto-grows to fit its content, on screen and in print", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Text (half)", exact: true })
+      .click();
+
+    const body = page.locator(".text-section__body");
+    const emptyHeight = (await body.boundingBox())!.height;
+
+    await body.fill(
+      "Line one of a long note.\nLine two.\nLine three.\nLine four.\nLine five.",
+    );
+
+    const filledHeight = (await body.boundingBox())!.height;
+    expect(filledHeight).toBeGreaterThan(emptyHeight);
+
+    const noClipping = async () =>
+      body.evaluate(
+        (el: HTMLTextAreaElement) => el.scrollHeight <= el.clientHeight + 1,
+      );
+    expect(await noClipping()).toBe(true);
+
+    await page.emulateMedia({ media: "print" });
+    expect(await noClipping()).toBe(true);
   });
 });

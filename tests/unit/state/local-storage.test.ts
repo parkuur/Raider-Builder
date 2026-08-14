@@ -24,8 +24,17 @@ describe("saveDocumentToLocalStorage / loadDocumentFromLocalStorage", () => {
       header: {
         title: "My Rider",
         band: "The Band",
-        revision: "1",
-        date: "2026-01-01",
+        metaFields: [
+          { id: "meta_1", kind: "keyvalue" as const, label: "Rev", value: "1" },
+          {
+            id: "meta_2",
+            kind: "date" as const,
+            label: "Date",
+            value: "2026-01-01",
+          },
+        ],
+        logos: [],
+        creditHidden: false,
       },
       rows: [
         {

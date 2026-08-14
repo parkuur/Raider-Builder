@@ -195,6 +195,45 @@ test.describe("Quick Look section", () => {
     expect(w0After).toBeCloseTo(w0, 0);
   });
 
+  test("the value-alignment toggle cycles a table topic's Value column, without affecting other topics", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+
+    const topics = page.locator(".quicklook-section__topic");
+    const firstTopic = topics.nth(0);
+    const secondTopic = topics.nth(1);
+    await firstTopic.getByRole("button", { name: "+ Add Line" }).click();
+    await secondTopic.getByRole("button", { name: "+ Add Line" }).click();
+
+    const firstValue = firstTopic.locator(".quicklook-section__line-value");
+    const secondValue = secondTopic.locator(".quicklook-section__line-value");
+    const toggle = firstTopic.locator(".quicklook-section__align-toggle");
+
+    await expect(firstValue).toHaveCSS("text-align", "left");
+    await expect(toggle).toHaveAccessibleName("Center-align values");
+
+    await toggle.click();
+    await expect(firstValue).toHaveCSS("text-align", "center");
+    await expect(toggle).toHaveAccessibleName("Right-align values");
+
+    await toggle.click();
+    await expect(firstValue).toHaveCSS("text-align", "right");
+    await expect(toggle).toHaveAccessibleName("Left-align values");
+
+    // The second topic's alignment is untouched by the first's toggle.
+    await expect(secondValue).toHaveCSS("text-align", "left");
+  });
+
   test("editing controls are hidden in print, content stays visible", async ({
     page,
   }) => {

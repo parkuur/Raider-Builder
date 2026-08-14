@@ -17,12 +17,15 @@ export interface QuickLookRowTopic {
   value: string;
 }
 
+export type TextAlign = "left" | "center" | "right";
+
 export interface QuickLookTableTopic {
   id: string;
   kind: "table";
   iconKey: IconKey;
   title: string;
   lines: QuickLookLine[];
+  valueAlign: TextAlign;
 }
 
 export type QuickLookTopic = QuickLookRowTopic | QuickLookTableTopic;
@@ -54,6 +57,7 @@ export function addQuickLookTopic(
           iconKey: "circle",
           title: "",
           lines: [],
+          valueAlign: "left",
         };
   return { ...data, topics: [...data.topics, topic] };
 }
@@ -191,6 +195,34 @@ export function updateQuickLookLine(
               l.id === lineId ? { ...l, ...patch } : l,
             ),
           }
+        : t,
+    ),
+  };
+}
+
+const VALUE_ALIGN_CYCLE: Record<TextAlign, TextAlign> = {
+  left: "center",
+  center: "right",
+  right: "left",
+};
+
+/**
+ * Value alignment is set per table topic (every line in that topic shares
+ * it), not per line — a table topic's Value column reads as one column, so
+ * one shared alignment is what "aligned over them" means for the toggle
+ * above it.
+ */
+export function cycleQuickLookTableValueAlign(
+  data: QuickLookSectionData,
+  topicId: string,
+): QuickLookSectionData {
+  const topic = data.topics.find((t) => t.id === topicId);
+  if (!topic || topic.kind !== "table") return data;
+  return {
+    ...data,
+    topics: data.topics.map((t) =>
+      t.id === topicId && t.kind === "table"
+        ? { ...t, valueAlign: VALUE_ALIGN_CYCLE[t.valueAlign] }
         : t,
     ),
   };

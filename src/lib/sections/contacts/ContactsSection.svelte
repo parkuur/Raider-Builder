@@ -11,7 +11,7 @@
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
-  import ChromeIcon from "../../components/icons/ChromeIcon.svelte";
+  import PlusIcon from "phosphor-svelte/lib/PlusIcon";
   import { autoFitText } from "../../components/auto-fit-text";
   import { SvelteSet } from "svelte/reactivity";
 
@@ -119,7 +119,7 @@
             title="Add email"
             onclick={() => expand(contact.id)}
           >
-            <ChromeIcon key="plus" size={14} />
+            <PlusIcon size={14} />
           </button>
         {/if}
       </div>
@@ -199,11 +199,13 @@
   .contacts-section__value {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
   }
 
   .contacts-section__value input {
     flex: 1;
     min-width: 0;
+    text-align: right;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);

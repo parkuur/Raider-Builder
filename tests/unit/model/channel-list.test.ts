@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   addChannelRow,
+  channelListColumnLabels,
+  defaultChannelListColumnLabels,
   defaultChannelListData,
   numberChannelRows,
   removeChannelRow,
+  setChannelListColumnLabel,
   updateChannelRow,
 } from "../../../src/lib/model/channel-list";
 import type { ChannelListSectionData } from "../../../src/lib/model/channel-list";
@@ -134,5 +137,41 @@ describe("numberChannelRows", () => {
 
   it("handles an empty list", () => {
     expect(numberChannelRows(defaultChannelListData())).toEqual([]);
+  });
+});
+
+describe("channelListColumnLabels", () => {
+  it("returns the defaults when columnLabels is absent", () => {
+    expect(channelListColumnLabels(defaultChannelListData())).toEqual(
+      defaultChannelListColumnLabels(),
+    );
+  });
+
+  it("fills in missing keys from a partial columnLabels", () => {
+    const data: ChannelListSectionData = {
+      rows: [],
+      columnLabels: { ch: "Input" },
+    };
+    expect(channelListColumnLabels(data)).toEqual({
+      ...defaultChannelListColumnLabels(),
+      ch: "Input",
+    });
+  });
+});
+
+describe("setChannelListColumnLabel", () => {
+  it("sets a single key without touching the others", () => {
+    const data = defaultChannelListData();
+    const result = setChannelListColumnLabel(data, "notes", "Comments");
+    expect(channelListColumnLabels(result)).toEqual({
+      ...defaultChannelListColumnLabels(),
+      notes: "Comments",
+    });
+  });
+
+  it("does not mutate the original data", () => {
+    const data = defaultChannelListData();
+    setChannelListColumnLabel(data, "notes", "Comments");
+    expect(data.columnLabels).toBeUndefined();
   });
 });

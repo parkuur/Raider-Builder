@@ -76,4 +76,105 @@ test.describe("Requirements section", () => {
       .evaluate((el) => getComputedStyle(el).resize);
     expect(resize).toBe("none");
   });
+
+  test("detail text auto-grows to fit its content, on screen and in print", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Item" }).click();
+
+    const text = page.locator(".requirements-section__text");
+    const emptyHeight = (await text.boundingBox())!.height;
+
+    await text.fill(
+      "Line one of a long requirement.\nLine two.\nLine three.\nLine four.\nLine five.",
+    );
+
+    const filledHeight = (await text.boundingBox())!.height;
+    expect(filledHeight).toBeGreaterThan(emptyHeight);
+
+    const noClipping = async () =>
+      text.evaluate(
+        (el: HTMLTextAreaElement) => el.scrollHeight <= el.clientHeight + 1,
+      );
+    expect(await noClipping()).toBe(true);
+
+    await page.emulateMedia({ media: "print" });
+    expect(await noClipping()).toBe(true);
+  });
+
+  test("detail text sizes itself via CSS alone on a field-sizing-supporting browser, with no inline height set", async ({
+    page,
+  }) => {
+    // Regression: an explicit inline `height` fully overrides `field-sizing:
+    // content` even while the property is active — confirmed directly by
+    // forcing one and watching the box ignore its own scrollHeight. A JS
+    // fallback that always sets `style.height` (the previous approach)
+    // therefore permanently defeats the one sizing path that's actually
+    // reliable for real print, which doesn't reliably give a JS callback a
+    // turn to run before it captures the page. The action must step aside
+    // entirely on browsers that support field-sizing.
+    await page.goto("/");
+    const supportsFieldSizing = await page.evaluate(() =>
+      CSS.supports("field-sizing", "content"),
+    );
+    test.skip(!supportsFieldSizing, "browser doesn't support field-sizing");
+
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Item" }).click();
+
+    const text = page.locator(".requirements-section__text");
+    await text.fill("Line one.\nLine two.\nLine three.\nLine four.");
+
+    expect(await text.evaluate((el) => el.style.height)).toBe("");
+  });
+
+  test("detail text re-grows when its own width changes, not just on input", async ({
+    page,
+  }) => {
+    // Regression: a height computed at one width (e.g. on input, at a wide
+    // desktop viewport) previously went stale the moment the textarea's
+    // width changed without new input — the same text wraps onto more
+    // lines at a narrower width (or print's narrower page width), and the
+    // old, shorter height clipped the newly-wrapped lines.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Item" }).click();
+
+    const text = page.locator(".requirements-section__text");
+    await text.fill(
+      "This sentence wraps onto only a line or two at a wide desktop " +
+        "viewport, but would need several more lines once the viewport " +
+        "narrows down to a phone-sized width instead.",
+    );
+    const wideHeight = (await text.boundingBox())!.height;
+
+    const noClipping = async () =>
+      text.evaluate(
+        (el: HTMLTextAreaElement) => el.scrollHeight <= el.clientHeight + 1,
+      );
+
+    await page.setViewportSize({ width: 380, height: 900 });
+    await expect(async () => {
+      expect((await text.boundingBox())!.height).toBeGreaterThan(wideHeight);
+    }).toPass();
+    expect(await noClipping()).toBe(true);
+  });
 });

@@ -2,20 +2,37 @@
   import DocumentHeader from "./DocumentHeader.svelte";
   import RowList from "./RowList.svelte";
   import SaveLoadControls from "./SaveLoadControls.svelte";
+  import InfoModal from "./InfoModal.svelte";
+  import InfoIcon from "phosphor-svelte/lib/InfoIcon";
+
+  let infoOpen = $state(false);
 </script>
 
 <div class="toolbar no-print">
-  <a
-    class="toolbar__logo"
-    href="https://frostysound.fi"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Frosty Sound"
-  >
-    <img src="/fs-logo.png" alt="Frosty Sound" />
-  </a>
+  <div class="toolbar__brand">
+    <a
+      class="toolbar__logo"
+      href="https://frostysound.fi"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Frosty Sound"
+    >
+      <img src="/fs-logo.png" alt="Frosty Sound" />
+    </a>
+    <button
+      type="button"
+      class="toolbar__info"
+      aria-label="About this app"
+      title="About this app"
+      onclick={() => (infoOpen = true)}
+    >
+      <InfoIcon size={18} />
+    </button>
+  </div>
   <SaveLoadControls />
 </div>
+
+<InfoModal open={infoOpen} onClose={() => (infoOpen = false)} />
 
 <div class="document-shell">
   <DocumentHeader />
@@ -36,6 +53,13 @@
     border-bottom: 1px solid var(--color-border);
   }
 
+  .toolbar__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: none;
+  }
+
   .toolbar__logo {
     flex: none;
     display: block;
@@ -46,6 +70,21 @@
     height: 28px;
     width: auto;
     object-fit: contain;
+  }
+
+  .toolbar__info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .toolbar__info:hover {
+    color: var(--color-accent);
   }
 
   .document-shell {
