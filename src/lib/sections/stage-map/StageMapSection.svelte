@@ -279,6 +279,17 @@
   .stage-map__canvas {
     position: relative;
     width: 100%;
+    /*
+     * Items inside grow z-index without bound as they're brought to front
+     * (see bringToFront in stage-map.ts) — without a stacking context here,
+     * those z-index values compete directly against the rest of the page
+     * (e.g. the sticky toolbar's z-index: 40), and once enough items have
+     * been brought to front, one can render above it. `isolation: isolate`
+     * contains every descendant z-index within this element regardless of
+     * canvasScale (a `transform` only applies, and only conditionally
+     * creates a stacking context of its own, below the mobile breakpoint).
+     */
+    isolation: isolate;
     border: 1px solid var(--color-border);
     break-inside: avoid;
     background-image:

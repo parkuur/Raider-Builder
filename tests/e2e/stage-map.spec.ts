@@ -326,4 +326,58 @@ test.describe("Stage Map section at a narrow viewport", () => {
     );
     expect(printTransform).toBe("none");
   });
+
+  test("an item's z-index never climbs above the sticky top bar, however many times it's brought to front", async ({
+    page,
+  }) => {
+    // Short enough that the page must scroll to bring the canvas's items
+    // up under the sticky toolbar — the real-world scenario this bug
+    // affects, where scrolled-past content passes underneath the toolbar.
+    await page.setViewportSize({ width: 1280, height: 220 });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    // Each add assigns the next order — 45 items pushes the last one's
+    // z-index well past the toolbar's z-index: 40, without needing dozens
+    // of individual bring-to-front clicks.
+    const addMic = page.getByRole("button", { name: "MIC", exact: true });
+    for (let i = 0; i < 45; i++) {
+      await addMic.click();
+    }
+
+    const lastItem = page.locator('[data-category="mic"]').last();
+    expect(await zIndexOf(lastItem)).toBeGreaterThan(40);
+
+    // Repeatedly clicking a control below the fold can trigger the
+    // browser's own scroll-into-view — reset to a known scroll position
+    // before measuring, so the target computed below is accurate.
+    await page.evaluate(() => window.scrollTo(0, 0));
+
+    // All 45 items spawn stacked at the canvas's own center (50%, 50%).
+    // Scroll the page so that point lands within the sticky toolbar's
+    // fixed viewport band.
+    const toolbarHeight = (await page.locator(".toolbar").boundingBox())!
+      .height;
+    const canvasBox = (await page.locator(".stage-map__canvas").boundingBox())!;
+    const itemPageY = canvasBox.y + canvasBox.height / 2;
+    await page.evaluate(
+      (y) => window.scrollTo(0, y),
+      itemPageY - toolbarHeight / 2,
+    );
+
+    const toolbarBox = (await page.locator(".toolbar").boundingBox())!;
+    const topElement = await page.evaluate(
+      ([x, y]) =>
+        document.elementFromPoint(x, y)?.closest(".toolbar, .stage-map__item")
+          ?.className,
+      [
+        toolbarBox.x + toolbarBox.width / 2,
+        toolbarBox.y + toolbarBox.height / 2,
+      ],
+    );
+    expect(topElement).toContain("toolbar");
+  });
 });
