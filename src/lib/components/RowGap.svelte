@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ChromeIcon from "./icons/ChromeIcon.svelte";
+  import PlusIcon from "phosphor-svelte/lib/PlusIcon";
 
   let {
     available,
@@ -32,7 +32,7 @@
     {#if available}
       {placeLabel}
     {:else}
-      <ChromeIcon key="plus" size={12} />
+      <PlusIcon size={12} />
       Add Section
     {/if}
   </button>

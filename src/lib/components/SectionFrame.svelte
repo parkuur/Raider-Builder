@@ -7,8 +7,12 @@
   } from "../state/document.svelte";
   import type { Section } from "../model/section-types";
   import type { SectionRegistryEntry } from "../sections/registry";
-  import ChromeIcon from "./icons/ChromeIcon.svelte";
   import LinkIcon from "phosphor-svelte/lib/LinkIcon";
+  import ArrowsOutCardinalIcon from "phosphor-svelte/lib/ArrowsOutCardinalIcon";
+  import EyeIcon from "phosphor-svelte/lib/EyeIcon";
+  import EyeSlashIcon from "phosphor-svelte/lib/EyeSlashIcon";
+  import CopyIcon from "phosphor-svelte/lib/CopyIcon";
+  import TrashIcon from "phosphor-svelte/lib/TrashIcon";
 
   let {
     rowId,
@@ -71,7 +75,7 @@
         title={moveLabel}
         onclick={onToggleMoveLift}
       >
-        <ChromeIcon key="move" />
+        <ArrowsOutCardinalIcon size={16} />
       </button>
       <button
         type="button"
@@ -81,7 +85,11 @@
         title={section.hidden ? "Show section" : "Hide section"}
         onclick={() => toggleSectionHidden(rowId, section.id)}
       >
-        <ChromeIcon key={section.hidden ? "eye-off" : "eye"} />
+        {#if section.hidden}
+          <EyeSlashIcon size={16} />
+        {:else}
+          <EyeIcon size={16} />
+        {/if}
       </button>
       <button
         type="button"
@@ -93,7 +101,7 @@
         title={copyLabel}
         onclick={onToggleCopyLift}
       >
-        <ChromeIcon key="copy" />
+        <CopyIcon size={16} />
       </button>
       <button
         type="button"
@@ -102,7 +110,7 @@
         title="Delete section"
         onclick={() => removeSection(rowId, section.id)}
       >
-        <ChromeIcon key="trash" />
+        <TrashIcon size={16} />
       </button>
     </div>
   </div>
