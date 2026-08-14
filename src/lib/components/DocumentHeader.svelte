@@ -7,7 +7,9 @@
     setHeaderMetaFieldValue,
   } from "../model/header-meta";
   import type { HeaderMetaFieldKind } from "../model/header-meta";
+  import { addHeaderLogo, removeHeaderLogo } from "../model/header-logos";
   import RemoveButton from "./RemoveButton.svelte";
+  import HeaderLogos from "./HeaderLogos.svelte";
   import PlusIcon from "phosphor-svelte/lib/PlusIcon";
 
   const header = $derived(getDocument().header);
@@ -15,6 +17,18 @@
   function commitFields(next: typeof header.metaFields) {
     setHeaderField("metaFields", next);
   }
+
+  let topRowEl: HTMLDivElement | undefined = $state();
+  let topRowWidth = $state(0);
+
+  $effect(() => {
+    if (!topRowEl) return;
+    const observer = new ResizeObserver((entries) => {
+      topRowWidth = entries[0]!.contentRect.width;
+    });
+    observer.observe(topRowEl);
+    return () => observer.disconnect();
+  });
 
   let addMenuOpen = $state(false);
 
@@ -32,18 +46,30 @@
 
 <header class="document-header">
   <div class="document-header__fields">
-    <input
-      class="document-header__title"
-      value={header.title}
-      oninput={(e) => setHeaderField("title", e.currentTarget.value)}
-      placeholder="Technical Rider"
-    />
-    <input
-      class="document-header__band"
-      value={header.band}
-      oninput={(e) => setHeaderField("band", e.currentTarget.value)}
-      placeholder="Band / Act Name"
-    />
+    <div class="document-header__top" bind:this={topRowEl}>
+      <div class="document-header__titles">
+        <input
+          class="document-header__title"
+          value={header.title}
+          oninput={(e) => setHeaderField("title", e.currentTarget.value)}
+          placeholder="Technical Rider"
+        />
+        <input
+          class="document-header__band"
+          value={header.band}
+          oninput={(e) => setHeaderField("band", e.currentTarget.value)}
+          placeholder="Band / Act Name"
+        />
+      </div>
+      <HeaderLogos
+        logos={header.logos}
+        maxTotalWidth={topRowWidth * 0.5}
+        onAdd={(dataUrl) =>
+          setHeaderField("logos", addHeaderLogo(header.logos, dataUrl))}
+        onRemove={(id) =>
+          setHeaderField("logos", removeHeaderLogo(header.logos, id))}
+      />
+    </div>
     <div class="document-header__meta">
       {#each header.metaFields as field (field.id)}
         <div class="document-header__meta-field">
@@ -138,6 +164,19 @@
     padding: 0;
   }
 
+  .document-header__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-2);
+  }
+
+  .document-header__titles {
+    flex: 1;
+    min-width: 0;
+  }
+
   .document-header__title {
     display: block;
     width: 100%;
@@ -152,7 +191,6 @@
     width: 100%;
     font-size: var(--font-size-body);
     color: var(--color-accent);
-    margin-bottom: var(--space-2);
   }
 
   .document-header__meta {

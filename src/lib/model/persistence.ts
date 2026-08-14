@@ -2,6 +2,7 @@ import type { Header, RiderDocument, Row } from "./document-types";
 import type { Section } from "./section-types";
 import type { HeaderMetaField } from "./header-meta";
 import { legacyHeaderMetaFields } from "./header-meta";
+import type { HeaderLogo } from "./header-logos";
 
 export function deriveFileName(header: Header): string {
   const base = (header.band || header.title || "technical-rider")
@@ -81,12 +82,48 @@ function validateHeaderMetaFields(
     : [];
 }
 
+function validateHeaderLogo(
+  value: unknown,
+  path: string,
+  errors: string[],
+): HeaderLogo | null {
+  if (!isPlainObject(value)) {
+    errors.push(`${path}: expected an object`);
+    return null;
+  }
+  const { id, dataUrl } = value;
+  if (typeof id !== "string") {
+    errors.push(`${path}.id: expected a string`);
+    return null;
+  }
+  if (typeof dataUrl !== "string") {
+    errors.push(`${path}.dataUrl: expected a string`);
+    return null;
+  }
+  return { id, dataUrl };
+}
+
+function validateHeaderLogos(
+  input: Record<string, unknown>,
+  errors: string[],
+): HeaderLogo[] {
+  if (input.logos === undefined) return [];
+  if (!Array.isArray(input.logos)) {
+    errors.push("header.logos: expected an array");
+    return [];
+  }
+  const validated = input.logos.map((l: unknown, i: number) =>
+    validateHeaderLogo(l, `header.logos[${i}]`, errors),
+  );
+  return validated.every((l) => l !== null) ? (validated as HeaderLogo[]) : [];
+}
+
 function validateHeader(value: unknown, errors: string[]): Header {
   if (value !== undefined && !isPlainObject(value)) {
     errors.push("header: expected an object");
   }
   const input = isPlainObject(value) ? value : {};
-  const header: Header = { title: "", band: "", metaFields: [] };
+  const header: Header = { title: "", band: "", metaFields: [], logos: [] };
   for (const field of ["title", "band"] as const) {
     const fieldValue = input[field];
     if (fieldValue === undefined) {
@@ -98,6 +135,7 @@ function validateHeader(value: unknown, errors: string[]): Header {
     }
   }
   header.metaFields = validateHeaderMetaFields(input, errors);
+  header.logos = validateHeaderLogos(input, errors);
   return header;
 }
 

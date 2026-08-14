@@ -33,6 +33,7 @@ describe("saveDocumentToLocalStorage / loadDocumentFromLocalStorage", () => {
             value: "2026-01-01",
           },
         ],
+        logos: [],
       },
       rows: [
         {

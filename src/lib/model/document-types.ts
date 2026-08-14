@@ -1,11 +1,13 @@
 import type { Section } from "./section-types";
 import type { HeaderMetaField } from "./header-meta";
 import { createDefaultHeaderMetaFields } from "./header-meta";
+import type { HeaderLogo } from "./header-logos";
 
 export interface Header {
   title: string;
   band: string;
   metaFields: HeaderMetaField[];
+  logos: HeaderLogo[];
 }
 
 /**
@@ -26,7 +28,12 @@ export interface RiderDocument {
 }
 
 export function createEmptyHeader(): Header {
-  return { title: "", band: "", metaFields: createDefaultHeaderMetaFields() };
+  return {
+    title: "",
+    band: "",
+    metaFields: createDefaultHeaderMetaFields(),
+    logos: [],
+  };
 }
 
 export function createEmptyDocument(): RiderDocument {

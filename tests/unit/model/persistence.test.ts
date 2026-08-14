@@ -60,6 +60,7 @@ describe("serializeDocument / parseDocumentJson round-trip", () => {
           { id: "meta_2", kind: "date", label: "Date", value: "2026-01-01" },
           { id: "meta_3", kind: "text", value: "Free text" },
         ],
+        logos: [{ id: "logo_1", dataUrl: "data:image/png;base64,abc" }],
       },
       rows: [
         {
@@ -296,6 +297,44 @@ describe("validateDocumentShape rejection cases", () => {
           title: "Rider",
           band: "Band",
           metaFields: [{ id: "meta_1", kind: "bogus", value: "x" }],
+        },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("defaults logos to an empty array when absent", () => {
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band" }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.logos).toEqual([]);
+    }
+  });
+
+  it("round-trips a present logos array unchanged", () => {
+    const logos = [{ id: "logo_1", dataUrl: "data:image/png;base64,abc" }];
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band", logos }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.logos).toEqual(logos);
+    }
+  });
+
+  it("rejects a malformed logos entry", () => {
+    const result = validateDocumentShape(
+      {
+        header: {
+          title: "Rider",
+          band: "Band",
+          logos: [{ id: "logo_1" }],
         },
         rows: [],
       },
