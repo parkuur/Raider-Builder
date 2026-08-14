@@ -2,11 +2,14 @@
   import type { Section } from "../../model/section-types";
   import {
     addMonitorRow,
+    monitorListColumnLabels,
     numberMonitorRows,
     removeMonitorRow,
     reorderMonitorRows,
+    setMonitorListColumnLabel,
     updateMonitorRow,
   } from "../../model/monitor-list";
+  import type { MonitorListColumnLabels } from "../../model/monitor-list";
   import { fitColumnChars } from "../../model/column-fit";
   import { setMonitorListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
@@ -29,6 +32,11 @@
   const numbered = $derived(numberMonitorRows(section.data));
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
+  }
+
+  const columnLabels = $derived(monitorListColumnLabels(section.data));
+  function setColumnLabel(key: keyof MonitorListColumnLabels, label: string) {
+    commit(setMonitorListColumnLabel(section.data, key, label));
   }
 
   const playerChars = $derived(
@@ -55,10 +63,34 @@
     <thead>
       <tr>
         <th class="no-print"></th>
-        <th class="monitor-list__num">Mon</th>
-        <th>Player</th>
-        <th>Type</th>
-        <th>Mix Notes</th>
+        <th class="monitor-list__num">
+          <input
+            class="monitor-list__header-input"
+            value={columnLabels.mon}
+            oninput={(e) => setColumnLabel("mon", e.currentTarget.value)}
+          />
+        </th>
+        <th>
+          <input
+            class="monitor-list__header-input"
+            value={columnLabels.player}
+            oninput={(e) => setColumnLabel("player", e.currentTarget.value)}
+          />
+        </th>
+        <th>
+          <input
+            class="monitor-list__header-input"
+            value={columnLabels.type}
+            oninput={(e) => setColumnLabel("type", e.currentTarget.value)}
+          />
+        </th>
+        <th>
+          <input
+            class="monitor-list__header-input"
+            value={columnLabels.notes}
+            oninput={(e) => setColumnLabel("notes", e.currentTarget.value)}
+          />
+        </th>
         <th class="no-print"></th>
         <th class="monitor-list__mode">Mode</th>
       </tr>
@@ -178,6 +210,35 @@
     color: var(--color-text-muted);
     padding: 4px var(--space-1);
     border-bottom: 1px solid var(--color-border);
+  }
+
+  /*
+   * `.monitor-list th` above pairs a class with an element selector, which
+   * out-specifies the plain single-class `.monitor-list__num` rule below on
+   * a `<th>` that carries both classes — without this, the Mon header
+   * renders left-aligned despite the centering rule existing. Qualifying
+   * with `th` here beats it back.
+   */
+  .monitor-list th.monitor-list__num {
+    text-align: center;
+  }
+
+  /*
+   * Beats the later, more general `.monitor-list input` rule (class+type,
+   * specificity 0-1-1) below, which would otherwise reapply its border/
+   * padding/background here — this selector adds the `th` ancestor to stay
+   * above it regardless of source order.
+   */
+  .monitor-list th .monitor-list__header-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    padding: 0;
   }
 
   .monitor-list td {

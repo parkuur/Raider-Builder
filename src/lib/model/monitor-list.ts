@@ -10,12 +10,58 @@ export interface MonitorRow {
   stereo: boolean;
 }
 
+/**
+ * Mode isn't included here — its header (`.monitor-list__mode`) only ever
+ * renders in print (`display: none` on screen), so there is no reachable UI
+ * surface to edit a label for it; it stays the fixed "Mode" text it always
+ * was.
+ */
+export interface MonitorListColumnLabels {
+  mon: string;
+  player: string;
+  type: string;
+  notes: string;
+}
+
+export function defaultMonitorListColumnLabels(): MonitorListColumnLabels {
+  return {
+    mon: "Mon",
+    player: "Player",
+    type: "Type",
+    notes: "Mix Notes",
+  };
+}
+
 export interface MonitorListSectionData {
   rows: MonitorRow[];
+  columnLabels?: Partial<MonitorListColumnLabels>;
 }
 
 export function defaultMonitorListData(): MonitorListSectionData {
   return { rows: [] };
+}
+
+/**
+ * Missing/partial `columnLabels` (documents saved before this field
+ * existed) self-heals here rather than in persistence.ts — matching how
+ * every other section's `data` shape is trusted once it passes the
+ * generic "is this an object?" check on load, not deep-validated.
+ */
+export function monitorListColumnLabels(
+  data: MonitorListSectionData,
+): MonitorListColumnLabels {
+  return { ...defaultMonitorListColumnLabels(), ...data.columnLabels };
+}
+
+export function setMonitorListColumnLabel(
+  data: MonitorListSectionData,
+  key: keyof MonitorListColumnLabels,
+  label: string,
+): MonitorListSectionData {
+  return {
+    ...data,
+    columnLabels: { ...monitorListColumnLabels(data), [key]: label },
+  };
 }
 
 function makeMonitorRow(): MonitorRow {

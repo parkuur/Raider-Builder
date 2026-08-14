@@ -124,8 +124,9 @@ icons throughout.
 ### Story: Monitor List column labels + centering fix
 
 **Acceptance criteria**
-- Same as the Channel List story, for Monitor List's Mon, Player, Type, Mix Notes, and Mode
-  headers, with the Mon header's centering fix.
+- Same as the Channel List story, for Monitor List's Mon, Player, Type, and Mix Notes headers,
+  with the Mon header's centering fix. Mode is excluded — its header only ever renders in
+  print, so there's no on-screen surface to edit a label for it, and it keeps its fixed text.
 
 ### Story: Print-clipping fix — Requirements & Text section fields
 

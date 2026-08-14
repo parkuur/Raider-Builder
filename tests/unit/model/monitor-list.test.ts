@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   addMonitorRow,
+  defaultMonitorListColumnLabels,
   defaultMonitorListData,
+  monitorListColumnLabels,
   numberMonitorRows,
   removeMonitorRow,
+  setMonitorListColumnLabel,
   updateMonitorRow,
 } from "../../../src/lib/model/monitor-list";
 import type { MonitorListSectionData } from "../../../src/lib/model/monitor-list";
@@ -94,5 +97,41 @@ describe("numberMonitorRows", () => {
       { id: "m1", label: "1" },
       { id: "m2", label: "2" },
     ]);
+  });
+});
+
+describe("monitorListColumnLabels", () => {
+  it("returns the defaults when columnLabels is absent", () => {
+    expect(monitorListColumnLabels(defaultMonitorListData())).toEqual(
+      defaultMonitorListColumnLabels(),
+    );
+  });
+
+  it("fills in missing keys from a partial columnLabels", () => {
+    const data: MonitorListSectionData = {
+      rows: [],
+      columnLabels: { mon: "Wedge" },
+    };
+    expect(monitorListColumnLabels(data)).toEqual({
+      ...defaultMonitorListColumnLabels(),
+      mon: "Wedge",
+    });
+  });
+});
+
+describe("setMonitorListColumnLabel", () => {
+  it("sets a single key without touching the others", () => {
+    const data = defaultMonitorListData();
+    const result = setMonitorListColumnLabel(data, "notes", "Comments");
+    expect(monitorListColumnLabels(result)).toEqual({
+      ...defaultMonitorListColumnLabels(),
+      notes: "Comments",
+    });
+  });
+
+  it("does not mutate the original data", () => {
+    const data = defaultMonitorListData();
+    setMonitorListColumnLabel(data, "notes", "Comments");
+    expect(data.columnLabels).toBeUndefined();
   });
 });
