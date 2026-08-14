@@ -76,4 +76,36 @@ test.describe("Requirements section", () => {
       .evaluate((el) => getComputedStyle(el).resize);
     expect(resize).toBe("none");
   });
+
+  test("detail text auto-grows to fit its content, on screen and in print", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Item" }).click();
+
+    const text = page.locator(".requirements-section__text");
+    const emptyHeight = (await text.boundingBox())!.height;
+
+    await text.fill(
+      "Line one of a long requirement.\nLine two.\nLine three.\nLine four.\nLine five.",
+    );
+
+    const filledHeight = (await text.boundingBox())!.height;
+    expect(filledHeight).toBeGreaterThan(emptyHeight);
+
+    const noClipping = async () =>
+      text.evaluate(
+        (el: HTMLTextAreaElement) => el.scrollHeight <= el.clientHeight + 1,
+      );
+    expect(await noClipping()).toBe(true);
+
+    await page.emulateMedia({ media: "print" });
+    expect(await noClipping()).toBe(true);
+  });
 });
