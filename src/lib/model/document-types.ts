@@ -1,10 +1,11 @@
 import type { Section } from "./section-types";
+import type { HeaderMetaField } from "./header-meta";
+import { createDefaultHeaderMetaFields } from "./header-meta";
 
 export interface Header {
   title: string;
   band: string;
-  revision: string;
-  date: string;
+  metaFields: HeaderMetaField[];
 }
 
 /**
@@ -25,7 +26,7 @@ export interface RiderDocument {
 }
 
 export function createEmptyHeader(): Header {
-  return { title: "", band: "", revision: "1.0", date: "" };
+  return { title: "", band: "", metaFields: createDefaultHeaderMetaFields() };
 }
 
 export function createEmptyDocument(): RiderDocument {

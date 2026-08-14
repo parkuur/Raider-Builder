@@ -466,7 +466,6 @@ describe("setHeaderField", () => {
     const result = setHeaderField(doc, "band", "The Test Band");
     expect(result.header.band).toBe("The Test Band");
     expect(result.header.title).toBe(doc.header.title);
-    expect(result.header.revision).toBe(doc.header.revision);
-    expect(result.header.date).toBe(doc.header.date);
+    expect(result.header.metaFields).toBe(doc.header.metaFields);
   });
 });
