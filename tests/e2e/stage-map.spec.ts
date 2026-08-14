@@ -240,6 +240,74 @@ test.describe("Stage Map section", () => {
     await expect(label).toHaveValue("Vo");
   });
 
+  test("Ctrl+C / Ctrl+V duplicates a selection with an offset and selects the pasted copies", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const original = page.locator('[data-category="mic"]');
+    await expect(original).toHaveCount(1);
+    const before = await original.boundingBox();
+    if (!before) throw new Error("item has no bounding box");
+
+    await original.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await page.keyboard.press("Control+c");
+    await page.keyboard.press("Control+v");
+
+    const items = page.locator('[data-category="mic"]');
+    await expect(items).toHaveCount(2);
+
+    // Paste replaces the selection with the pasted copies.
+    const selected = /stage-map__item--selected/;
+    await expect(items.nth(0)).not.toHaveClass(selected);
+    await expect(items.nth(1)).toHaveClass(selected);
+
+    const pastedBox = await items.nth(1).boundingBox();
+    if (!pastedBox) throw new Error("pasted item has no bounding box");
+    expect(pastedBox.x).toBeGreaterThan(before.x);
+    expect(pastedBox.y).toBeGreaterThan(before.y);
+  });
+
+  test("copying in one Stage Map section pastes into a different Stage Map section", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "Add Section" }).last().click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvases = page.locator(".stage-map__canvas");
+    await expect(canvases).toHaveCount(2);
+    const canvasA = canvases.nth(0);
+    const canvasB = canvases.nth(1);
+
+    await page
+      .getByRole("button", { name: "MIC", exact: true })
+      .first()
+      .click();
+    const itemInA = canvasA.locator('[data-category="mic"]');
+    await expect(itemInA).toHaveCount(1);
+
+    await itemInA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await page.keyboard.press("Control+c");
+
+    await canvasB.click();
+    await page.keyboard.press("Control+v");
+
+    await expect(canvasA.locator('[data-category="mic"]')).toHaveCount(1);
+    await expect(canvasB.locator('[data-category="mic"]')).toHaveCount(1);
+  });
+
   test("dragging one item of a multi-selection moves the whole group", async ({
     page,
   }) => {

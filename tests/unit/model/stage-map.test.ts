@@ -3,6 +3,7 @@ import {
   addStageItem,
   bringManyToFront,
   bringToFront,
+  cloneStageItemsForPaste,
   defaultStageMapData,
   moveStageItem,
   moveStageItemsBy,
@@ -137,6 +138,46 @@ describe("setCanvasHeight", () => {
   it("allows a taller canvas", () => {
     const data = defaultStageMapData();
     expect(setCanvasHeight(data, 400).canvasHeight).toBe(400);
+  });
+});
+
+describe("cloneStageItemsForPaste", () => {
+  it("appends offset copies with fresh ids stacked above the existing max order", () => {
+    const data = { items: [item("a", 5)], canvasHeight: 260 };
+    const source = { ...item("a", 5), label: "Vox", nameText: "" };
+    const result = cloneStageItemsForPaste(data, [source]);
+
+    expect(result.items).toHaveLength(2);
+    const pasted = result.items[1]!;
+    expect(pasted.id).not.toBe(source.id);
+    expect(pasted.x).toBe(source.x + 4);
+    expect(pasted.y).toBe(source.y + 4);
+    expect(pasted.order).toBeGreaterThan(data.items[0]!.order);
+    expect(pasted.label).toBe("Vox");
+  });
+
+  it("clamps the offset position within the canvas margins", () => {
+    const data = defaultStageMapData();
+    const source = { ...item("a", 1), x: 96, y: 91 };
+    const result = cloneStageItemsForPaste(data, [source]);
+    expect(result.items[0]).toMatchObject({ x: 97, y: 92 });
+  });
+
+  it("stacks multiple pasted items above each other, preserving order", () => {
+    const data = defaultStageMapData();
+    const result = cloneStageItemsForPaste(data, [item("a", 1), item("b", 2)]);
+    expect(result.items[1]!.order).toBeGreaterThan(result.items[0]!.order);
+  });
+
+  it("leaves the original data untouched", () => {
+    const data = { items: [item("a", 1)], canvasHeight: 260 };
+    cloneStageItemsForPaste(data, [item("a", 1)]);
+    expect(data.items).toHaveLength(1);
+  });
+
+  it("is a no-op for an empty clipboard", () => {
+    const data = defaultStageMapData();
+    expect(cloneStageItemsForPaste(data, [])).toBe(data);
   });
 });
 

@@ -63,6 +63,7 @@ const MIN_RISER_WIDTH = 34;
 const MIN_RISER_HEIGHT = 26;
 const DEFAULT_RISER_WIDTH = 70;
 const DEFAULT_RISER_HEIGHT = 50;
+const PASTE_OFFSET = 4;
 
 export interface StageItem {
   id: string;
@@ -286,4 +287,27 @@ export function moveStageItemsBy(
         : item,
     ),
   };
+}
+
+/**
+ * Appends a fresh, offset copy of each given item to `data` — the paste
+ * half of copy/paste. `items` is deliberately independent of `data.items`
+ * (it comes from the clipboard, which may hold a snapshot from a different
+ * Stage Map section), so ids are always regenerated rather than assumed
+ * unique against `data`.
+ */
+export function cloneStageItemsForPaste(
+  data: StageMapSectionData,
+  items: readonly StageItem[],
+): StageMapSectionData {
+  if (items.length === 0) return data;
+  const baseOrder = nextOrder(data.items);
+  const clones = items.map((item, index) => ({
+    ...item,
+    id: createId("stage-item"),
+    x: clamp(item.x + PASTE_OFFSET, 3, 97),
+    y: clamp(item.y + PASTE_OFFSET, 8, 92),
+    order: baseOrder + index,
+  }));
+  return { ...data, items: [...data.items, ...clones] };
 }

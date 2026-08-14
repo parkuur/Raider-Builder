@@ -6,6 +6,7 @@
     STAGE_ITEM_CATEGORIES,
     addStageItem,
     bringManyToFront,
+    cloneStageItemsForPaste,
     moveStageItemsBy,
     removeStageItem,
     removeStageItems,
@@ -16,6 +17,10 @@
   } from "../../model/stage-map";
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
+  import {
+    copyStageItems,
+    getStageMapClipboard,
+  } from "../../state/stage-map-clipboard";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
   import { autoFitText } from "../../components/auto-fit-text";
@@ -64,14 +69,17 @@
     });
   }
 
-  // Backspace/Delete/Escape only act while the canvas element itself is
-  // focused — not a descendant like the label textarea or name input — so
-  // typing/backspacing inside those fields is completely unaffected. Every
-  // item-click, marquee-drag, or canvas-background interaction focuses the
-  // canvas first, so whichever Stage Map section was last interacted with
-  // is naturally where these keys apply.
+  // Backspace/Delete/Escape/Ctrl+C/Ctrl+V only act while the canvas element
+  // itself is focused — not a descendant like the label textarea or name
+  // input — so typing/backspacing/copy-paste inside those fields is
+  // completely unaffected. Every item-click, marquee-drag, or
+  // canvas-background interaction focuses the canvas first, so whichever
+  // Stage Map section was last interacted with is naturally where these
+  // keys apply — including as the paste target for a copy made elsewhere.
   function handleCanvasKeydown(event: KeyboardEvent): void {
     if (event.target !== canvasEl) return;
+    const withModifier = event.ctrlKey || event.metaKey;
+
     if (event.key === "Backspace" || event.key === "Delete") {
       if (selectedIds.size === 0) return;
       event.preventDefault();
@@ -79,6 +87,23 @@
       selectedIds.clear();
     } else if (event.key === "Escape") {
       selectedIds.clear();
+    } else if (withModifier && event.key.toLowerCase() === "c") {
+      if (selectedIds.size === 0) return;
+      event.preventDefault();
+      copyStageItems(
+        section.data.items.filter((item) => selectedIds.has(item.id)),
+      );
+    } else if (withModifier && event.key.toLowerCase() === "v") {
+      const clipboardItems = getStageMapClipboard();
+      if (clipboardItems.length === 0) return;
+      event.preventDefault();
+      const originalCount = section.data.items.length;
+      const pasted = cloneStageItemsForPaste(section.data, clipboardItems);
+      commit(pasted);
+      selectedIds.clear();
+      for (const newItem of pasted.items.slice(originalCount)) {
+        selectedIds.add(newItem.id);
+      }
     }
   }
 
