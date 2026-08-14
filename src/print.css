@@ -87,6 +87,22 @@
   }
 
   /*
+   * Hiding the empty title above still leaves `.section-frame__head`'s own
+   * margin-bottom behind — a blank gap above the section body even though
+   * nothing renders in the head at all once its title is gone and its
+   * actions are `.no-print`-hidden (every section's actions always are, in
+   * print). `:not(:has(title-with-a-value))` covers both an empty title
+   * and a `hideTitle` section type that never renders a title input at
+   * all (e.g. Page Break) — in either case there's no title text to keep
+   * space for.
+   */
+  .section-frame__head:not(
+    :has(.section-frame__title:not(:placeholder-shown))
+  ) {
+    margin-bottom: 0;
+  }
+
+  /*
    * A paired row's two sections and Equipment's two lists always print
    * side-by-side/two-column, regardless of the screen-only mobile stacking
    * in RowView.svelte / EquipmentSection.svelte (those rules are already

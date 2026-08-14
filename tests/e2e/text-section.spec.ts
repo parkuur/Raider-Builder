@@ -68,14 +68,19 @@ test.describe("Text section", () => {
       .click();
 
     const title = page.locator(".section-frame__title");
+    const head = page.locator(".section-frame__head");
     await title.fill("");
     await page.emulateMedia({ media: "print" });
     await expect(title).toBeHidden();
+    // No title text and no actions (also print-hidden) means the head
+    // reserves no vertical space at all, not just a hidden title line.
+    expect((await head.boundingBox())!.height).toBe(0);
 
     await page.emulateMedia({ media: "screen" });
     await title.fill("Notes");
     await page.emulateMedia({ media: "print" });
     await expect(title).toBeVisible();
+    expect((await head.boundingBox())!.height).toBeGreaterThan(0);
   });
 
   test("body text auto-grows to fit its content, on screen and in print", async ({
