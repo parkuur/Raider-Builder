@@ -52,11 +52,11 @@ test.describe("copy-lift/copy-place", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page.getByRole("button", { name: "Add Section" }).last().click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await expect(page.locator(".row-view")).toHaveCount(2);
@@ -90,7 +90,7 @@ test.describe("copy-lift/copy-place", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
 
     const row = page.locator(".row-view").first();

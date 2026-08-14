@@ -34,7 +34,7 @@ export interface SectionComponentProps<T extends SectionType = SectionType> {
 export interface SectionRegistryEntry<T extends SectionType = SectionType> {
   type: T;
   label: string;
-  half: boolean;
+  split: boolean;
   /** Whether this type is offered in the "Add Section" menu. Defaults to true. */
   addable?: boolean;
   /** Suppresses the shared title input for types with nothing to title. */
@@ -49,7 +49,7 @@ export const sectionRegistry: SectionRegistry = {
   placeholder: {
     type: "placeholder",
     label: "Section",
-    half: false,
+    split: false,
     addable: false,
     defaultData: () => ({ note: "" }),
     component: PlaceholderSection,
@@ -57,63 +57,63 @@ export const sectionRegistry: SectionRegistry = {
   requirements: {
     type: "requirements",
     label: "Requirements",
-    half: false,
+    split: false,
     defaultData: defaultRequirementsData,
     component: RequirementsSection,
   },
   equipment: {
     type: "equipment",
     label: "Equipment",
-    half: false,
+    split: false,
     defaultData: defaultEquipmentData,
     component: EquipmentSection,
   },
   "channel-list": {
     type: "channel-list",
     label: "Channel List",
-    half: false,
+    split: false,
     defaultData: defaultChannelListData,
     component: ChannelListSection,
   },
   "monitor-list": {
     type: "monitor-list",
     label: "Monitor List",
-    half: false,
+    split: false,
     defaultData: defaultMonitorListData,
     component: MonitorListSection,
   },
   "band-members": {
     type: "band-members",
     label: "Band Members",
-    half: false,
+    split: false,
     defaultData: defaultBandMembersData,
     component: BandMembersSection,
   },
   "stage-map": {
     type: "stage-map",
     label: "Stage Map",
-    half: false,
+    split: false,
     defaultData: defaultStageMapData,
     component: StageMapSection,
   },
   contacts: {
     type: "contacts",
     label: "Contacts",
-    half: true,
+    split: true,
     defaultData: defaultContactsData,
     component: ContactsSection,
   },
   quicklook: {
     type: "quicklook",
     label: "Quick Look",
-    half: true,
+    split: true,
     defaultData: defaultQuickLookData,
     component: QuickLookSection,
   },
   "page-break": {
     type: "page-break",
     label: "Page Break",
-    half: false,
+    split: false,
     hideTitle: true,
     defaultData: defaultPageBreakData,
     component: PageBreakSection,
@@ -121,7 +121,7 @@ export const sectionRegistry: SectionRegistry = {
   text: {
     type: "text",
     label: "Text",
-    half: true,
+    split: true,
     defaultData: defaultTextData,
     component: TextSection,
   },

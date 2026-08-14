@@ -34,7 +34,7 @@
       ? (sectionRegistry[row.sections[0]!.type] as SectionRegistryEntry)
       : undefined,
   );
-  const showPairSlot = $derived(soleEntry?.half === true);
+  const showPairSlot = $derived(soleEntry?.split === true);
   const paired = $derived(row.sections.length === 2);
   // `liftedSectionId`/`liftedMode` only arrive non-null when the lift
   // originated in this very row (RowList scopes them per-row), so a

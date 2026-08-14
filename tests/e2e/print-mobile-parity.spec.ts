@@ -11,14 +11,14 @@ test.describe("layout that stacks on a mobile viewport still prints desktop-shap
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page
       .locator(".row-view")
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     const sections = page.locator(".row-view__sections");

@@ -53,7 +53,7 @@ async function buildDocument(page: Page): Promise<void> {
 
   await page.getByRole("button", { name: "Add Section" }).last().click();
   await page
-    .getByRole("button", { name: "Contacts (half)", exact: true })
+    .getByRole("button", { name: "Contacts (split)", exact: true })
     .click();
   await page.getByRole("button", { name: "+ Add Contact" }).click();
   await page.locator(".contacts-section__name").fill("Jamie Rivera");
@@ -63,7 +63,7 @@ async function buildDocument(page: Page): Promise<void> {
     .getByRole("button", { name: "Add paired section" })
     .click();
   await page
-    .getByRole("button", { name: "Quick Look (half)", exact: true })
+    .getByRole("button", { name: "Quick Look (split)", exact: true })
     .click();
   await page.getByRole("button", { name: "+ Add Topic" }).click();
   await page.getByRole("menuitem", { name: "Row", exact: true }).click();

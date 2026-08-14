@@ -7,26 +7,26 @@ import {
 const channels: SectionTypeSummary = {
   type: "channels",
   label: "Channel List",
-  half: false,
+  split: false,
 };
 const monitors: SectionTypeSummary = {
   type: "monitors",
   label: "Monitor List",
-  half: false,
+  split: false,
 };
 const contacts: SectionTypeSummary = {
   type: "contacts",
   label: "Contacts",
-  half: true,
+  split: true,
 };
 const quicklook: SectionTypeSummary = {
   type: "quicklook",
   label: "Quick Look",
-  half: true,
+  split: true,
 };
 
 describe("groupSectionTypesByWidth", () => {
-  it("splits a mix of full and half entries", () => {
+  it("splits a mix of full and split entries", () => {
     const result = groupSectionTypesByWidth([
       channels,
       contacts,
@@ -34,24 +34,24 @@ describe("groupSectionTypesByWidth", () => {
       quicklook,
     ]);
     expect(result.full).toEqual([channels, monitors]);
-    expect(result.half).toEqual([contacts, quicklook]);
+    expect(result.split).toEqual([contacts, quicklook]);
   });
 
-  it("puts everything in full when nothing is half-width", () => {
+  it("puts everything in full when nothing is split-eligible", () => {
     const result = groupSectionTypesByWidth([channels, monitors]);
     expect(result.full).toEqual([channels, monitors]);
-    expect(result.half).toEqual([]);
+    expect(result.split).toEqual([]);
   });
 
-  it("puts everything in half when nothing is full-width", () => {
+  it("puts everything in split when nothing is full-width", () => {
     const result = groupSectionTypesByWidth([contacts, quicklook]);
     expect(result.full).toEqual([]);
-    expect(result.half).toEqual([contacts, quicklook]);
+    expect(result.split).toEqual([contacts, quicklook]);
   });
 
   it("returns empty groups for empty input", () => {
     const result = groupSectionTypesByWidth([]);
     expect(result.full).toEqual([]);
-    expect(result.half).toEqual([]);
+    expect(result.split).toEqual([]);
   });
 });

@@ -20,7 +20,7 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
 
     await page
@@ -35,7 +35,7 @@ test.describe("half-width pairing UI", () => {
       page.getByRole("button", { name: "Equipment", exact: true }),
     ).toHaveCount(0);
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await expect(page.locator(".row-view")).toHaveCount(1);
@@ -61,14 +61,14 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page
       .locator(".row-view")
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     const frames = page.locator(".row-view").first().locator(".section-frame");
@@ -87,14 +87,14 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page
       .locator(".row-view")
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await expect(page.locator(".row-view")).toHaveCount(1);
@@ -128,14 +128,14 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page
       .locator(".row-view")
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     const frames = page.locator(".row-view").first().locator(".section-frame");
@@ -167,14 +167,14 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page
       .locator(".row-view")
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     const row = page.locator(".row-view").first();
@@ -214,11 +214,11 @@ test.describe("half-width pairing UI", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .getByRole("button", { name: "Contacts (split)", exact: true })
       .click();
     await page.getByRole("button", { name: "Add Section" }).last().click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await expect(page.locator(".row-view")).toHaveCount(2);

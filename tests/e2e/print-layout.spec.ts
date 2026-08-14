@@ -64,7 +64,7 @@ test.describe("print layout", () => {
       .first()
       .fill("PA System With Subwoofers");
 
-    await addSection(page, "Contacts (half)");
+    await addSection(page, "Contacts (split)");
     await page.getByRole("button", { name: "+ Add Contact" }).click();
     await page.locator(".contacts-section__name").fill("Jamie Rivera");
     await page
@@ -73,7 +73,7 @@ test.describe("print layout", () => {
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
     await page.getByRole("button", { name: "+ Add Topic" }).click();
     await page.getByRole("menuitem", { name: "Row", exact: true }).click();
@@ -124,14 +124,14 @@ test.describe("print layout", () => {
     page,
   }) => {
     await page.goto("/");
-    await addFirstSection(page, "Contacts (half)");
+    await addFirstSection(page, "Contacts (split)");
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     const row = page

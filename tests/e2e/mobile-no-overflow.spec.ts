@@ -52,7 +52,7 @@ test.describe("no horizontal overflow at a 360px viewport", () => {
       .first()
       .fill("PA System With Subwoofers");
 
-    await addSection(page, "Contacts (half)");
+    await addSection(page, "Contacts (split)");
     await page.getByRole("button", { name: "+ Add Contact" }).click();
     await page
       .locator(".row-view")
@@ -60,7 +60,7 @@ test.describe("no horizontal overflow at a 360px viewport", () => {
       .getByRole("button", { name: "Add paired section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
     await page.getByRole("button", { name: "+ Add Topic" }).click();
     await page.getByRole("menuitem", { name: "Row", exact: true }).click();

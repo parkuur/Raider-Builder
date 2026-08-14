@@ -7,12 +7,12 @@
 
   let {
     open,
-    filterHalfOnly = false,
+    filterSplitOnly = false,
     onPick,
     onClose,
   }: {
     open: boolean;
-    filterHalfOnly?: boolean;
+    filterSplitOnly?: boolean;
     onPick: (type: SectionType) => void;
     onClose: () => void;
   } = $props();
@@ -23,7 +23,7 @@
     ),
   );
   const entries = $derived(
-    filterHalfOnly ? groups.half : [...groups.full, ...groups.half],
+    filterSplitOnly ? groups.split : [...groups.full, ...groups.split],
   );
 </script>
 
@@ -36,11 +36,11 @@
         onclick={() => onPick(entry.type as SectionType)}
       >
         {entry.label}
-        {#if entry.half}
-          <span class="add-section-menu__half-tag" aria-hidden="true">
+        {#if entry.split}
+          <span class="add-section-menu__split-tag" aria-hidden="true">
             <SquareSplitHorizontalIcon size={14} />
           </span>
-          <span class="add-section-menu__half-sr">(half)</span>
+          <span class="add-section-menu__split-sr">(split)</span>
         {/if}
       </button>
     {/each}
@@ -72,15 +72,15 @@
     color: var(--color-text);
   }
 
-  .add-section-menu__half-tag {
+  .add-section-menu__split-tag {
     display: inline-flex;
     opacity: 0.55;
     margin-left: var(--space-1);
   }
 
   /* Kept for screen readers: the icon above is decorative (aria-hidden), so
-     this preserves "Contacts (half)" etc. as the option's accessible name. */
-  .add-section-menu__half-sr {
+     this preserves "Contacts (split)" etc. as the option's accessible name. */
+  .add-section-menu__split-sr {
     position: absolute;
     width: 1px;
     height: 1px;

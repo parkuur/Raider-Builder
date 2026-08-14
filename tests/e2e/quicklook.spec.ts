@@ -19,7 +19,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Row");
@@ -60,7 +60,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Row");
@@ -101,7 +101,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Row");
@@ -136,7 +136,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Table");
@@ -170,7 +170,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Table");
@@ -212,7 +212,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Table");
@@ -251,7 +251,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Text");
@@ -292,7 +292,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Table");
@@ -327,7 +327,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
 
     await addTopic(page, "Row");
@@ -355,7 +355,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "+ Add your first section" })
       .click();
     await page
-      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
     await addTopic(page, "Row");
     await page.locator(".quicklook-topic-header__title").fill("Wireless");

@@ -79,7 +79,7 @@
     const section = liftedSectionOf(liftedSource);
     if (!section) return false;
     const entry = sectionRegistry[section.type] as SectionRegistryEntry;
-    return entry.half === true;
+    return entry.split === true;
   }
 
   // The single entry point for both the move and copy triggers on a
@@ -220,7 +220,7 @@
 
 <AddSectionMenu
   open={menuRequest !== null}
-  filterHalfOnly={menuRequest?.kind === "pair"}
+  filterSplitOnly={menuRequest?.kind === "pair"}
   onPick={pickType}
   onClose={closeMenu}
 />
