@@ -1,14 +1,24 @@
 [Unit]
 Description=Technical Rider Editor
 After=network-online.target
+Wants=network-online.target
 
 [Container]
 Image=localhost/rider-editor:latest
+
+# Network setup
+Network=<network name>
+# OR
+#PublishPort=<interface>:<port>:<port>
+
 ContainerName=rider-editor
+RunInit=yes
+NoNewPrivileges=yes
 
 [Service]
 Restart=always
-TimeoutStartSec=60
+TimeoutStopSec=30s
+TimeoutStartSec=60s
 
 [Install]
 WantedBy=multi-user.target default.target
