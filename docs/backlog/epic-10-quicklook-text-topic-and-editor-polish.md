@@ -111,6 +111,10 @@ one onto the other.
 - The native file-input chrome ("Choose File" / "No file chosen") is replaced by a camera-icon
   affordance: an always-visible small badge in the empty (initials) state, and a full-circle
   hover-only overlay once a photo is set.
+- The filled-state overlay splits evenly into two controls — "Change photo" (opens the file
+  picker) and "Remove photo" (clears it, reverting to the initials/badge state) — not one
+  combined control, and the two halves are a true 50/50 split (accounting for native `<button>`
+  UA padding that a `<label>` doesn't have, which otherwise skews the flex split).
 - Selecting a file still updates the member's photo the same way as before.
-- Covered by a Playwright case in `band-members.spec.ts` exercising both states and the hover
-  transition.
+- Covered by a Playwright case in `band-members.spec.ts` exercising both states, the hover
+  transition, and removal.

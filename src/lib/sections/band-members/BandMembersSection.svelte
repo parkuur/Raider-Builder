@@ -15,6 +15,7 @@
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
   import CameraIcon from "phosphor-svelte/lib/CameraIcon";
+  import TrashIcon from "phosphor-svelte/lib/TrashIcon";
 
   let {
     rowId,
@@ -113,21 +114,39 @@
               <div class="band-members__avatar">
                 {#if member.photoData}
                   <img src={member.photoData} alt="" />
-                  <!-- Filled: a full-circle hover overlay, so switching photos
-                       doesn't need a permanently visible control sitting on
-                       top of the photo itself. -->
-                  <label
+                  <!-- Filled: a full-circle hover overlay, so switching/
+                       removing photos doesn't need permanently visible
+                       controls sitting on top of the photo itself. Split
+                       into two halves rather than one combined control,
+                       since "change" and "remove" are different actions
+                       with different consequences. -->
+                  <div
                     class="band-members__avatar-edit band-members__avatar-edit--overlay no-print"
                   >
-                    <CameraIcon size={18} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      class="band-members__photo-input"
-                      aria-label="Change photo"
-                      onchange={(e) => onPhotoSelected(member.id, e)}
-                    />
-                  </label>
+                    <label class="band-members__avatar-edit-half">
+                      <CameraIcon size={16} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        class="band-members__photo-input"
+                        aria-label="Change photo"
+                        onchange={(e) => onPhotoSelected(member.id, e)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      class="band-members__avatar-edit-half"
+                      aria-label="Remove photo"
+                      onclick={() =>
+                        commit(
+                          updateBandMember(section.data, member.id, {
+                            photoData: undefined,
+                          }),
+                        )}
+                    >
+                      <TrashIcon size={16} />
+                    </button>
+                  </div>
                 {:else}
                   <span>{memberInitials(member.name)}</span>
                 {/if}
@@ -299,13 +318,43 @@
   }
 
   /* Filled state: covers the whole circle but stays invisible until
-     hovered/focused, so the photo itself isn't obstructed at rest. */
+     hovered/focused, so the photo itself isn't obstructed at rest. Its two
+     children (change/remove) split it evenly, side by side. */
   .band-members__avatar-edit--overlay {
     position: absolute;
     inset: 0;
     background: color-mix(in srgb, #000 45%, transparent);
     opacity: 0;
     transition: opacity 0.15s ease;
+  }
+
+  /*
+   * `flex: 1` alone isn't enough to make these two true 50/50 — a native
+   * <button> carries UA default padding that a <label> doesn't, and with
+   * `min-width: auto` (the flex default) that padding counts toward each
+   * item's own minimum size, throwing off the split unevenly. Zeroing
+   * padding here (on both, since it's one shared class) removes that
+   * asymmetry.
+   */
+  .band-members__avatar-edit-half {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #fff;
+  }
+
+  .band-members__avatar-edit-half:not(:last-child) {
+    border-right: 1px solid color-mix(in srgb, #fff 35%, transparent);
+  }
+
+  .band-members__avatar-edit-half:hover {
+    background: color-mix(in srgb, #fff 15%, transparent);
   }
 
   .band-members__avatar:hover .band-members__avatar-edit--overlay,

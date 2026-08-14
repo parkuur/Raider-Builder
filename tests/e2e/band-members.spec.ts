@@ -130,7 +130,7 @@ test.describe("Band Members section", () => {
     await expect(page.locator(".band-members__card")).toHaveCount(0);
   });
 
-  test("selecting a photo replaces the initials, and the edit control switches from a badge to a hover overlay", async ({
+  test("selecting a photo switches the badge to a hover overlay; removing it reverts to the badge", async ({
     page,
   }) => {
     await page.goto("/");
@@ -172,6 +172,20 @@ test.describe("Band Members section", () => {
 
     await page.locator(".band-members__avatar").hover();
     await expect(overlay).toHaveCSS("opacity", "1");
+
+    // The overlay splits into a "Change photo" half and a separate
+    // "Remove photo" half, not one combined control.
+    await expect(page.getByLabel("Remove photo", { exact: true })).toHaveCount(
+      1,
+    );
+    await page.getByLabel("Remove photo", { exact: true }).click();
+
+    // Removing reverts to the empty state: initials back, badge back.
+    await expect(page.locator(".band-members__avatar img")).toHaveCount(0);
+    await expect(page.locator(".band-members__avatar span")).toHaveText("JH");
+    await expect(
+      page.locator(".band-members__avatar-edit--badge"),
+    ).toBeVisible();
   });
 
   test("the avatar circle's side gaps match its top gap, so it isn't off-center in its card", async ({
