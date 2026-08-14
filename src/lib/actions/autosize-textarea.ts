@@ -26,12 +26,29 @@ export const autosizeTextarea: Action<HTMLTextAreaElement, unknown> = (
   const onInput = () => resize(node);
   node.addEventListener("input", onInput);
 
+  // A height computed at one width goes stale the moment the textarea's
+  // own width changes — the same text now wraps onto a different number of
+  // lines (a narrower layout breakpoint, a column that reflows, or print's
+  // own page width, which is usually narrower than the screen the height
+  // was last computed at) — without re-measuring, the stale height clips
+  // the now-taller wrapped content. Tracked by width specifically (not
+  // height) so this doesn't loop against its own `resize()` writes above.
+  let lastWidth = node.getBoundingClientRect().width;
+  const resizeObserver = new ResizeObserver((entries) => {
+    const width = entries[0]!.contentRect.width;
+    if (width === lastWidth) return;
+    lastWidth = width;
+    resize(node);
+  });
+  resizeObserver.observe(node);
+
   return {
     update() {
       resize(node);
     },
     destroy() {
       node.removeEventListener("input", onInput);
+      resizeObserver.disconnect();
     },
   };
 };

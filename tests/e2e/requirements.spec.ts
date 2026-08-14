@@ -108,4 +108,42 @@ test.describe("Requirements section", () => {
     await page.emulateMedia({ media: "print" });
     expect(await noClipping()).toBe(true);
   });
+
+  test("detail text re-grows when its own width changes, not just on input", async ({
+    page,
+  }) => {
+    // Regression: a height computed at one width (e.g. on input, at a wide
+    // desktop viewport) previously went stale the moment the textarea's
+    // width changed without new input — the same text wraps onto more
+    // lines at a narrower width (or print's narrower page width), and the
+    // old, shorter height clipped the newly-wrapped lines.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Requirements", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Item" }).click();
+
+    const text = page.locator(".requirements-section__text");
+    await text.fill(
+      "This sentence wraps onto only a line or two at a wide desktop " +
+        "viewport, but would need several more lines once the viewport " +
+        "narrows down to a phone-sized width instead.",
+    );
+    const wideHeight = (await text.boundingBox())!.height;
+
+    const noClipping = async () =>
+      text.evaluate(
+        (el: HTMLTextAreaElement) => el.scrollHeight <= el.clientHeight + 1,
+      );
+
+    await page.setViewportSize({ width: 380, height: 900 });
+    await expect(async () => {
+      expect((await text.boundingBox())!.height).toBeGreaterThan(wideHeight);
+    }).toPass();
+    expect(await noClipping()).toBe(true);
+  });
 });
