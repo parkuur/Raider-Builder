@@ -75,7 +75,11 @@ function collapseIfEmptied(rows: Row[], rowIndex: number): Row[] {
     kind: "full",
     section,
   }));
-  return [...rows.slice(0, rowIndex), ...replacement, ...rows.slice(rowIndex + 1)];
+  return [
+    ...rows.slice(0, rowIndex),
+    ...replacement,
+    ...rows.slice(rowIndex + 1),
+  ];
 }
 
 export function addRow(
@@ -180,8 +184,7 @@ export function moveSectionToNewRow(
   }
 
   const producedCount = rowsAfterRemoval.length - (doc.rows.length - 1);
-  const shifted =
-    atIndex > sourceIndex ? atIndex + producedCount - 1 : atIndex;
+  const shifted = atIndex > sourceIndex ? atIndex + producedCount - 1 : atIndex;
   const insertIndex = clamp(shifted, 0, rowsAfterRemoval.length);
 
   const newRow: Row = { id: createId("row"), kind: "full", section };
@@ -467,8 +470,7 @@ export function reorderSectionWithinColumn(
 }
 
 type SectionSite =
-  | { kind: "full" }
-  | { kind: "split"; column: 0 | 1; index: number };
+  { kind: "full" } | { kind: "split"; column: 0 | 1; index: number };
 
 function siteOf(row: Row, sectionId: string): SectionSite | null {
   if (row.kind === "full") {

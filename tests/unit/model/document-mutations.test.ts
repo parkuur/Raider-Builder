@@ -404,14 +404,18 @@ describe("insertSectionIntoColumn", () => {
       ),
     );
     const start = insertSectionIntoColumn(doc, "r1", 0, 0, makeSection("s0"));
-    expect(
-      (start.rows[0] as SplitRow).columns[0].map((s) => s.id),
-    ).toEqual(["s0", "s1", "s3"]);
+    expect((start.rows[0] as SplitRow).columns[0].map((s) => s.id)).toEqual([
+      "s0",
+      "s1",
+      "s3",
+    ]);
 
     const middle = insertSectionIntoColumn(doc, "r1", 0, 1, makeSection("s2"));
-    expect(
-      (middle.rows[0] as SplitRow).columns[0].map((s) => s.id),
-    ).toEqual(["s1", "s2", "s3"]);
+    expect((middle.rows[0] as SplitRow).columns[0].map((s) => s.id)).toEqual([
+      "s1",
+      "s2",
+      "s3",
+    ]);
 
     const end = insertSectionIntoColumn(doc, "r1", 0, 2, makeSection("s4"));
     expect((end.rows[0] as SplitRow).columns[0].map((s) => s.id)).toEqual([
@@ -585,15 +589,15 @@ describe("duplicateSectionIntoColumn", () => {
       makeFullRow("r1", makeSection("s1")),
       makeSplitRow("r2", [makeSection("s2")], [makeSection("s3")]),
     );
-    expect(
-      duplicateSectionIntoColumn(doc, "missing", "s1", "r2", 0, 0),
-    ).toBe(doc);
-    expect(
-      duplicateSectionIntoColumn(doc, "r1", "missing", "r2", 0, 0),
-    ).toBe(doc);
-    expect(
-      duplicateSectionIntoColumn(doc, "r1", "s1", "missing", 0, 0),
-    ).toBe(doc);
+    expect(duplicateSectionIntoColumn(doc, "missing", "s1", "r2", 0, 0)).toBe(
+      doc,
+    );
+    expect(duplicateSectionIntoColumn(doc, "r1", "missing", "r2", 0, 0)).toBe(
+      doc,
+    );
+    expect(duplicateSectionIntoColumn(doc, "r1", "s1", "missing", 0, 0)).toBe(
+      doc,
+    );
   });
 });
 
@@ -608,16 +612,20 @@ describe("reorderSectionWithinColumn", () => {
 
   it("moves the first item to last", () => {
     const result = reorderSectionWithinColumn(doc, "r1", 0, 0, 2);
-    expect(
-      (result.rows[0] as SplitRow).columns[0].map((s) => s.id),
-    ).toEqual(["s2", "s3", "s1"]);
+    expect((result.rows[0] as SplitRow).columns[0].map((s) => s.id)).toEqual([
+      "s2",
+      "s3",
+      "s1",
+    ]);
   });
 
   it("moves the last item to first", () => {
     const result = reorderSectionWithinColumn(doc, "r1", 0, 2, 0);
-    expect(
-      (result.rows[0] as SplitRow).columns[0].map((s) => s.id),
-    ).toEqual(["s3", "s1", "s2"]);
+    expect((result.rows[0] as SplitRow).columns[0].map((s) => s.id)).toEqual([
+      "s3",
+      "s1",
+      "s2",
+    ]);
   });
 
   it("is a no-op when moving to its own current index", () => {
@@ -631,9 +639,11 @@ describe("reorderSectionWithinColumn", () => {
 
   it("clamps an out-of-range toIndex instead of erroring", () => {
     const result = reorderSectionWithinColumn(doc, "r1", 0, 0, 99);
-    expect(
-      (result.rows[0] as SplitRow).columns[0].map((s) => s.id),
-    ).toEqual(["s2", "s3", "s1"]);
+    expect((result.rows[0] as SplitRow).columns[0].map((s) => s.id)).toEqual([
+      "s2",
+      "s3",
+      "s1",
+    ]);
   });
 
   it("is a no-op when the row isn't a split layout", () => {
@@ -832,11 +842,7 @@ describe("setSectionData", () => {
 
   it("leaves other sections in the same column untouched", () => {
     const doc = docWithRows(
-      makeSplitRow(
-        "r1",
-        [makeSection("s1", "a")],
-        [makeSection("s2", "b")],
-      ),
+      makeSplitRow("r1", [makeSection("s1", "a")], [makeSection("s2", "b")]),
     );
     const result = setSectionData(doc, "r1", "s1", "placeholder", {
       note: "changed",
