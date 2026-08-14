@@ -66,6 +66,40 @@ test.describe("Stage Map section", () => {
     expect(after.y).toBeGreaterThan(before.y + 20);
   });
 
+  test("the depth handle is fully visible (not clipped) and large enough to tap", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const handle = page.locator(".stage-map__depth-handle");
+    const handleBox = await handle.boundingBox();
+    const scrollBox = await page.locator(".stage-map__scroll").boundingBox();
+    if (!handleBox || !scrollBox) throw new Error("missing bounding box");
+
+    expect(handleBox.height).toBeCloseTo(18, 0);
+    // Fully inside the scroll container's clipped area, not cut off by its
+    // overflow-y: hidden.
+    expect(handleBox.y + handleBox.height).toBeLessThanOrEqual(
+      scrollBox.y + scrollBox.height + 1,
+    );
+
+    const before = await page.locator(".stage-map__canvas").boundingBox();
+    if (!before) throw new Error("canvas has no bounding box");
+    await handle.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.move(
+      handleBox.x + handleBox.width / 2,
+      handleBox.y + handleBox.height / 2 + 40,
+    );
+    await page.mouse.up();
+    const after = await page.locator(".stage-map__canvas").boundingBox();
+    if (!after) throw new Error("canvas has no bounding box after drag");
+    expect(after.height).toBeGreaterThan(before.height);
+  });
+
   test("editing controls are hidden in print, content stays visible", async ({
     page,
   }) => {

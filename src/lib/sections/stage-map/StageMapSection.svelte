@@ -247,6 +247,14 @@
      * legitimately needs vertical scroll.
      */
     overflow-y: hidden;
+    /*
+     * The depth handle (below) intentionally sits half outside the
+     * canvas's own box, centered on its bottom edge — at its current size
+     * that's 9px of overflow below the canvas, which `overflow-y: hidden`
+     * above would otherwise clip. This padding gives it room without
+     * reintroducing scroll on this axis.
+     */
+    padding-bottom: 12px;
   }
 
   /*
@@ -447,10 +455,10 @@
   .stage-map__depth-handle {
     position: absolute;
     left: 50%;
-    bottom: -3px;
+    bottom: -9px;
     transform: translateX(-50%);
     width: 40px;
-    height: 6px;
+    height: 18px;
     border: 1px solid var(--color-border);
     background: var(--color-background);
     cursor: ns-resize;
