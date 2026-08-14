@@ -75,8 +75,10 @@ test.describe("print layout", () => {
     await page
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await page.getByRole("button", { name: "+ Add Topic" }).click();
+    await page.getByRole("menuitem", { name: "Row", exact: true }).click();
+    await page.getByRole("button", { name: "+ Add Topic" }).click();
+    await page.getByRole("menuitem", { name: "Table", exact: true }).click();
 
     await page.emulateMedia({ media: "print" });
 

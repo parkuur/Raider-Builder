@@ -129,6 +129,10 @@ export function moveSectionToPair(
   );
 }
 
+export function swapPairedSections(rowId: string): void {
+  state = mutations.swapPairedSections(state, rowId);
+}
+
 export function toggleSectionHidden(rowId: string, sectionId: string): void {
   state = mutations.toggleSectionHidden(state, rowId, sectionId);
 }

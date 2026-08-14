@@ -20,16 +20,20 @@
     sectionCount,
     showPairBadge,
     liftedMode,
+    swapAvailable,
     onToggleMoveLift,
     onToggleCopyLift,
+    onSwapPlace,
   }: {
     rowId: string;
     section: Section;
     sectionCount: number;
     showPairBadge: boolean;
     liftedMode: "move" | "copy" | null;
+    swapAvailable: boolean;
     onToggleMoveLift: () => void;
     onToggleCopyLift: () => void;
+    onSwapPlace: () => void;
   } = $props();
 
   // Indexing a mapped-type registry by a widened `SectionType` key yields a
@@ -121,6 +125,18 @@
     <div class="section-frame__pair-badge no-print" aria-hidden="true">
       <LinkIcon size={12} />
     </div>
+  {/if}
+  {#if swapAvailable}
+    <button
+      type="button"
+      class="section-frame__swap-target no-print"
+      data-lift-ui
+      aria-label="Swap places with this section"
+      title="Swap places with this section"
+      onclick={onSwapPlace}
+    >
+      Swap places
+    </button>
   {/if}
 </div>
 
@@ -222,5 +238,35 @@
       bottom: auto;
       transform: translate(-50%, -50%);
     }
+  }
+
+  /*
+   * Covers this section's own box so dropping the lifted sibling anywhere
+   * on it reads as "swap with this section," rather than needing a
+   * separate narrow drop target — matches PairSlot's "available" styling
+   * (solid accent border/tint) so the two drop-target affordances read as
+   * the same interaction language.
+   */
+  .section-frame__swap-target {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-accent);
+    /* Mostly opaque (unlike PairSlot's lighter tint) so the section's own
+       content underneath doesn't show through and clash with the label. */
+    background: color-mix(
+      in srgb,
+      var(--color-background) 92%,
+      var(--color-accent) 8%
+    );
+    cursor: pointer;
+    font-size: var(--font-size-label);
+    color: var(--color-accent);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 </style>

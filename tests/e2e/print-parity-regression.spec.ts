@@ -65,7 +65,8 @@ async function buildDocument(page: Page): Promise<void> {
   await page
     .getByRole("button", { name: "Quick Look (half)", exact: true })
     .click();
-  await page.getByRole("button", { name: "+ Add Row Topic" }).click();
+  await page.getByRole("button", { name: "+ Add Topic" }).click();
+  await page.getByRole("menuitem", { name: "Row", exact: true }).click();
 }
 
 interface PrintFingerprint {

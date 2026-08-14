@@ -120,6 +120,92 @@ test.describe("half-width pairing UI", () => {
     await expect(page.locator(".pair-slot")).toHaveCount(2);
   });
 
+  test("the divider between paired sections spans the taller section, not just the shorter one", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .click();
+    await page
+      .locator(".row-view")
+      .getByRole("button", { name: "Add paired section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    const frames = page.locator(".row-view").first().locator(".section-frame");
+    const shortHeight = (await frames.nth(0).boundingBox())!.height;
+
+    // Make the second (Quick Look) section much taller than the first
+    // (Contacts, left empty) by giving it several topics.
+    for (let i = 0; i < 6; i++) {
+      await page.getByRole("button", { name: "+ Add Topic" }).click();
+      await page.getByRole("menuitem", { name: "Row", exact: true }).click();
+    }
+
+    const contactsHeight = (await frames.nth(0).boundingBox())!.height;
+    const quicklookHeight = (await frames.nth(1).boundingBox())!.height;
+    expect(quicklookHeight).toBeGreaterThan(shortHeight);
+    // The shorter (Contacts) section's own box is stretched to match its
+    // taller partner, so the divider border on the second section — which
+    // spans that section's own box height — ends up exactly as tall as the
+    // taller side, not stopping short at the empty Contacts section's
+    // natural content height.
+    expect(contactsHeight).toBeCloseTo(quicklookHeight, 0);
+  });
+
+  test("lifting one side of a pair and dropping it on its own sibling swaps their positions", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .click();
+    await page
+      .locator(".row-view")
+      .getByRole("button", { name: "Add paired section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    const row = page.locator(".row-view").first();
+    // No swap affordance appears until a lift is in progress.
+    await expect(row.getByRole("button", { name: "Swap places" })).toHaveCount(
+      0,
+    );
+
+    const frames = row.locator(".section-frame");
+    await frames
+      .nth(0)
+      .getByRole("button", { name: "Move or unpair this section" })
+      .click();
+
+    const swapTarget = frames
+      .nth(1)
+      .getByRole("button", { name: "Swap places with this section" });
+    await expect(swapTarget).toBeVisible();
+    // The lifted section itself never offers to swap with itself.
+    await expect(
+      frames.nth(0).getByRole("button", { name: "Swap places" }),
+    ).toHaveCount(0);
+
+    await swapTarget.click();
+
+    await expect(frames).toHaveCount(2);
+    // Contacts (originally first) is now second, Quick Look now first.
+    await expect(frames.nth(0).locator(".quicklook-section")).toHaveCount(1);
+    await expect(frames.nth(1).locator(".contacts-section")).toHaveCount(1);
+  });
+
   test("lifting a standalone half section and placing it on another's pair slot pairs them", async ({
     page,
   }) => {

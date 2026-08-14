@@ -14,6 +14,7 @@
     setQuickLookTopicTitle,
     updateQuickLookLine,
     updateQuickLookRowValue,
+    updateQuickLookTextContent,
   } from "../../model/quicklook";
   import type { IconKey } from "../../model/icon-keys";
   import { fitColumnChars } from "../../model/column-fit";
@@ -21,6 +22,7 @@
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { autosizeTextarea } from "../../actions/autosize-textarea";
   import TextAlignLeftIcon from "phosphor-svelte/lib/TextAlignLeftIcon";
   import TextAlignCenterIcon from "phosphor-svelte/lib/TextAlignCenterIcon";
   import TextAlignRightIcon from "phosphor-svelte/lib/TextAlignRightIcon";
@@ -170,6 +172,38 @@
     >
       + Add Line
     </button>
+  {:else if topic.kind === "text"}
+    <div class="quicklook-section__text-row">
+      <!-- Matches the drag-handle width a table line's Label starts after,
+           so the text body's left edge lines up with Label's. Also
+           no-print, like the real DragHandle, so it collapses the same
+           way in print and the edges stay aligned there too. -->
+      <span
+        class="quicklook-section__text-row-spacer no-print"
+        aria-hidden="true"
+      ></span>
+      <textarea
+        class="quicklook-section__text-body"
+        use:autosizeTextarea={topic.content}
+        rows="1"
+        value={topic.content}
+        placeholder="Text…"
+        oninput={(e) =>
+          onCommit(
+            updateQuickLookTextContent(data, topic.id, e.currentTarget.value),
+          )}></textarea>
+      <!-- An actual (invisible, inert) RemoveButton, as the flex item
+           itself rather than wrapped in a spacer — a table line's Value
+           field ends right before its own RemoveButton, and matching that
+           width (button default font metrics differ subtly from the
+           app's inherited body font) exactly needs the same element, not
+           an approximation. Not wrapped: `no-print` is on this real
+           button, and it needs to be the flex item that goes away in
+           print, the same as it does in a table line, rather than a
+           wrapper span that would linger (and keep reserving its `gap`)
+           after the button inside it disappears. -->
+      <RemoveButton label="" onclick={() => {}} />
+    </div>
   {/if}
 </div>
 
@@ -245,6 +279,42 @@
 
   .quicklook-section__line-value {
     flex: none;
+  }
+
+  .quicklook-section__text-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .quicklook-section__text-row-spacer {
+    flex: none;
+    width: 20px;
+  }
+
+  /* Invisible but still a real flex item (not display:none), so it keeps
+     occupying its width and `gap` on screen — its own `no-print` class
+     (inherited from RemoveButton) takes it out of the layout in print,
+     the same way a table line's own remove button does. */
+  .quicklook-section__text-row :global(.remove-button) {
+    visibility: hidden;
+  }
+
+  .quicklook-section__text-body {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    min-height: 56px;
+    resize: none;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--font-size-body);
+    padding: var(--space-2);
+    box-sizing: border-box;
+    field-sizing: content;
   }
 
   .quicklook-section__add-line {

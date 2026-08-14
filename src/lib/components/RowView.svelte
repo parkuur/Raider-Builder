@@ -15,6 +15,7 @@
     onToggleCopyLift,
     onPairAdd,
     onPairPlace,
+    onSwapPlace,
   }: {
     row: Row;
     liftedSectionId: string | null;
@@ -25,6 +26,7 @@
     onToggleCopyLift: (sectionId: string) => void;
     onPairAdd: () => void;
     onPairPlace: () => void;
+    onSwapPlace: () => void;
   } = $props();
 
   const soleEntry = $derived(
@@ -34,6 +36,13 @@
   );
   const showPairSlot = $derived(soleEntry?.half === true);
   const paired = $derived(row.sections.length === 2);
+  // `liftedSectionId`/`liftedMode` only arrive non-null when the lift
+  // originated in this very row (RowList scopes them per-row), so a
+  // non-null id here already means "one of this row's own two sections is
+  // lifted" once `paired` is true — no extra check needed against `row.id`.
+  const swapAvailable = $derived(
+    paired && liftedMode === "move" && liftedSectionId !== null,
+  );
 </script>
 
 <div class="row-view">
@@ -45,8 +54,10 @@
         sectionCount={row.sections.length}
         showPairBadge={paired && sectionIndex === 1}
         liftedMode={liftedSectionId === section.id ? liftedMode : null}
+        swapAvailable={swapAvailable && liftedSectionId !== section.id}
         onToggleMoveLift={() => onToggleMoveLift(section.id)}
         onToggleCopyLift={() => onToggleCopyLift(section.id)}
+        {onSwapPlace}
       />
     {/each}
     {#if showPairSlot}
@@ -70,6 +81,18 @@
 
   .row-view__sections--paired {
     gap: var(--space-2);
+    /*
+     * Overrides the container's own `align-items: flex-start` above: each
+     * `.section-frame` is otherwise only as tall as its own content, so a
+     * border on the shorter one (below) would stop short of the taller
+     * one's bottom. Stretching both to the container's height — which is
+     * already exactly the taller section's height, container height being
+     * the max of its children's regardless of align-items — makes the
+     * border-carrying section always exactly as tall as its partner. Safe
+     * because no half-width section (Contacts/Quick Look/Text) relies on
+     * its own box height for internal layout.
+     */
+    align-items: stretch;
   }
 
   /*
