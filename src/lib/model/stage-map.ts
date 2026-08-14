@@ -110,14 +110,6 @@ export function addStageItem(
   return { ...data, items: [...data.items, item] };
 }
 
-export function removeStageItem(
-  data: StageMapSectionData,
-  itemId: string,
-): StageMapSectionData {
-  if (!data.items.some((i) => i.id === itemId)) return data;
-  return { ...data, items: data.items.filter((i) => i.id !== itemId) };
-}
-
 export function removeStageItems(
   data: StageMapSectionData,
   itemIds: readonly string[],

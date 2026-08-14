@@ -8,7 +8,6 @@
     bringManyToFront,
     cloneStageItemsForPaste,
     moveStageItemsBy,
-    removeStageItem,
     removeStageItems,
     resizeStageItem,
     setCanvasHeight,
@@ -22,7 +21,6 @@
     getStageMapClipboard,
   } from "../../state/stage-map-clipboard";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
-  import RemoveButton from "../../components/RemoveButton.svelte";
   import { autoFitText } from "../../components/auto-fit-text";
 
   let {
@@ -344,12 +342,6 @@
               }}
             ></div>
           {/if}
-          <div class="stage-map__remove no-print">
-            <RemoveButton
-              label="Remove item"
-              onclick={() => commit(removeStageItem(section.data, item.id))}
-            />
-          </div>
           <textarea
             class="stage-map__label"
             rows={item.label.split("\n").length}
@@ -626,12 +618,6 @@
     background: var(--color-background);
     cursor: nwse-resize;
     touch-action: none;
-  }
-
-  .stage-map__remove {
-    position: absolute;
-    top: -10px;
-    right: -10px;
   }
 
   .stage-map__label {

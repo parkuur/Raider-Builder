@@ -364,9 +364,6 @@ test.describe("Stage Map section", () => {
     await page.emulateMedia({ media: "print" });
 
     await expect(page.locator(".stage-map__palette")).toBeHidden();
-    await expect(
-      page.getByRole("button", { name: "Remove item" }),
-    ).toBeHidden();
     await expect(page.locator(".stage-map__resize-handle")).toBeHidden();
     await expect(page.locator(".stage-map__depth-handle")).toBeHidden();
     await expect(page.locator(".stage-map__canvas")).toBeVisible();
@@ -430,7 +427,7 @@ test.describe("Stage Map section", () => {
     expect(triangleTextColor).toBe(circleTextColor);
   });
 
-  test("the power item's label and remove button aren't clipped by its triangle shape", async ({
+  test("the power item's label isn't clipped by its triangle shape", async ({
     page,
   }) => {
     await page.goto("/");
@@ -444,9 +441,6 @@ test.describe("Stage Map section", () => {
     await expect(item.locator(".stage-map__label")).toBeVisible();
     await item.locator(".stage-map__label").fill("Power");
     await expect(item.locator(".stage-map__label")).toHaveValue("Power");
-    await expect(
-      item.getByRole("button", { name: "Remove item" }),
-    ).toBeVisible();
   });
 
   test("XLR and DI items render as half-height rectangles, not squares", async ({

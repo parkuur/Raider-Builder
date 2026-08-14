@@ -7,7 +7,6 @@ import {
   defaultStageMapData,
   moveStageItem,
   moveStageItemsBy,
-  removeStageItem,
   removeStageItems,
   resizeStageItem,
   setCanvasHeight,
@@ -63,13 +62,6 @@ describe("addStageItem", () => {
       w: undefined,
       h: undefined,
     });
-  });
-});
-
-describe("removeStageItem", () => {
-  it("is a no-op for an unknown id", () => {
-    const data = defaultStageMapData();
-    expect(removeStageItem(data, "missing")).toBe(data);
   });
 });
 
