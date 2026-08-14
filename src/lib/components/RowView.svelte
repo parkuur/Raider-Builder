@@ -154,9 +154,11 @@
    * rule between them so a split reads as a distinct signal — every other
    * seam in the document (RowGap, between unrelated rows) uses the neutral
    * border color, so hue alone marks "these two columns belong together."
-   * The badge sits on the divider's own bottom corner, not offset in from
-   * it, since the divider is now genuinely this column's own boundary
-   * rather than a rule borrowed from a section box.
+   * The badge sits on top of the divider, offset in from its true bottom
+   * (rather than centered exactly on the end) so a short tail of the
+   * full-length line still shows past the badge down to the actual corner —
+   * flush with the corner instead reads as the line stopping abruptly at
+   * the badge rather than the badge marking a point on a continuous line.
    */
   .row-view__column + .row-view__column {
     position: relative;
@@ -168,7 +170,7 @@
   .row-view__split-badge {
     position: absolute;
     left: 0;
-    bottom: 0;
+    bottom: 14px;
     transform: translate(-50%, 50%);
     width: 20px;
     height: 20px;
