@@ -237,7 +237,7 @@ test.describe("Stage Map section", () => {
     await expect(item.locator(".stage-map__label")).toBeVisible();
   });
 
-  test("Shift+Enter adds a line break in the label; Enter alone does not", async ({
+  test("Enter adds a line break in the label; Escape exits editing without losing the text", async ({
     page,
   }) => {
     await page.goto("/");
@@ -249,11 +249,11 @@ test.describe("Stage Map section", () => {
 
     const label = page.locator(".stage-map__label");
     await label.fill("Vox");
-    await label.press("Shift+Enter");
+    await label.press("Enter");
     await label.type("Lead");
     await expect(label).toHaveValue("Vox\nLead");
 
-    await label.press("Enter");
+    await label.press("Escape");
     await expect(label).not.toBeFocused();
     await expect(label).toHaveValue("Vox\nLead");
   });

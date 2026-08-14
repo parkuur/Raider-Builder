@@ -170,6 +170,9 @@
                     e.currentTarget.value,
                   ),
                 )}
+              onkeydown={(e) => {
+                if (e.key === "Escape") e.currentTarget.blur();
+              }}
             />
           {:else}
             <span class="stage-map__abbr">{meta.abbreviation}</span>
@@ -202,10 +205,7 @@
                 ),
               )}
             onkeydown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                e.currentTarget.blur();
-              }
+              if (e.key === "Escape") e.currentTarget.blur();
             }}></textarea>
         </div>
       {/each}
