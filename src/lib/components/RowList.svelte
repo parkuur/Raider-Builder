@@ -12,6 +12,7 @@
     moveSectionToPair,
     pairSections,
     reorderRows,
+    swapPairedSections,
   } from "../state/document.svelte";
   import { sectionRegistry } from "../sections/registry";
   import type { SectionRegistryEntry } from "../sections/registry";
@@ -140,6 +141,17 @@
     }
   }
 
+  // Dropping a lifted half onto its own row's other half swaps the two
+  // sections' positions — a distinct target from `placeAtPair` (which
+  // pairs onto a *different* row's single-section pair slot).
+  function placeAtSwap(rowId: string): void {
+    const source = liftedSource;
+    liftedSource = null;
+    if (!source || source.kind !== "section" || source.mode !== "move") return;
+    if (source.rowId !== rowId) return;
+    swapPairedSections(rowId);
+  }
+
   // Clicking or tapping anywhere outside the lift/drop-target controls
   // cancels an in-progress lift without otherwise interrupting the click —
   // this is what lets the user freely scroll or edit elsewhere mid-move
@@ -193,6 +205,7 @@
         onToggleCopyLift={(sectionId) => toggleLift(row, sectionId, "copy")}
         onPairAdd={() => openPairMenu(row.id)}
         onPairPlace={() => placeAtPair(row.id)}
+        onSwapPlace={() => placeAtSwap(row.id)}
       />
       <RowGap
         available={liftedSource !== null}

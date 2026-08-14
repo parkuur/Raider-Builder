@@ -159,6 +159,53 @@ test.describe("half-width pairing UI", () => {
     expect(contactsHeight).toBeCloseTo(quicklookHeight, 0);
   });
 
+  test("lifting one side of a pair and dropping it on its own sibling swaps their positions", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Contacts (half)", exact: true })
+      .click();
+    await page
+      .locator(".row-view")
+      .getByRole("button", { name: "Add paired section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    const row = page.locator(".row-view").first();
+    // No swap affordance appears until a lift is in progress.
+    await expect(row.getByRole("button", { name: "Swap places" })).toHaveCount(
+      0,
+    );
+
+    const frames = row.locator(".section-frame");
+    await frames
+      .nth(0)
+      .getByRole("button", { name: "Move or unpair this section" })
+      .click();
+
+    const swapTarget = frames
+      .nth(1)
+      .getByRole("button", { name: "Swap places with this section" });
+    await expect(swapTarget).toBeVisible();
+    // The lifted section itself never offers to swap with itself.
+    await expect(
+      frames.nth(0).getByRole("button", { name: "Swap places" }),
+    ).toHaveCount(0);
+
+    await swapTarget.click();
+
+    await expect(frames).toHaveCount(2);
+    // Contacts (originally first) is now second, Quick Look now first.
+    await expect(frames.nth(0).locator(".quicklook-section")).toHaveCount(1);
+    await expect(frames.nth(1).locator(".contacts-section")).toHaveCount(1);
+  });
+
   test("lifting a standalone half section and placing it on another's pair slot pairs them", async ({
     page,
   }) => {

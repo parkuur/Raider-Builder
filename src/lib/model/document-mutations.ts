@@ -186,6 +186,19 @@ export function moveSectionToPair(
   return { ...doc, rows };
 }
 
+export function swapPairedSections(
+  doc: RiderDocument,
+  rowId: string,
+): RiderDocument {
+  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
+  if (rowIndex === -1) return doc;
+  const row = doc.rows[rowIndex]!;
+  if (row.sections.length !== 2) return doc;
+  const rows = [...doc.rows];
+  rows[rowIndex] = { ...row, sections: [row.sections[1], row.sections[0]] };
+  return { ...doc, rows };
+}
+
 export function toggleSectionHidden(
   doc: RiderDocument,
   rowId: string,

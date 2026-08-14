@@ -12,6 +12,7 @@ import {
   setHeaderField,
   setSectionData,
   setSectionTitle,
+  swapPairedSections,
   toggleSectionHidden,
 } from "../../../src/lib/model/document-mutations";
 import { createEmptyDocument } from "../../../src/lib/model/document-types";
@@ -375,6 +376,28 @@ describe("moveSectionToPair", () => {
     expect(moveSectionToPair(doc, "missing", "s1", "r2")).toBe(doc);
     expect(moveSectionToPair(doc, "r1", "missing", "r2")).toBe(doc);
     expect(moveSectionToPair(doc, "r1", "s1", "missing")).toBe(doc);
+  });
+});
+
+describe("swapPairedSections", () => {
+  it("swaps the two sections of a paired row", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1"), makeSection("s2")),
+    );
+    const result = swapPairedSections(doc, "r1");
+    expect(result.rows[0]!.sections.map((s) => s.id)).toEqual(["s2", "s1"]);
+  });
+
+  it("is a no-op for an unknown row id", () => {
+    const doc = docWithRows(
+      makeRow("r1", makeSection("s1"), makeSection("s2")),
+    );
+    expect(swapPairedSections(doc, "missing")).toBe(doc);
+  });
+
+  it("is a no-op when the row is not a pair", () => {
+    const doc = docWithRows(makeRow("r1", makeSection("s1")));
+    expect(swapPairedSections(doc, "r1")).toBe(doc);
   });
 });
 

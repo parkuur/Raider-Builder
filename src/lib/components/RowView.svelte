@@ -15,6 +15,7 @@
     onToggleCopyLift,
     onPairAdd,
     onPairPlace,
+    onSwapPlace,
   }: {
     row: Row;
     liftedSectionId: string | null;
@@ -25,6 +26,7 @@
     onToggleCopyLift: (sectionId: string) => void;
     onPairAdd: () => void;
     onPairPlace: () => void;
+    onSwapPlace: () => void;
   } = $props();
 
   const soleEntry = $derived(
@@ -34,6 +36,13 @@
   );
   const showPairSlot = $derived(soleEntry?.half === true);
   const paired = $derived(row.sections.length === 2);
+  // `liftedSectionId`/`liftedMode` only arrive non-null when the lift
+  // originated in this very row (RowList scopes them per-row), so a
+  // non-null id here already means "one of this row's own two sections is
+  // lifted" once `paired` is true — no extra check needed against `row.id`.
+  const swapAvailable = $derived(
+    paired && liftedMode === "move" && liftedSectionId !== null,
+  );
 </script>
 
 <div class="row-view">
@@ -45,8 +54,10 @@
         sectionCount={row.sections.length}
         showPairBadge={paired && sectionIndex === 1}
         liftedMode={liftedSectionId === section.id ? liftedMode : null}
+        swapAvailable={swapAvailable && liftedSectionId !== section.id}
         onToggleMoveLift={() => onToggleMoveLift(section.id)}
         onToggleCopyLift={() => onToggleCopyLift(section.id)}
+        {onSwapPlace}
       />
     {/each}
     {#if showPairSlot}
