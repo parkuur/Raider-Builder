@@ -49,6 +49,63 @@
     }
   }
 
+  interface ClientPoint {
+    x: number;
+    y: number;
+  }
+
+  let marqueeStartClient: ClientPoint | undefined = $state();
+  let marqueeCurrentClient: ClientPoint | undefined = $state();
+  let marqueeAdditive = false;
+
+  // Converts a viewport point into the canvas's own (unscaled) local
+  // coordinate space — the space item x/y percentages and the marquee
+  // overlay's own inline position are both expressed in, since the overlay
+  // is a descendant of the canvas and inherits its CSS `transform: scale()`.
+  function canvasLocalPoint(client: ClientPoint): ClientPoint {
+    if (!canvasEl) return { x: 0, y: 0 };
+    const rect = canvasEl.getBoundingClientRect();
+    return {
+      x: (client.x - rect.left) / canvasScale,
+      y: (client.y - rect.top) / canvasScale,
+    };
+  }
+
+  // Hit-testing happens directly in viewport coordinates (both the marquee
+  // corners and each item's own getBoundingClientRect() are already in that
+  // space), sidestepping any scale conversion entirely.
+  function finishMarquee(): void {
+    const start = marqueeStartClient;
+    const current = marqueeCurrentClient;
+    marqueeStartClient = undefined;
+    marqueeCurrentClient = undefined;
+    if (!start || !current || !canvasEl) return;
+
+    const left = Math.min(start.x, current.x);
+    const right = Math.max(start.x, current.x);
+    const top = Math.min(start.y, current.y);
+    const bottom = Math.max(start.y, current.y);
+
+    const matchedIds = section.data.items
+      .filter((item) => {
+        const el = canvasEl!.querySelector<HTMLElement>(
+          `[data-item-id="${item.id}"]`,
+        );
+        if (!el) return false;
+        const box = el.getBoundingClientRect();
+        return (
+          box.left < right &&
+          box.right > left &&
+          box.top < bottom &&
+          box.bottom > top
+        );
+      })
+      .map((item) => item.id);
+
+    if (!marqueeAdditive) selectedIds.clear();
+    for (const id of matchedIds) selectedIds.add(id);
+  }
+
   const categories: StageItemCategory[] = [
     "mic",
     "di",
@@ -147,6 +204,17 @@
       style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
       style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
       style:transform-origin="top left"
+      use:pointerDrag={{
+        onStart: (event) => {
+          marqueeAdditive = event.ctrlKey || event.metaKey;
+          marqueeStartClient = { x: event.clientX, y: event.clientY };
+          marqueeCurrentClient = marqueeStartClient;
+        },
+        onMove: (_dx, _dy, event) => {
+          marqueeCurrentClient = { x: event.clientX, y: event.clientY };
+        },
+        onEnd: () => finishMarquee(),
+      }}
     >
       {#each section.data.items as item (item.id)}
         {@const meta = STAGE_ITEM_CATEGORIES[item.category]}
@@ -162,6 +230,7 @@
           data-item-id={item.id}
           data-category={item.category}
           use:pointerDrag={{
+            stopPropagation: true,
             onStart: (event) => {
               resolveClickSelection(item, event);
               commit(bringStageItemToFront(section.data, item.id));
@@ -231,9 +300,21 @@
             }}></textarea>
         </div>
       {/each}
+      {#if marqueeStartClient && marqueeCurrentClient}
+        {@const a = canvasLocalPoint(marqueeStartClient)}
+        {@const b = canvasLocalPoint(marqueeCurrentClient)}
+        <div
+          class="stage-map__marquee no-print"
+          style:left="{Math.min(a.x, b.x)}px"
+          style:top="{Math.min(a.y, b.y)}px"
+          style:width="{Math.abs(b.x - a.x)}px"
+          style:height="{Math.abs(b.y - a.y)}px"
+        ></div>
+      {/if}
       <div
         class="stage-map__depth-handle no-print"
         use:pointerDrag={{
+          stopPropagation: true,
           onMove: (dx, dy) =>
             commit(
               setCanvasHeight(
@@ -447,6 +528,13 @@
     padding: 0;
     cursor: text;
     touch-action: none;
+  }
+
+  .stage-map__marquee {
+    position: absolute;
+    border: 1px dashed #d64545;
+    background: color-mix(in srgb, #d64545 12%, transparent);
+    pointer-events: none;
   }
 
   .stage-map__resize-handle {

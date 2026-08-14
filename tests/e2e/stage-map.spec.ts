@@ -68,6 +68,64 @@ test.describe("Stage Map section", () => {
     await expect(itemB).toHaveClass(selected);
   });
 
+  test("dragging a marquee over several items selects them; clicking empty canvas clears the selection", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+    const selected = /stage-map__item--selected/;
+
+    // Spread the two items apart — both spawn overlapping at the default
+    // position, so a marquee couldn't otherwise be drawn around only one
+    // of them to prove it's a rectangle test and not a click.
+    const diBefore = await itemB.boundingBox();
+    if (!diBefore) throw new Error("item has no bounding box");
+    await page.mouse.move(
+      diBefore.x + diBefore.width / 2,
+      diBefore.y + diBefore.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      diBefore.x + diBefore.width / 2 - 120,
+      diBefore.y + diBefore.height / 2 - 60,
+    );
+    await page.mouse.up();
+
+    const canvasBox = await page.locator(".stage-map__canvas").boundingBox();
+    const boxA = await itemA.boundingBox();
+    const boxB = await itemB.boundingBox();
+    if (!canvasBox || !boxA || !boxB) throw new Error("missing bounding box");
+
+    // Drag a marquee from an empty top-left corner of the canvas across
+    // both items.
+    await page.mouse.move(canvasBox.x + 4, canvasBox.y + 4);
+    await page.mouse.down();
+    await page.mouse.move(
+      Math.max(boxA.x + boxA.width, boxB.x + boxB.width) + 10,
+      Math.max(boxA.y + boxA.height, boxB.y + boxB.height) + 10,
+    );
+    await page.mouse.up();
+
+    await expect(itemA).toHaveClass(selected);
+    await expect(itemB).toHaveClass(selected);
+
+    // A plain click (no drag) on empty canvas clears the selection.
+    await page.mouse.move(canvasBox.x + 4, canvasBox.y + canvasBox.height - 4);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(itemA).not.toHaveClass(selected);
+    await expect(itemB).not.toHaveClass(selected);
+  });
+
   test("dragging an item repositions it on the canvas", async ({ page }) => {
     await page.goto("/");
     await page
