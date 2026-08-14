@@ -117,6 +117,15 @@ export function removeStageItem(
   return { ...data, items: data.items.filter((i) => i.id !== itemId) };
 }
 
+export function removeStageItems(
+  data: StageMapSectionData,
+  itemIds: readonly string[],
+): StageMapSectionData {
+  const idSet = new Set(itemIds);
+  if (!data.items.some((i) => idSet.has(i.id))) return data;
+  return { ...data, items: data.items.filter((i) => !idSet.has(i.id)) };
+}
+
 export function updateStageItemLabel(
   data: StageMapSectionData,
   itemId: string,

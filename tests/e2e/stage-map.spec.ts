@@ -189,6 +189,57 @@ test.describe("Stage Map section", () => {
     expect(after.height).toBeGreaterThan(before.height);
   });
 
+  test("Backspace deletes every selected item", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+
+    await itemA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await itemB.dispatchEvent("pointerdown", { button: 0, ctrlKey: true });
+    await page.mouse.up();
+
+    await page.keyboard.press("Backspace");
+
+    await expect(itemA).toHaveCount(0);
+    await expect(itemB).toHaveCount(0);
+  });
+
+  test("Backspace while typing in a label edits its text instead of deleting the item", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const item = page.locator('[data-category="mic"]');
+    // Selecting the item first focuses the canvas, the same way a real user
+    // would before noticing they'd rather edit the label instead.
+    await item.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+
+    const label = page.locator(".stage-map__label");
+    await label.click();
+    await expect(label).toHaveValue("Vox");
+    await label.evaluate((el: HTMLTextAreaElement) => {
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+    await label.press("Backspace");
+
+    await expect(item).toHaveCount(1);
+    await expect(label).toHaveValue("Vo");
+  });
+
   test("dragging one item of a multi-selection moves the whole group", async ({
     page,
   }) => {

@@ -7,6 +7,7 @@ import {
   moveStageItem,
   moveStageItemsBy,
   removeStageItem,
+  removeStageItems,
   resizeStageItem,
   setCanvasHeight,
   updateStageItemName,
@@ -68,6 +69,28 @@ describe("removeStageItem", () => {
   it("is a no-op for an unknown id", () => {
     const data = defaultStageMapData();
     expect(removeStageItem(data, "missing")).toBe(data);
+  });
+});
+
+describe("removeStageItems", () => {
+  it("removes every listed item that's present", () => {
+    const data = {
+      items: [item("a", 1), item("b", 2), item("c", 3)],
+      canvasHeight: 260,
+    };
+    const result = removeStageItems(data, ["a", "c"]);
+    expect(result.items.map((i) => i.id)).toEqual(["b"]);
+  });
+
+  it("is a no-op when none of the ids are present", () => {
+    const data = defaultStageMapData();
+    expect(removeStageItems(data, ["missing"])).toBe(data);
+  });
+
+  it("ignores ids that aren't present, removing only the ones that are", () => {
+    const data = { items: [item("a", 1)], canvasHeight: 260 };
+    const result = removeStageItems(data, ["a", "missing"]);
+    expect(result.items).toEqual([]);
   });
 });
 

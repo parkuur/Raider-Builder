@@ -8,6 +8,7 @@
     bringManyToFront,
     moveStageItemsBy,
     removeStageItem,
+    removeStageItems,
     resizeStageItem,
     setCanvasHeight,
     updateStageItemLabel,
@@ -54,12 +55,31 @@
   let dragGroupIds: string[] = [];
 
   function beginItemDrag(item: StageItem, event: PointerEvent): void {
+    canvasEl?.focus({ preventScroll: true });
     resolveClickSelection(item, event);
     dragGroupIds = selectedIds.has(item.id) ? [...selectedIds] : [item.id];
     commit({
       ...section.data,
       items: bringManyToFront(section.data.items, dragGroupIds),
     });
+  }
+
+  // Backspace/Delete/Escape only act while the canvas element itself is
+  // focused — not a descendant like the label textarea or name input — so
+  // typing/backspacing inside those fields is completely unaffected. Every
+  // item-click, marquee-drag, or canvas-background interaction focuses the
+  // canvas first, so whichever Stage Map section was last interacted with
+  // is naturally where these keys apply.
+  function handleCanvasKeydown(event: KeyboardEvent): void {
+    if (event.target !== canvasEl) return;
+    if (event.key === "Backspace" || event.key === "Delete") {
+      if (selectedIds.size === 0) return;
+      event.preventDefault();
+      commit(removeStageItems(section.data, [...selectedIds]));
+      selectedIds.clear();
+    } else if (event.key === "Escape") {
+      selectedIds.clear();
+    }
   }
 
   interface ClientPoint {
@@ -208,6 +228,15 @@
       ? `${section.data.canvasHeight * canvasScale}px`
       : undefined}
   >
+    <!--
+      role="application" plus a focusable, keydown-handling canvas is the
+      free-form editing-surface pattern (a whiteboard/diagram canvas, not a
+      document-flow region) — svelte's a11y checks don't recognize it as
+      "interactive" on its own, but the role and keyboard handling here are
+      intentional and paired.
+    -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="stage-map__canvas"
       bind:this={canvasEl}
@@ -215,8 +244,13 @@
       style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
       style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
       style:transform-origin="top left"
+      role="application"
+      aria-label="Stage map canvas"
+      tabindex="0"
+      onkeydown={handleCanvasKeydown}
       use:pointerDrag={{
         onStart: (event) => {
+          canvasEl?.focus({ preventScroll: true });
           marqueeAdditive = event.ctrlKey || event.metaKey;
           marqueeStartClient = { x: event.clientX, y: event.clientY };
           marqueeCurrentClient = marqueeStartClient;
