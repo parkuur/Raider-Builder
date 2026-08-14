@@ -15,6 +15,7 @@ import {
   setHeaderField,
   setSectionData,
   setSectionTitle,
+  swapSections,
   toggleSectionHidden,
 } from "../../../src/lib/model/document-mutations";
 import { createEmptyDocument } from "../../../src/lib/model/document-types";
@@ -638,6 +639,83 @@ describe("reorderSectionWithinColumn", () => {
   it("is a no-op when the row isn't a split layout", () => {
     const full = docWithRows(makeFullRow("r1", makeSection("s1")));
     expect(reorderSectionWithinColumn(full, "r1", 0, 0, 0)).toBe(full);
+  });
+});
+
+describe("swapSections", () => {
+  it("swaps two items within the same column", () => {
+    const doc = docWithRows(
+      makeSplitRow(
+        "r1",
+        [makeSection("s1"), makeSection("s2")],
+        [makeSection("s9")],
+      ),
+    );
+    const result = swapSections(doc, "r1", "s1", "r1", "s2");
+    const row = result.rows[0] as SplitRow;
+    expect(row.columns[0].map((s) => s.id)).toEqual(["s2", "s1"]);
+    expect(row.columns[1].map((s) => s.id)).toEqual(["s9"]);
+  });
+
+  it("swaps two items across columns of the same row", () => {
+    const doc = docWithRows(
+      makeSplitRow("r1", [makeSection("s1")], [makeSection("s2")]),
+    );
+    const result = swapSections(doc, "r1", "s1", "r1", "s2");
+    const row = result.rows[0] as SplitRow;
+    expect(row.columns[0].map((s) => s.id)).toEqual(["s2"]);
+    expect(row.columns[1].map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("swaps two embedded items across different rows", () => {
+    const doc = docWithRows(
+      makeSplitRow("r1", [makeSection("s1")], [makeSection("s2")]),
+      makeSplitRow("r2", [makeSection("s3")], [makeSection("s4")]),
+    );
+    const result = swapSections(doc, "r1", "s1", "r2", "s4");
+    const row1 = result.rows[0] as SplitRow;
+    const row2 = result.rows[1] as SplitRow;
+    expect(row1.columns[0].map((s) => s.id)).toEqual(["s4"]);
+    expect(row1.columns[1].map((s) => s.id)).toEqual(["s2"]);
+    expect(row2.columns[0].map((s) => s.id)).toEqual(["s3"]);
+    expect(row2.columns[1].map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("swaps a solo FullRow's section with an embedded column item", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeSplitRow("r2", [makeSection("s2")], [makeSection("s3")]),
+    );
+    const result = swapSections(doc, "r1", "s1", "r2", "s2");
+    expect((result.rows[0] as FullRow).section.id).toBe("s2");
+    const row2 = result.rows[1] as SplitRow;
+    expect(row2.columns[0].map((s) => s.id)).toEqual(["s1"]);
+    expect(row2.columns[1].map((s) => s.id)).toEqual(["s3"]);
+  });
+
+  it("swaps two solo FullRows", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeFullRow("r2", makeSection("s2")),
+    );
+    const result = swapSections(doc, "r1", "s1", "r2", "s2");
+    expect((result.rows[0] as FullRow).section.id).toBe("s2");
+    expect((result.rows[1] as FullRow).section.id).toBe("s1");
+  });
+
+  it("is a no-op for a self-swap", () => {
+    const doc = docWithRows(makeFullRow("r1", makeSection("s1")));
+    expect(swapSections(doc, "r1", "s1", "r1", "s1")).toBe(doc);
+  });
+
+  it("is a no-op for unresolvable locators", () => {
+    const doc = docWithRows(
+      makeFullRow("r1", makeSection("s1")),
+      makeFullRow("r2", makeSection("s2")),
+    );
+    expect(swapSections(doc, "missing", "s1", "r2", "s2")).toBe(doc);
+    expect(swapSections(doc, "r1", "missing", "r2", "s2")).toBe(doc);
+    expect(swapSections(doc, "r1", "s1", "r2", "missing")).toBe(doc);
   });
 });
 

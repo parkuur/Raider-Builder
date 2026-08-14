@@ -180,8 +180,13 @@ export function reorderSectionWithinColumn(
   );
 }
 
-export function swapPairedSections(rowId: string): void {
-  state = mutations.swapPairedSections(state, rowId);
+export function swapSections(
+  rowIdA: string,
+  sectionIdA: string,
+  rowIdB: string,
+  sectionIdB: string,
+): void {
+  state = mutations.swapSections(state, rowIdA, sectionIdA, rowIdB, sectionIdB);
 }
 
 export function toggleSectionHidden(rowId: string, sectionId: string): void {

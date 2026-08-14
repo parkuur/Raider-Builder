@@ -466,16 +466,78 @@ export function reorderSectionWithinColumn(
   return { ...doc, rows };
 }
 
-export function swapPairedSections(
+type SectionSite =
+  | { kind: "full" }
+  | { kind: "split"; column: 0 | 1; index: number };
+
+function siteOf(row: Row, sectionId: string): SectionSite | null {
+  if (row.kind === "full") {
+    return row.section.id === sectionId ? { kind: "full" } : null;
+  }
+  const located = locateInSplitRow(row, sectionId);
+  return located ? { kind: "split", ...located } : null;
+}
+
+/**
+ * Replaces whatever section currently occupies `site` — a position, not an
+ * id, unlike `replaceSectionInRow` — with `section`. `site.kind === "full"`
+ * is only ever produced by `siteOf` for a row that's actually a `FullRow`,
+ * so the cast is safe even though TS can't see that correlation itself.
+ */
+function withSectionAt(row: Row, site: SectionSite, section: Section): Row {
+  if (site.kind === "full") {
+    return { ...row, section } as Row;
+  }
+  if (row.kind !== "split") return row;
+  const columns = row.columns.map((column, i) => {
+    if (i !== site.column) return column;
+    const next = [...column];
+    next[site.index] = section;
+    return next;
+  }) as [Section[], Section[]];
+  return { ...row, columns };
+}
+
+/**
+ * Swaps the section content at two arbitrary locations — a `FullRow`'s
+ * own section or a specific split-row column item, in any combination,
+ * same row or different rows. Deliberately permissive about *which*
+ * combinations make sense to offer as a swap in the first place — that
+ * eligibility (e.g. a full-width row can't swap with an embedded split
+ * section) is a UI-layer concern, not enforced here, matching the rest of
+ * this file staying registry-agnostic.
+ */
+export function swapSections(
   doc: RiderDocument,
-  rowId: string,
+  rowIdA: string,
+  sectionIdA: string,
+  rowIdB: string,
+  sectionIdB: string,
 ): RiderDocument {
-  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
-  if (rowIndex === -1) return doc;
-  const row = doc.rows[rowIndex]!;
-  if (row.sections.length !== 2) return doc;
+  if (rowIdA === rowIdB && sectionIdA === sectionIdB) return doc;
+  const rowIndexA = doc.rows.findIndex((r) => r.id === rowIdA);
+  const rowIndexB = doc.rows.findIndex((r) => r.id === rowIdB);
+  if (rowIndexA === -1 || rowIndexB === -1) return doc;
+  const rowA = doc.rows[rowIndexA]!;
+  const rowB = doc.rows[rowIndexB]!;
+  const siteA = siteOf(rowA, sectionIdA);
+  const siteB = siteOf(rowB, sectionIdB);
+  if (!siteA || !siteB) return doc;
+  const sectionA = findSectionInRow(rowA, sectionIdA)!;
+  const sectionB = findSectionInRow(rowB, sectionIdB)!;
+
   const rows = [...doc.rows];
-  rows[rowIndex] = { ...row, sections: [row.sections[1], row.sections[0]] };
+  if (rowIndexA === rowIndexB) {
+    const updated = withSectionAt(
+      withSectionAt(rowA, siteA, sectionB),
+      siteB,
+      sectionA,
+    );
+    rows[rowIndexA] = updated;
+  } else {
+    rows[rowIndexA] = withSectionAt(rowA, siteA, sectionB);
+    rows[rowIndexB] = withSectionAt(rowB, siteB, sectionA);
+  }
   return { ...doc, rows };
 }
 
