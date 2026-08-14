@@ -1,0 +1,14 @@
+[Unit]
+Description=Technical Rider Editor
+After=network-online.target
+
+[Container]
+Image=localhost/rider-editor:latest
+ContainerName=rider-editor
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target default.target
