@@ -43,6 +43,23 @@ describe("addStageItem", () => {
     const micData = addStageItem(defaultStageMapData(), "mic");
     expect(micData.items[0]!.w).toBeUndefined();
   });
+
+  it("gives rack and io items their default labels and no fixed size", () => {
+    const rackData = addStageItem(defaultStageMapData(), "rack");
+    expect(rackData.items[0]).toMatchObject({
+      category: "rack",
+      label: "Rack",
+      w: undefined,
+      h: undefined,
+    });
+    const ioData = addStageItem(defaultStageMapData(), "io");
+    expect(ioData.items[0]).toMatchObject({
+      category: "io",
+      label: "I/O",
+      w: undefined,
+      h: undefined,
+    });
+  });
 });
 
 describe("removeStageItem", () => {

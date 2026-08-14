@@ -34,8 +34,10 @@
   const categories: StageItemCategory[] = [
     "mic",
     "di",
+    "io",
     "xlr",
     "amp",
+    "rack",
     "drum",
     "mon",
     "power",

@@ -2,7 +2,17 @@ import { createId } from "./id";
 import { clamp } from "./util";
 
 export type StageItemCategory =
-  "mic" | "di" | "amp" | "drum" | "mon" | "xlr" | "power" | "riser" | "name";
+  | "mic"
+  | "di"
+  | "amp"
+  | "rack"
+  | "drum"
+  | "mon"
+  | "xlr"
+  | "io"
+  | "power"
+  | "riser"
+  | "name";
 
 export interface StageItemCategoryMeta {
   abbreviation: string;
@@ -18,9 +28,11 @@ export const STAGE_ITEM_CATEGORIES: Record<
   mic: { abbreviation: "MIC", shape: "circle" },
   di: { abbreviation: "DI", shape: "rectangle" },
   amp: { abbreviation: "AMP", shape: "square" },
+  rack: { abbreviation: "RACK", shape: "square" },
   drum: { abbreviation: "DRM", shape: "circle" },
   mon: { abbreviation: "MON", shape: "square" },
   xlr: { abbreviation: "XLR", shape: "rectangle" },
+  io: { abbreviation: "I/O", shape: "rectangle" },
   power: { abbreviation: "PWR", shape: "triangle" },
   riser: {
     abbreviation: "RISER",
@@ -35,9 +47,11 @@ const DEFAULT_LABELS: Record<StageItemCategory, string> = {
   mic: "Vox",
   di: "Bass DI",
   amp: "Amp",
+  rack: "Rack",
   drum: "Drums",
   mon: "Wedge",
   xlr: "XLR Run",
+  io: "I/O",
   power: "Power",
   riser: "Riser",
   name: "Name",

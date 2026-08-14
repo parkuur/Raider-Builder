@@ -184,6 +184,31 @@ test.describe("Stage Map section", () => {
     }
   });
 
+  test("Rack renders as a square like Amp; I/O renders as a half-height rectangle like XLR/DI", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "AMP", exact: true }).click();
+    await page.getByRole("button", { name: "RACK", exact: true }).click();
+    await page.getByRole("button", { name: "I/O", exact: true }).click();
+
+    for (const category of ["amp", "rack"]) {
+      const box = await page
+        .locator(`[data-category="${category}"]`)
+        .boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeCloseTo(box!.width, 0);
+    }
+
+    const ioBox = await page.locator('[data-category="io"]').boundingBox();
+    expect(ioBox).not.toBeNull();
+    expect(ioBox!.height).toBeCloseTo(ioBox!.width / 2, 0);
+  });
+
   test("a Name marker's center text is directly editable and auto-shrinks to fit", async ({
     page,
   }) => {
