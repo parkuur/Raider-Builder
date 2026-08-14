@@ -123,7 +123,13 @@ function validateHeader(value: unknown, errors: string[]): Header {
     errors.push("header: expected an object");
   }
   const input = isPlainObject(value) ? value : {};
-  const header: Header = { title: "", band: "", metaFields: [], logos: [] };
+  const header: Header = {
+    title: "",
+    band: "",
+    metaFields: [],
+    logos: [],
+    creditHidden: false,
+  };
   for (const field of ["title", "band"] as const) {
     const fieldValue = input[field];
     if (fieldValue === undefined) {
@@ -136,6 +142,13 @@ function validateHeader(value: unknown, errors: string[]): Header {
   }
   header.metaFields = validateHeaderMetaFields(input, errors);
   header.logos = validateHeaderLogos(input, errors);
+  if (input.creditHidden === undefined) {
+    header.creditHidden = false;
+  } else if (typeof input.creditHidden === "boolean") {
+    header.creditHidden = input.creditHidden;
+  } else {
+    errors.push("header.creditHidden: expected a boolean");
+  }
   return header;
 }
 

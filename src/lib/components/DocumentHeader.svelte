@@ -11,6 +11,8 @@
   import RemoveButton from "./RemoveButton.svelte";
   import HeaderLogos from "./HeaderLogos.svelte";
   import PlusIcon from "phosphor-svelte/lib/PlusIcon";
+  import EyeIcon from "phosphor-svelte/lib/EyeIcon";
+  import EyeSlashIcon from "phosphor-svelte/lib/EyeSlashIcon";
 
   const header = $derived(getDocument().header);
 
@@ -146,6 +148,34 @@
         {/if}
       </div>
     </div>
+    <div class="document-header__credit">
+      {#if header.creditHidden}
+        <span class="document-header__credit-nudge no-print">
+          Please consider leaving the message in to support my work
+          <button
+            type="button"
+            aria-label="Show credit line"
+            title="Show credit line"
+            onclick={() => setHeaderField("creditHidden", false)}
+          >
+            <EyeIcon size={14} />
+          </button>
+        </span>
+      {:else}
+        <span class="document-header__credit-text">
+          Generated with Frosty Sound rider builder rider.frostysound.fi
+        </span>
+        <button
+          type="button"
+          class="no-print"
+          aria-label="Hide credit line"
+          title="Hide credit line"
+          onclick={() => setHeaderField("creditHidden", true)}
+        >
+          <EyeSlashIcon size={14} />
+        </button>
+      {/if}
+    </div>
   </div>
 </header>
 
@@ -272,5 +302,31 @@
 
   .document-header__add-field-popover button:hover {
     background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  }
+
+  .document-header__credit {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+  }
+
+  .document-header__credit button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .document-header__credit button:hover {
+    color: var(--color-accent);
   }
 </style>

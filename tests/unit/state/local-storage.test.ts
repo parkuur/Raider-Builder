@@ -34,6 +34,7 @@ describe("saveDocumentToLocalStorage / loadDocumentFromLocalStorage", () => {
           },
         ],
         logos: [],
+        creditHidden: false,
       },
       rows: [
         {

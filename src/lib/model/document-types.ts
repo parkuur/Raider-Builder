@@ -8,6 +8,7 @@ export interface Header {
   band: string;
   metaFields: HeaderMetaField[];
   logos: HeaderLogo[];
+  creditHidden: boolean;
 }
 
 /**
@@ -33,6 +34,7 @@ export function createEmptyHeader(): Header {
     band: "",
     metaFields: createDefaultHeaderMetaFields(),
     logos: [],
+    creditHidden: false,
   };
 }
 

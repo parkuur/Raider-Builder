@@ -61,6 +61,7 @@ describe("serializeDocument / parseDocumentJson round-trip", () => {
           { id: "meta_3", kind: "text", value: "Free text" },
         ],
         logos: [{ id: "logo_1", dataUrl: "data:image/png;base64,abc" }],
+        creditHidden: true,
       },
       rows: [
         {
@@ -336,6 +337,42 @@ describe("validateDocumentShape rejection cases", () => {
           band: "Band",
           logos: [{ id: "logo_1" }],
         },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("defaults creditHidden to false when absent", () => {
+    const result = validateDocumentShape(
+      { header: { title: "Rider", band: "Band" }, rows: [] },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.creditHidden).toBe(false);
+    }
+  });
+
+  it("preserves an explicit creditHidden value", () => {
+    const result = validateDocumentShape(
+      {
+        header: { title: "Rider", band: "Band", creditHidden: true },
+        rows: [],
+      },
+      KNOWN_TYPES,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.document.header.creditHidden).toBe(true);
+    }
+  });
+
+  it("rejects a non-boolean creditHidden", () => {
+    const result = validateDocumentShape(
+      {
+        header: { title: "Rider", band: "Band", creditHidden: "yes" },
         rows: [],
       },
       KNOWN_TYPES,
