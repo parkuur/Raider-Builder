@@ -16,6 +16,17 @@
     background: #fff;
   }
 
+  /*
+   * .document-shell's padding is screen-only "paper card" framing; @page's
+   * margin above already insets printed content. Left uncorrected, this
+   * trailing padding after the last row doesn't reliably fit in whatever
+   * space remains on the last page and gets pushed onto a page of its own
+   * — which paints nothing, so it prints as a spurious blank final page.
+   */
+  .document-shell {
+    padding-bottom: 0 !important;
+  }
+
   input:not([type="checkbox"]),
   textarea,
   select {
