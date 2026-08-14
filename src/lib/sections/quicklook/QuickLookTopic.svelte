@@ -5,6 +5,7 @@
   } from "../../model/quicklook";
   import {
     addQuickLookLine,
+    cycleQuickLookTableValueAlign,
     removeQuickLookLine,
     removeQuickLookTopic,
     reorderQuickLookLine,
@@ -20,6 +21,17 @@
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import TextAlignLeftIcon from "phosphor-svelte/lib/TextAlignLeftIcon";
+  import TextAlignCenterIcon from "phosphor-svelte/lib/TextAlignCenterIcon";
+  import TextAlignRightIcon from "phosphor-svelte/lib/TextAlignRightIcon";
+
+  // Describes the *next* alignment a click will switch to (the standard
+  // pattern for a cycling toggle's label), keyed by the *current* state.
+  const NEXT_VALUE_ALIGN_LABEL = {
+    left: "Center-align values",
+    center: "Right-align values",
+    right: "Left-align values",
+  } as const;
 
   let {
     data,
@@ -75,6 +87,23 @@
               updateQuickLookRowValue(data, topic.id, e.currentTarget.value),
             )}
         />
+      {:else if topic.kind === "table"}
+        <button
+          type="button"
+          class="quicklook-section__align-toggle no-print"
+          aria-label={NEXT_VALUE_ALIGN_LABEL[topic.valueAlign]}
+          title={NEXT_VALUE_ALIGN_LABEL[topic.valueAlign]}
+          onclick={() =>
+            onCommit(cycleQuickLookTableValueAlign(data, topic.id))}
+        >
+          {#if topic.valueAlign === "left"}
+            <TextAlignLeftIcon size={14} />
+          {:else if topic.valueAlign === "center"}
+            <TextAlignCenterIcon size={14} />
+          {:else}
+            <TextAlignRightIcon size={14} />
+          {/if}
+        </button>
       {/if}
     {/snippet}
   </QuickLookTopicHeader>
@@ -118,6 +147,7 @@
         <input
           class="quicklook-section__line-value"
           style:width="{valueChars}ch"
+          style:text-align={topic.valueAlign}
           value={line.value}
           placeholder="Value"
           oninput={(e) =>
@@ -169,6 +199,23 @@
     color: var(--color-text);
     font-size: var(--font-size-body);
     padding: 4px var(--space-2);
+  }
+
+  .quicklook-section__align-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .quicklook-section__align-toggle:hover {
+    color: var(--color-accent);
   }
 
   .quicklook-section__line {

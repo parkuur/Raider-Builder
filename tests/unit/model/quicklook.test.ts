@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addQuickLookLine,
   addQuickLookTopic,
+  cycleQuickLookTableValueAlign,
   defaultQuickLookData,
   removeQuickLookLine,
   removeQuickLookTopic,
@@ -42,6 +43,7 @@ function tableTopic(
     iconKey: "circle",
     title: "",
     lines: [],
+    valueAlign: "left",
     ...overrides,
   };
 }
@@ -72,7 +74,45 @@ describe("addQuickLookTopic", () => {
       kind: "table",
       iconKey: "circle",
       lines: [],
+      valueAlign: "left",
     });
+  });
+});
+
+describe("cycleQuickLookTableValueAlign", () => {
+  it("cycles left -> center -> right -> left", () => {
+    const data = dataWith([tableTopic("t1", { valueAlign: "left" })]);
+    const afterOne = cycleQuickLookTableValueAlign(data, "t1");
+    expect((afterOne.topics[0] as QuickLookTableTopic).valueAlign).toBe(
+      "center",
+    );
+    const afterTwo = cycleQuickLookTableValueAlign(afterOne, "t1");
+    expect((afterTwo.topics[0] as QuickLookTableTopic).valueAlign).toBe(
+      "right",
+    );
+    const afterThree = cycleQuickLookTableValueAlign(afterTwo, "t1");
+    expect((afterThree.topics[0] as QuickLookTableTopic).valueAlign).toBe(
+      "left",
+    );
+  });
+
+  it("is a no-op for an unknown topic id", () => {
+    const data = dataWith([tableTopic("t1")]);
+    expect(cycleQuickLookTableValueAlign(data, "missing")).toBe(data);
+  });
+
+  it("is a no-op when the targeted topic is a row topic", () => {
+    const data = dataWith([rowTopic("t1")]);
+    expect(cycleQuickLookTableValueAlign(data, "t1")).toBe(data);
+  });
+
+  it("does not affect another topic's alignment", () => {
+    const data = dataWith([
+      tableTopic("t1", { valueAlign: "left" }),
+      tableTopic("t2", { valueAlign: "left" }),
+    ]);
+    const result = cycleQuickLookTableValueAlign(data, "t1");
+    expect((result.topics[1] as QuickLookTableTopic).valueAlign).toBe("left");
   });
 });
 
