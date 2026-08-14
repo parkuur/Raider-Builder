@@ -199,11 +199,13 @@
   .contacts-section__value {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
   }
 
   .contacts-section__value input {
     flex: 1;
     min-width: 0;
+    text-align: right;
     border: 1px solid var(--color-border);
     background: transparent;
     color: var(--color-text);
