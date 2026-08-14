@@ -22,6 +22,7 @@
 
   let topRowEl: HTMLDivElement | undefined = $state();
   let topRowWidth = $state(0);
+  let titlesHeight = $state(0);
 
   $effect(() => {
     if (!topRowEl) return;
@@ -31,6 +32,12 @@
     observer.observe(topRowEl);
     return () => observer.disconnect();
   });
+
+  // Logos may grow up to 50% taller than the title/band text block beside
+  // them, unless the 50%-of-header-width budget forces them shorter — a
+  // fallback of 44 (a little taller than the title's own line box) covers
+  // the brief window before the title block's real height is measured.
+  const logoMaxHeight = $derived(titlesHeight > 0 ? titlesHeight * 1.5 : 44);
 
   let addMenuOpen = $state(false);
 
@@ -49,7 +56,7 @@
 <header class="document-header">
   <div class="document-header__fields">
     <div class="document-header__top" bind:this={topRowEl}>
-      <div class="document-header__titles">
+      <div class="document-header__titles" bind:clientHeight={titlesHeight}>
         <input
           class="document-header__title"
           value={header.title}
@@ -65,6 +72,7 @@
       </div>
       <HeaderLogos
         logos={header.logos}
+        maxHeight={logoMaxHeight}
         maxTotalWidth={topRowWidth * 0.5}
         onAdd={(dataUrl) =>
           setHeaderField("logos", addHeaderLogo(header.logos, dataUrl))}
@@ -152,15 +160,16 @@
       {#if header.creditHidden}
         <span class="document-header__credit-nudge no-print">
           Please consider leaving the message in to support my work
-          <button
-            type="button"
-            aria-label="Show credit line"
-            title="Show credit line"
-            onclick={() => setHeaderField("creditHidden", false)}
-          >
-            <EyeIcon size={14} />
-          </button>
         </span>
+        <button
+          type="button"
+          class="no-print"
+          aria-label="Show credit line"
+          title="Show credit line"
+          onclick={() => setHeaderField("creditHidden", false)}
+        >
+          <EyeSlashIcon size={14} />
+        </button>
       {:else}
         <span class="document-header__credit-text">
           Generated with Frosty Sound rider builder rider.frostysound.fi
@@ -172,7 +181,7 @@
           title="Hide credit line"
           onclick={() => setHeaderField("creditHidden", true)}
         >
-          <EyeSlashIcon size={14} />
+          <EyeIcon size={14} />
         </button>
       {/if}
     </div>
@@ -243,12 +252,14 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--color-text-muted);
-    width: 4em;
+    field-sizing: content;
+    min-width: 3ch;
   }
 
   .document-header__meta-input {
     font-size: var(--font-size-body);
-    width: 70px;
+    field-sizing: content;
+    min-width: 1ch;
   }
 
   .document-header__add-field {
@@ -315,10 +326,24 @@
     color: var(--color-text-muted);
   }
 
+  .document-header__credit-text,
+  .document-header__credit-nudge {
+    /* Sibling of the button (not nested inside it) so the two always stay
+     * on the same flex row — text alone may still wrap onto multiple
+     * lines, but that never pushes the button down with it. */
+    flex: 1;
+    min-width: 0;
+  }
+
+  .document-header__credit-nudge {
+    opacity: 0.7;
+  }
+
   .document-header__credit button {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: none;
     padding: 2px;
     border: none;
     background: transparent;

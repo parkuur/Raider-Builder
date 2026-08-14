@@ -7,19 +7,17 @@
 
   let {
     logos,
+    maxHeight,
     maxTotalWidth,
     onAdd,
     onRemove,
   }: {
     logos: HeaderLogo[];
+    maxHeight: number;
     maxTotalWidth: number;
     onAdd: (dataUrl: string) => void;
     onRemove: (id: string) => void;
   } = $props();
-
-  // A little taller than the document title's rendered line box
-  // (--font-size-doc-title is 34px) without dominating it.
-  const MAX_LOGO_HEIGHT = 44;
 
   let fileInput: HTMLInputElement | undefined = $state();
   let aspectRatios: Record<string, number> = $state({});
@@ -27,7 +25,7 @@
   const sharedHeight = $derived(
     computeLogoHeight(
       logos.map((l) => aspectRatios[l.id] ?? 1),
-      MAX_LOGO_HEIGHT,
+      maxHeight,
       maxTotalWidth,
     ),
   );
