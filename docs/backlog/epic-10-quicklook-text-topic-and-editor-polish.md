@@ -95,3 +95,22 @@ one onto the other.
 - The avatar circle's side gaps (to the card's left/right edge) match its top gap (to the
   card's top edge), instead of the circle reading as small and off-center.
 - Covered by a Playwright case in `band-members.spec.ts` asserting the three gaps match.
+
+### Story: Untitled sections don't reserve title space in print
+
+**Acceptance criteria**
+- A section with no title (empty title field, or a `hideTitle` type like Page Break) contributes
+  no blank vertical gap above its body in print — not just a hidden title line.
+- A titled section's spacing is unaffected.
+- Covered by a Playwright case in `text-section.spec.ts` asserting the head's print height is
+  zero when untitled and nonzero once titled.
+
+### Story: Band Members photo picker restyle
+
+**Acceptance criteria**
+- The native file-input chrome ("Choose File" / "No file chosen") is replaced by a camera-icon
+  affordance: an always-visible small badge in the empty (initials) state, and a full-circle
+  hover-only overlay once a photo is set.
+- Selecting a file still updates the member's photo the same way as before.
+- Covered by a Playwright case in `band-members.spec.ts` exercising both states and the hover
+  transition.
