@@ -44,7 +44,7 @@ test.describe("copy-lift/copy-place", () => {
     await expect(page.locator(".row-view")).toHaveCount(1);
   });
 
-  test("lifting a standalone half section for copy and placing it on another's pair slot duplicates it into the pair, leaving the original standalone", async ({
+  test("lifting a standalone split section for copy and placing it on another's edge slot splits that row with a copy, leaving the original standalone", async ({
     page,
   }) => {
     await page.goto("/");
@@ -60,7 +60,7 @@ test.describe("copy-lift/copy-place", () => {
       .click();
 
     await expect(page.locator(".row-view")).toHaveCount(2);
-    await expect(page.locator(".pair-slot")).toHaveCount(2);
+    await expect(page.locator(".split-edge-slot")).toHaveCount(2);
 
     await page
       .locator(".row-view")
@@ -68,40 +68,19 @@ test.describe("copy-lift/copy-place", () => {
       .getByRole("button", { name: "Copy this section" })
       .click();
     await page
-      .locator(".pair-slot")
-      .first()
-      .getByRole("button", { name: "Place copy here to pair" })
+      .locator(".row-view")
+      .nth(0)
+      .locator(".split-edge-slot__button")
       .click();
 
     // The original Quick Look row is untouched (still standalone), and the
-    // Contacts row now has a duplicate Quick Look paired onto it.
+    // Contacts row is now a split layout with a duplicate Quick Look.
     await expect(page.locator(".row-view")).toHaveCount(2);
-    await expect(page.locator(".pair-slot")).toHaveCount(1);
+    await expect(
+      page.locator(".row-view").nth(1).locator(".split-edge-slot"),
+    ).toHaveCount(1);
     await expect(
       page.locator(".row-view").first().locator(".section-frame"),
     ).toHaveCount(2);
-  });
-
-  test("lifting a standalone half section for copy and placing it on its own pair slot pairs it with a copy of itself", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await page
-      .getByRole("button", { name: "+ Add your first section" })
-      .click();
-    await page
-      .getByRole("button", { name: "Contacts (split)", exact: true })
-      .click();
-
-    const row = page.locator(".row-view").first();
-    await row.getByRole("button", { name: "Copy this section" }).click();
-    await row
-      .locator(".pair-slot")
-      .getByRole("button", { name: "Place copy here to pair" })
-      .click();
-
-    await expect(page.locator(".row-view")).toHaveCount(1);
-    await expect(row.locator(".section-frame")).toHaveCount(2);
-    await expect(row.locator(".contacts-section")).toHaveCount(2);
   });
 });

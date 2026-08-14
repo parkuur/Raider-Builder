@@ -44,4 +44,20 @@ test.describe("loading an invalid file", () => {
       "Keep Me Too",
     );
   });
+
+  test("rejects a file saved in the old sections:[...] row shape, leaving the document unchanged", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.locator(".document-header__title").fill("Keep Me Three");
+
+    await page
+      .locator(".save-load-controls__file-input")
+      .setInputFiles(fixture("legacy-row-shape-document.json"));
+
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.locator(".document-header__title")).toHaveValue(
+      "Keep Me Three",
+    );
+  });
 });

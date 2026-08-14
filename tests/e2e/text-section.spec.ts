@@ -30,9 +30,7 @@ test.describe("Text section", () => {
     );
   });
 
-  test("pairs side-by-side with another half-width section", async ({
-    page,
-  }) => {
+  test("splits side-by-side with another split section", async ({ page }) => {
     await page.goto("/");
     await page
       .getByRole("button", { name: "+ Add your first section" })
@@ -43,7 +41,7 @@ test.describe("Text section", () => {
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
       .getByRole("button", { name: "Text (split)", exact: true })

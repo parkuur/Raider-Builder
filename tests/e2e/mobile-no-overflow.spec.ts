@@ -57,7 +57,7 @@ test.describe("no horizontal overflow at a 360px viewport", () => {
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
       .getByRole("button", { name: "Quick Look (split)", exact: true })
