@@ -235,6 +235,16 @@
    */
   .stage-map__scroll {
     overflow-x: auto;
+    /*
+     * Explicit, rather than left to the default `visible` — CSS's overflow
+     * computed-value rules force `visible` to compute as `auto` alongside
+     * an explicit `auto` on the other axis, so this wrapper could already
+     * scroll vertically today. Items are always contained within the
+     * canvas's own height (canvasHeight, user-adjustable via the depth
+     * handle; y is clamped to 8–92% in moveStageItem), so nothing here
+     * legitimately needs vertical scroll.
+     */
+    overflow-y: hidden;
   }
 
   /*

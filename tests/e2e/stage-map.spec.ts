@@ -380,4 +380,20 @@ test.describe("Stage Map section at a narrow viewport", () => {
     );
     expect(topElement).toContain("toolbar");
   });
+
+  test("the canvas wrapper only scrolls horizontally, never vertically", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "RISER", exact: true }).click();
+
+    const overflow = await page
+      .locator(".stage-map__scroll")
+      .evaluate((el) => getComputedStyle(el).overflowY);
+    expect(overflow).toBe("hidden");
+  });
 });
