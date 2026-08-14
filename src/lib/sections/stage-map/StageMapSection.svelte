@@ -5,8 +5,8 @@
   import {
     STAGE_ITEM_CATEGORIES,
     addStageItem,
-    bringStageItemToFront,
-    moveStageItem,
+    bringManyToFront,
+    moveStageItemsBy,
     removeStageItem,
     resizeStageItem,
     setCanvasHeight,
@@ -47,6 +47,19 @@
       selectedIds.clear();
       selectedIds.add(item.id);
     }
+  }
+
+  // The set of item ids a drag gesture moves together, fixed for the
+  // duration of that gesture (selection changes mid-drag don't retarget it).
+  let dragGroupIds: string[] = [];
+
+  function beginItemDrag(item: StageItem, event: PointerEvent): void {
+    resolveClickSelection(item, event);
+    dragGroupIds = selectedIds.has(item.id) ? [...selectedIds] : [item.id];
+    commit({
+      ...section.data,
+      items: bringManyToFront(section.data.items, dragGroupIds),
+    });
   }
 
   interface ClientPoint {
@@ -154,14 +167,12 @@
     };
   });
 
-  function moveByPixelDelta(item: StageItem, dx: number, dy: number) {
+  function moveByPixelDelta(dx: number, dy: number) {
     if (!canvasEl) return;
     const rect = canvasEl.getBoundingClientRect();
     const deltaX = (dx / rect.width) * 100;
     const deltaY = (dy / rect.height) * 100;
-    commit(
-      moveStageItem(section.data, item.id, item.x + deltaX, item.y + deltaY),
-    );
+    commit(moveStageItemsBy(section.data, dragGroupIds, deltaX, deltaY));
   }
 
   // Divided by the current scale so a resize/height-drag tracks the pointer
@@ -231,11 +242,8 @@
           data-category={item.category}
           use:pointerDrag={{
             stopPropagation: true,
-            onStart: (event) => {
-              resolveClickSelection(item, event);
-              commit(bringStageItemToFront(section.data, item.id));
-            },
-            onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
+            onStart: (event) => beginItemDrag(item, event),
+            onMove: (dx, dy) => moveByPixelDelta(dx, dy),
           }}
         >
           {#if meta.shape === "triangle"}

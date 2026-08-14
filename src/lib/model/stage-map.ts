@@ -212,3 +212,69 @@ export function bringStageItemToFront(
   const items = bringToFront(data.items, itemId);
   return items === data.items ? data : { ...data, items };
 }
+
+/**
+ * Group version of {@link bringToFront} — brings every item in `ids` above
+ * everything else, preserving their order relative to each other (so
+ * bringing a multi-selection forward never scrambles which of the selected
+ * items was already on top within the group).
+ */
+export function bringManyToFront(
+  items: StageItem[],
+  ids: readonly string[],
+): StageItem[] {
+  const idSet = new Set(ids);
+  const targets = items.filter((item) => idSet.has(item.id));
+  if (targets.length === 0) return items;
+
+  const others = items.filter((item) => !idSet.has(item.id));
+  const maxOtherOrder = others.reduce(
+    (max, item) => Math.max(max, item.order),
+    -Infinity,
+  );
+  const isAlreadyUniquelyOnTop = targets.every(
+    (target) => target.order > maxOtherOrder,
+  );
+  if (isAlreadyUniquelyOnTop) return items;
+
+  const sortedTargets = [...targets].sort((a, b) => a.order - b.order);
+  const maxOrder = items.reduce(
+    (max, item) => Math.max(max, item.order),
+    -Infinity,
+  );
+  const newOrderById = new Map(
+    sortedTargets.map((item, index) => [item.id, maxOrder + 1 + index]),
+  );
+
+  return items.map((item) => {
+    const newOrder = newOrderById.get(item.id);
+    return newOrder === undefined ? item : { ...item, order: newOrder };
+  });
+}
+
+/**
+ * Moves every item in `ids` by the same percentage delta, each still
+ * independently clamped to the canvas margins — the group-drag counterpart
+ * to {@link moveStageItem}.
+ */
+export function moveStageItemsBy(
+  data: StageMapSectionData,
+  ids: readonly string[],
+  dxPercent: number,
+  dyPercent: number,
+): StageMapSectionData {
+  const idSet = new Set(ids);
+  if (!data.items.some((item) => idSet.has(item.id))) return data;
+  return {
+    ...data,
+    items: data.items.map((item) =>
+      idSet.has(item.id)
+        ? {
+            ...item,
+            x: clamp(item.x + dxPercent, 3, 97),
+            y: clamp(item.y + dyPercent, 8, 92),
+          }
+        : item,
+    ),
+  };
+}

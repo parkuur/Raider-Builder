@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   addStageItem,
+  bringManyToFront,
   bringToFront,
   defaultStageMapData,
   moveStageItem,
+  moveStageItemsBy,
   removeStageItem,
   resizeStageItem,
   setCanvasHeight,
@@ -140,5 +142,61 @@ describe("bringToFront", () => {
     const a = result.find((i) => i.id === "a")!;
     const b = result.find((i) => i.id === "b")!;
     expect(a.order).toBeGreaterThan(b.order);
+  });
+});
+
+describe("bringManyToFront", () => {
+  it("brings a group above a later item, preserving order within the group", () => {
+    const items = [item("a", 1), item("b", 2), item("c", 3)];
+    const result = bringManyToFront(items, ["a", "b"]);
+    const a = result.find((i) => i.id === "a")!;
+    const b = result.find((i) => i.id === "b")!;
+    const c = result.find((i) => i.id === "c")!;
+    expect(a.order).toBeGreaterThan(c.order);
+    expect(b.order).toBeGreaterThan(c.order);
+    // a was already below b before the bump — that relative order holds.
+    expect(a.order).toBeLessThan(b.order);
+  });
+
+  it("is a no-op when the group is already uniquely on top", () => {
+    const items = [item("a", 1), item("b", 2), item("c", 3)];
+    expect(bringManyToFront(items, ["b", "c"])).toBe(items);
+  });
+
+  it("is a no-op when none of the ids exist", () => {
+    const items = [item("a", 1)];
+    expect(bringManyToFront(items, ["missing"])).toBe(items);
+  });
+
+  it("ignores unknown ids mixed in with a real one", () => {
+    const items = [item("a", 1), item("b", 2), item("c", 3)];
+    const result = bringManyToFront(items, ["a", "missing"]);
+    const a = result.find((i) => i.id === "a")!;
+    const c = result.find((i) => i.id === "c")!;
+    expect(a.order).toBeGreaterThan(c.order);
+    expect(result.some((i) => i.id === "missing")).toBe(false);
+  });
+});
+
+describe("moveStageItemsBy", () => {
+  it("moves every listed item by the same delta, each independently clamped", () => {
+    const data = {
+      items: [item("a", 1), { ...item("b", 2), x: 95 }],
+      canvasHeight: 260,
+    };
+    const result = moveStageItemsBy(data, ["a", "b"], 10, 0);
+    expect(result.items[0]).toMatchObject({ x: 60 });
+    expect(result.items[1]).toMatchObject({ x: 97 });
+  });
+
+  it("is a no-op when none of the ids exist", () => {
+    const data = defaultStageMapData();
+    expect(moveStageItemsBy(data, ["missing"], 10, 10)).toBe(data);
+  });
+
+  it("only moves ids that exist, ignoring the rest", () => {
+    const data = { items: [item("a", 1)], canvasHeight: 260 };
+    const result = moveStageItemsBy(data, ["a", "missing"], 5, 5);
+    expect(result.items[0]).toMatchObject({ x: 55, y: 55 });
   });
 });

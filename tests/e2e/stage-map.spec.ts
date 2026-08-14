@@ -189,6 +189,49 @@ test.describe("Stage Map section", () => {
     expect(after.height).toBeGreaterThan(before.height);
   });
 
+  test("dragging one item of a multi-selection moves the whole group", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+
+    await itemA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await itemB.dispatchEvent("pointerdown", { button: 0, ctrlKey: true });
+    await page.mouse.up();
+
+    const beforeA = await itemA.boundingBox();
+    const beforeB = await itemB.boundingBox();
+    if (!beforeA || !beforeB) throw new Error("missing bounding box");
+
+    await page.mouse.move(
+      beforeA.x + beforeA.width / 2,
+      beforeA.y + beforeA.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      beforeA.x + beforeA.width / 2 + 80,
+      beforeA.y + beforeA.height / 2 + 40,
+    );
+    await page.mouse.up();
+
+    const afterA = await itemA.boundingBox();
+    const afterB = await itemB.boundingBox();
+    if (!afterA || !afterB) throw new Error("missing bounding box after drag");
+
+    expect(afterA.x).toBeGreaterThan(beforeA.x + 40);
+    expect(afterA.x - beforeA.x).toBeCloseTo(afterB.x - beforeB.x, 0);
+    expect(afterA.y - beforeA.y).toBeCloseTo(afterB.y - beforeB.y, 0);
+  });
+
   test("editing controls are hidden in print, content stays visible", async ({
     page,
   }) => {
