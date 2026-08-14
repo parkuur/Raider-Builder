@@ -3,6 +3,7 @@
   import { groupSectionTypesByWidth } from "../model/registry-grouping";
   import type { SectionType } from "../model/section-types";
   import SquareSplitHorizontalIcon from "phosphor-svelte/lib/SquareSplitHorizontalIcon";
+  import Modal from "./Modal.svelte";
 
   let {
     open,
@@ -26,74 +27,32 @@
   );
 </script>
 
-{#if open}
-  <div
-    class="add-section-menu-backdrop no-print"
-    role="button"
-    tabindex="-1"
-    onclick={onClose}
-    onkeydown={(e) => e.key === "Escape" && onClose()}
-  >
-    <div
-      class="add-section-menu"
-      role="dialog"
-      aria-label="Add section"
-      tabindex="-1"
-      onclick={(e) => e.stopPropagation()}
-      onkeydown={(e) => e.stopPropagation()}
-    >
-      <div class="add-section-menu__heading">Add Section</div>
-      <div class="add-section-menu__grid">
-        {#each entries as entry (entry.type)}
-          <button
-            type="button"
-            class="add-section-menu__option"
-            onclick={() => onPick(entry.type as SectionType)}
-          >
-            {entry.label}
-            {#if entry.half}
-              <span class="add-section-menu__half-tag" aria-hidden="true">
-                <SquareSplitHorizontalIcon size={14} />
-              </span>
-              <span class="add-section-menu__half-sr">(half)</span>
-            {/if}
-          </button>
-        {/each}
-      </div>
-      <div class="add-section-menu__footer">
-        <button type="button" class="add-section-menu__cancel" onclick={onClose}
-          >Cancel</button
-        >
-      </div>
-    </div>
+<Modal {open} title="Add Section" {onClose}>
+  <div class="add-section-menu__grid">
+    {#each entries as entry (entry.type)}
+      <button
+        type="button"
+        class="add-section-menu__option"
+        onclick={() => onPick(entry.type as SectionType)}
+      >
+        {entry.label}
+        {#if entry.half}
+          <span class="add-section-menu__half-tag" aria-hidden="true">
+            <SquareSplitHorizontalIcon size={14} />
+          </span>
+          <span class="add-section-menu__half-sr">(half)</span>
+        {/if}
+      </button>
+    {/each}
   </div>
-{/if}
+  <div class="add-section-menu__footer">
+    <button type="button" class="add-section-menu__cancel" onclick={onClose}
+      >Cancel</button
+    >
+  </div>
+</Modal>
 
 <style>
-  .add-section-menu-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: grid;
-    place-items: center;
-    padding: var(--space-4);
-    background: color-mix(in srgb, #000 45%, transparent);
-  }
-
-  .add-section-menu {
-    width: min(460px, 100%);
-    background: var(--color-background);
-    border: 1px solid var(--color-border);
-    padding: var(--space-5);
-  }
-
-  .add-section-menu__heading {
-    font-family: var(--font-heading);
-    font-weight: 600;
-    font-size: var(--font-size-section-title);
-    margin-bottom: var(--space-4);
-  }
-
   .add-section-menu__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
