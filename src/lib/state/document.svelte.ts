@@ -116,6 +116,70 @@ export function moveSectionToSplitRow(
   );
 }
 
+export function insertSectionIntoColumn(
+  rowId: string,
+  columnIndex: 0 | 1,
+  atIndex: number,
+  type: SectionType,
+): void {
+  state = mutations.insertSectionIntoColumn(
+    state,
+    rowId,
+    columnIndex,
+    atIndex,
+    buildSection(type),
+  );
+}
+
+export function moveSectionIntoColumn(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+  targetColumnIndex: 0 | 1,
+  targetAtIndex: number,
+): void {
+  state = mutations.moveSectionIntoColumn(
+    state,
+    sourceRowId,
+    sectionId,
+    targetRowId,
+    targetColumnIndex,
+    targetAtIndex,
+  );
+}
+
+export function duplicateSectionIntoColumn(
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+  targetColumnIndex: 0 | 1,
+  targetAtIndex: number,
+): void {
+  state = mutations.duplicateSectionIntoColumn(
+    $state.snapshot(state),
+    sourceRowId,
+    sectionId,
+    targetRowId,
+    targetColumnIndex,
+    targetAtIndex,
+  );
+}
+
+export function reorderSectionWithinColumn(
+  rowId: string,
+  columnIndex: 0 | 1,
+  fromIndex: number,
+  toIndex: number,
+): void {
+  state = mutations.reorderSectionWithinColumn(
+    state,
+    rowId,
+    columnIndex,
+    fromIndex,
+    toIndex,
+  );
+}
+
 export function swapPairedSections(rowId: string): void {
   state = mutations.swapPairedSections(state, rowId);
 }

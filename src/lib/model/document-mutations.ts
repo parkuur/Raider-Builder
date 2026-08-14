@@ -299,6 +299,173 @@ export function duplicateSectionToSplitRow(
   return { ...doc, rows };
 }
 
+/** Inserts a fresh section at any index of an existing split row's column. */
+export function insertSectionIntoColumn(
+  doc: RiderDocument,
+  rowId: string,
+  columnIndex: 0 | 1,
+  atIndex: number,
+  section: Section,
+): RiderDocument {
+  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
+  if (rowIndex === -1) return doc;
+  const row = doc.rows[rowIndex]!;
+  if (row.kind !== "split") return doc;
+  const column = row.columns[columnIndex];
+  const index = clamp(atIndex, 0, column.length);
+  const newColumn = [
+    ...column.slice(0, index),
+    section,
+    ...column.slice(index),
+  ];
+  const columns = row.columns.map((c, i) =>
+    i === columnIndex ? newColumn : c,
+  ) as [Section[], Section[]];
+  const rows = [...doc.rows];
+  rows[rowIndex] = { ...row, columns };
+  return { ...doc, rows };
+}
+
+/**
+ * Moves any section — solo or embedded — into a specific position of an
+ * existing split row's column. Moving between the two columns of the same
+ * row is a single combined splice/insert so the row is never transiently
+ * read from a stale reference; moving within the same column is a no-op
+ * here (that's `reorderSectionWithinColumn`'s job). No-op unless the
+ * target is currently a `SplitRow`.
+ */
+export function moveSectionIntoColumn(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+  targetColumnIndex: 0 | 1,
+  targetAtIndex: number,
+): RiderDocument {
+  const targetIndex = doc.rows.findIndex((r) => r.id === targetRowId);
+  if (targetIndex === -1) return doc;
+  const targetRow = doc.rows[targetIndex]!;
+  if (targetRow.kind !== "split") return doc;
+
+  if (sourceRowId === targetRowId) {
+    const located = locateInSplitRow(targetRow, sectionId);
+    if (!located || located.column === targetColumnIndex) return doc;
+    const moved = targetRow.columns[located.column][located.index]!;
+    const withoutSource = targetRow.columns[located.column].filter(
+      (s) => s.id !== sectionId,
+    );
+    const targetColumn = targetRow.columns[targetColumnIndex];
+    const insertAt = clamp(targetAtIndex, 0, targetColumn.length);
+    const newTargetColumn = [
+      ...targetColumn.slice(0, insertAt),
+      moved,
+      ...targetColumn.slice(insertAt),
+    ];
+    const columns = (
+      located.column === 0
+        ? [withoutSource, newTargetColumn]
+        : [newTargetColumn, withoutSource]
+    ) as [Section[], Section[]];
+    const rows = [...doc.rows];
+    rows[targetIndex] = { ...targetRow, columns };
+    return { ...doc, rows: collapseIfEmptied(rows, targetIndex) };
+  }
+
+  const sourceIndex = doc.rows.findIndex((r) => r.id === sourceRowId);
+  if (sourceIndex === -1) return doc;
+  const sourceRow = doc.rows[sourceIndex]!;
+  const moved = findSectionInRow(sourceRow, sectionId);
+  if (!moved) return doc;
+
+  const targetColumn = targetRow.columns[targetColumnIndex];
+  const insertAt = clamp(targetAtIndex, 0, targetColumn.length);
+  const newTargetColumn = [
+    ...targetColumn.slice(0, insertAt),
+    moved,
+    ...targetColumn.slice(insertAt),
+  ];
+  const rows = [...doc.rows];
+  rows[targetIndex] = {
+    ...targetRow,
+    columns: targetRow.columns.map((c, i) =>
+      i === targetColumnIndex ? newTargetColumn : c,
+    ) as [Section[], Section[]],
+  };
+
+  if (sourceRow.kind === "full") {
+    rows.splice(sourceIndex, 1);
+    return { ...doc, rows };
+  }
+  const located = locateInSplitRow(sourceRow, sectionId)!;
+  const columns = sourceRow.columns.map((column, i) =>
+    i === located.column ? column.filter((s) => s.id !== sectionId) : column,
+  ) as [Section[], Section[]];
+  rows[sourceIndex] = { ...sourceRow, columns };
+  return { ...doc, rows: collapseIfEmptied(rows, sourceIndex) };
+}
+
+/**
+ * Copy counterpart to `moveSectionIntoColumn` — clones the source into a
+ * target split row's column at any index, leaving the source untouched.
+ * Same-row, same-column duplication needs no special-casing: it's just
+ * clone + insert like every other case.
+ */
+export function duplicateSectionIntoColumn(
+  doc: RiderDocument,
+  sourceRowId: string,
+  sectionId: string,
+  targetRowId: string,
+  targetColumnIndex: 0 | 1,
+  targetAtIndex: number,
+): RiderDocument {
+  const sourceRow = doc.rows.find((r) => r.id === sourceRowId);
+  const source = sourceRow && findSectionInRow(sourceRow, sectionId);
+  const targetIndex = doc.rows.findIndex((r) => r.id === targetRowId);
+  const targetRow = doc.rows[targetIndex];
+  if (!source || !targetRow || targetRow.kind !== "split") return doc;
+  const copy = cloneSection(source);
+  const targetColumn = targetRow.columns[targetColumnIndex];
+  const insertAt = clamp(targetAtIndex, 0, targetColumn.length);
+  const newTargetColumn = [
+    ...targetColumn.slice(0, insertAt),
+    copy,
+    ...targetColumn.slice(insertAt),
+  ];
+  const columns = targetRow.columns.map((c, i) =>
+    i === targetColumnIndex ? newTargetColumn : c,
+  ) as [Section[], Section[]];
+  const rows = [...doc.rows];
+  rows[targetIndex] = { ...targetRow, columns };
+  return { ...doc, rows };
+}
+
+/** Direct per-column analog of `reorderRows`. */
+export function reorderSectionWithinColumn(
+  doc: RiderDocument,
+  rowId: string,
+  columnIndex: 0 | 1,
+  fromIndex: number,
+  toIndex: number,
+): RiderDocument {
+  const rowIndex = doc.rows.findIndex((r) => r.id === rowId);
+  if (rowIndex === -1) return doc;
+  const row = doc.rows[rowIndex]!;
+  if (row.kind !== "split") return doc;
+  const column = row.columns[columnIndex];
+  if (fromIndex < 0 || fromIndex >= column.length) return doc;
+  const target = clamp(toIndex, 0, column.length - 1);
+  if (fromIndex === target) return doc;
+  const newColumn = [...column];
+  const [moved] = newColumn.splice(fromIndex, 1);
+  newColumn.splice(target, 0, moved!);
+  const columns = row.columns.map((c, i) =>
+    i === columnIndex ? newColumn : c,
+  ) as [Section[], Section[]];
+  const rows = [...doc.rows];
+  rows[rowIndex] = { ...row, columns };
+  return { ...doc, rows };
+}
+
 export function swapPairedSections(
   doc: RiderDocument,
   rowId: string,
