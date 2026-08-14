@@ -28,7 +28,16 @@ export interface QuickLookTableTopic {
   valueAlign: TextAlign;
 }
 
-export type QuickLookTopic = QuickLookRowTopic | QuickLookTableTopic;
+export interface QuickLookTextTopic {
+  id: string;
+  kind: "text";
+  iconKey: IconKey;
+  title: string;
+  content: string;
+}
+
+export type QuickLookTopic =
+  QuickLookRowTopic | QuickLookTableTopic | QuickLookTextTopic;
 
 export interface QuickLookSectionData {
   topics: QuickLookTopic[];
@@ -40,7 +49,7 @@ export function defaultQuickLookData(): QuickLookSectionData {
 
 export function addQuickLookTopic(
   data: QuickLookSectionData,
-  kind: "row" | "table",
+  kind: "row" | "table" | "text",
 ): QuickLookSectionData {
   const topic: QuickLookTopic =
     kind === "row"
@@ -51,14 +60,22 @@ export function addQuickLookTopic(
           title: "",
           value: "",
         }
-      : {
-          id: createId("topic"),
-          kind: "table",
-          iconKey: "circle",
-          title: "",
-          lines: [],
-          valueAlign: "left",
-        };
+      : kind === "table"
+        ? {
+            id: createId("topic"),
+            kind: "table",
+            iconKey: "circle",
+            title: "",
+            lines: [],
+            valueAlign: "left",
+          }
+        : {
+            id: createId("topic"),
+            kind: "text",
+            iconKey: "circle",
+            title: "",
+            content: "",
+          };
   return { ...data, topics: [...data.topics, topic] };
 }
 
@@ -119,6 +136,21 @@ export function updateQuickLookRowValue(
     ...data,
     topics: data.topics.map((t) =>
       t.id === topicId && t.kind === "row" ? { ...t, value } : t,
+    ),
+  };
+}
+
+export function updateQuickLookTextContent(
+  data: QuickLookSectionData,
+  topicId: string,
+  content: string,
+): QuickLookSectionData {
+  const topic = data.topics.find((t) => t.id === topicId);
+  if (!topic || topic.kind !== "text") return data;
+  return {
+    ...data,
+    topics: data.topics.map((t) =>
+      t.id === topicId && t.kind === "text" ? { ...t, content } : t,
     ),
   };
 }

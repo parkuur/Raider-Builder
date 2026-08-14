@@ -12,11 +12,13 @@ import {
   setQuickLookTopicTitle,
   updateQuickLookLine,
   updateQuickLookRowValue,
+  updateQuickLookTextContent,
 } from "../../../src/lib/model/quicklook";
 import type {
   QuickLookRowTopic,
   QuickLookSectionData,
   QuickLookTableTopic,
+  QuickLookTextTopic,
 } from "../../../src/lib/model/quicklook";
 
 function rowTopic(
@@ -48,8 +50,22 @@ function tableTopic(
   };
 }
 
+function textTopic(
+  id: string,
+  overrides: Partial<QuickLookTextTopic> = {},
+): QuickLookTextTopic {
+  return {
+    id,
+    kind: "text",
+    iconKey: "circle",
+    title: "",
+    content: "",
+    ...overrides,
+  };
+}
+
 function dataWith(
-  topics: (QuickLookRowTopic | QuickLookTableTopic)[],
+  topics: (QuickLookRowTopic | QuickLookTableTopic | QuickLookTextTopic)[],
 ): QuickLookSectionData {
   return { topics };
 }
@@ -75,6 +91,16 @@ describe("addQuickLookTopic", () => {
       iconKey: "circle",
       lines: [],
       valueAlign: "left",
+    });
+  });
+
+  it("appends a text topic with the default icon and empty content", () => {
+    const result = addQuickLookTopic(dataWith([]), "text");
+    expect(result.topics).toHaveLength(1);
+    expect(result.topics[0]).toMatchObject({
+      kind: "text",
+      iconKey: "circle",
+      content: "",
     });
   });
 });
@@ -171,6 +197,26 @@ describe("updateQuickLookRowValue", () => {
   it("is a no-op when the targeted topic is a table topic", () => {
     const data = dataWith([tableTopic("t1")]);
     expect(updateQuickLookRowValue(data, "t1", "x")).toBe(data);
+  });
+});
+
+describe("updateQuickLookTextContent", () => {
+  it("updates a text topic's content", () => {
+    const data = dataWith([textTopic("t1")]);
+    const result = updateQuickLookTextContent(data, "t1", "Load-in at 6pm.");
+    expect((result.topics[0] as QuickLookTextTopic).content).toBe(
+      "Load-in at 6pm.",
+    );
+  });
+
+  it("is a no-op when the targeted topic is not a text topic", () => {
+    const data = dataWith([rowTopic("t1")]);
+    expect(updateQuickLookTextContent(data, "t1", "x")).toBe(data);
+  });
+
+  it("is a no-op for an unknown topic id", () => {
+    const data = dataWith([textTopic("t1")]);
+    expect(updateQuickLookTextContent(data, "missing", "x")).toBe(data);
   });
 });
 

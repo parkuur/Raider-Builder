@@ -21,7 +21,9 @@
 
 <div class="quicklook-section">
   {#if section.data.topics.length === 0}
-    <SectionEmptyHint text="No topics yet — add a row or table topic above." />
+    <SectionEmptyHint
+      text="No topics yet — add a row, table, or text topic above."
+    />
   {/if}
   {#each section.data.topics as topic (topic.id)}
     <QuickLookTopic data={section.data} {topic} {drag} onCommit={commit} />
@@ -40,6 +42,13 @@
       onclick={() => commit(addQuickLookTopic(section.data, "table"))}
     >
       + Add Table Topic
+    </button>
+    <button
+      type="button"
+      class="quicklook-section__add"
+      onclick={() => commit(addQuickLookTopic(section.data, "text"))}
+    >
+      + Add Text Topic
     </button>
   </div>
 </div>

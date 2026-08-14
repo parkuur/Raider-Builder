@@ -14,6 +14,7 @@
     setQuickLookTopicTitle,
     updateQuickLookLine,
     updateQuickLookRowValue,
+    updateQuickLookTextContent,
   } from "../../model/quicklook";
   import type { IconKey } from "../../model/icon-keys";
   import { fitColumnChars } from "../../model/column-fit";
@@ -21,6 +22,7 @@
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { autosizeTextarea } from "../../actions/autosize-textarea";
   import TextAlignLeftIcon from "phosphor-svelte/lib/TextAlignLeftIcon";
   import TextAlignCenterIcon from "phosphor-svelte/lib/TextAlignCenterIcon";
   import TextAlignRightIcon from "phosphor-svelte/lib/TextAlignRightIcon";
@@ -170,6 +172,17 @@
     >
       + Add Line
     </button>
+  {:else if topic.kind === "text"}
+    <textarea
+      class="quicklook-section__text-body"
+      use:autosizeTextarea={topic.content}
+      rows="1"
+      value={topic.content}
+      placeholder="Text…"
+      oninput={(e) =>
+        onCommit(
+          updateQuickLookTextContent(data, topic.id, e.currentTarget.value),
+        )}></textarea>
   {/if}
 </div>
 
@@ -245,6 +258,22 @@
 
   .quicklook-section__line-value {
     flex: none;
+  }
+
+  .quicklook-section__text-body {
+    display: block;
+    width: 100%;
+    min-height: 56px;
+    resize: none;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--font-size-body);
+    padding: var(--space-2);
+    box-sizing: border-box;
+    field-sizing: content;
   }
 
   .quicklook-section__add-line {

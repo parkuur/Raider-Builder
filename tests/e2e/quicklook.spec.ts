@@ -234,6 +234,47 @@ test.describe("Quick Look section", () => {
     await expect(secondValue).toHaveCSS("text-align", "left");
   });
 
+  test("text topic auto-sizes its body and round-trips its content through JSON save/load", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await page.getByRole("button", { name: "+ Add Text Topic" }).click();
+    const topic = page.locator(".quicklook-section__topic").first();
+    await topic.locator(".quicklook-topic-header__title").fill("Notes");
+
+    const body = topic.locator(".quicklook-section__text-body");
+    const shortHeight = (await body.boundingBox())!.height;
+    await body.fill("Line one\nLine two\nLine three\nLine four\nLine five");
+    const tallHeight = (await body.boundingBox())!.height;
+    expect(tallHeight).toBeGreaterThan(shortHeight);
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Save" }).click();
+    const download = await downloadPromise;
+    const downloadPath = await download.path();
+    expect(downloadPath).toBeTruthy();
+
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page
+      .locator(".save-load-controls__file-input")
+      .setInputFiles(downloadPath as string);
+
+    await expect(page.locator(".quicklook-topic-header__title")).toHaveValue(
+      "Notes",
+    );
+    await expect(page.locator(".quicklook-section__text-body")).toHaveValue(
+      "Line one\nLine two\nLine three\nLine four\nLine five",
+    );
+  });
+
   test("editing controls are hidden in print, content stays visible", async ({
     page,
   }) => {
