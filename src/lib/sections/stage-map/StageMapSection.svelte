@@ -504,6 +504,18 @@
       );
   }
 
+  /*
+   * The canvas is a focusable keyboard-shortcut target (Backspace/Delete,
+   * Ctrl/Cmd+C/V, Escape — see handleCanvasKeydown), which is otherwise
+   * exactly the kind of element that should keep its default focus ring for
+   * keyboard users. Its own border already reads clearly as the canvas's
+   * boundary, so the browser's default focus ring just doubled that edge
+   * with a second, heavier one — dropped in favor of the existing border.
+   */
+  .stage-map__canvas:focus {
+    outline: none;
+  }
+
   .stage-map__item {
     position: absolute;
     transform: translate(-50%, -50%);
