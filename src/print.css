@@ -119,11 +119,25 @@
   }
 
   /*
+   * A column with nothing visible in it (every section inside individually
+   * hidden-from-print) shouldn't still claim its `flex: 1` half of the
+   * row — an empty flex item reserves its share of the width regardless of
+   * whether it has visible content, which would otherwise leave the
+   * surviving column stuck at half width with blank space beside it.
+   * Removing the empty column from the layout entirely lets the sibling's
+   * `flex: 1` absorb the full row width instead.
+   */
+  .row-view__column:not(:has(.section-frame:not(.hidden-from-print))) {
+    display: none !important;
+  }
+
+  /*
    * The split-layout divider (RowView.svelte) lives on the column-wrapper
    * boundary, not on individual sections, so it doesn't know about a
    * section's `hidden` state on its own — if every section in the first
    * column is hidden-from-print, the second column's divider would
-   * otherwise still point at an empty column.
+   * otherwise still point at an empty (now display:none, per the rule
+   * above) column.
    */
   .row-view__column:not(:has(.section-frame:not(.hidden-from-print)))
     + .row-view__column {

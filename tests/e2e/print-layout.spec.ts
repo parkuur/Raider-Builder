@@ -139,11 +139,19 @@ test.describe("print layout", () => {
       .filter({ has: page.locator(".contacts-section") });
     const contactsFrame = row.locator(".section-frame").first();
     const quicklookFrame = row.locator(".section-frame").nth(1);
+    const firstColumn = row.locator(".row-view__column").nth(0);
     const secondColumn = row.locator(".row-view__column").nth(1);
 
     await contactsFrame.getByRole("button", { name: "Hide section" }).click();
     await page.emulateMedia({ media: "print" });
     await expect(secondColumn).toHaveCSS("border-left-style", "none");
+    // The now-empty first column shouldn't still claim half the row's
+    // width — the surviving column should expand to fill it.
+    await expect(firstColumn).toBeHidden();
+    const rowWidth = (await row.locator(".row-view__sections").boundingBox())!
+      .width;
+    const secondColumnWidth = (await secondColumn.boundingBox())!.width;
+    expect(secondColumnWidth).toBeCloseTo(rowWidth, 0);
 
     await page.emulateMedia({ media: "screen" });
     await quicklookFrame.getByRole("button", { name: "Hide section" }).click();
