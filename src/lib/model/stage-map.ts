@@ -2,7 +2,17 @@ import { createId } from "./id";
 import { clamp } from "./util";
 
 export type StageItemCategory =
-  "mic" | "di" | "amp" | "drum" | "mon" | "xlr" | "power" | "riser" | "name";
+  | "mic"
+  | "di"
+  | "amp"
+  | "rack"
+  | "drum"
+  | "mon"
+  | "xlr"
+  | "io"
+  | "power"
+  | "riser"
+  | "name";
 
 export interface StageItemCategoryMeta {
   abbreviation: string;
@@ -18,9 +28,11 @@ export const STAGE_ITEM_CATEGORIES: Record<
   mic: { abbreviation: "MIC", shape: "circle" },
   di: { abbreviation: "DI", shape: "rectangle" },
   amp: { abbreviation: "AMP", shape: "square" },
+  rack: { abbreviation: "RACK", shape: "square" },
   drum: { abbreviation: "DRM", shape: "circle" },
   mon: { abbreviation: "MON", shape: "square" },
   xlr: { abbreviation: "XLR", shape: "rectangle" },
+  io: { abbreviation: "I/O", shape: "rectangle" },
   power: { abbreviation: "PWR", shape: "triangle" },
   riser: {
     abbreviation: "RISER",
@@ -35,9 +47,11 @@ const DEFAULT_LABELS: Record<StageItemCategory, string> = {
   mic: "Vox",
   di: "Bass DI",
   amp: "Amp",
+  rack: "Rack",
   drum: "Drums",
   mon: "Wedge",
   xlr: "XLR Run",
+  io: "I/O",
   power: "Power",
   riser: "Riser",
   name: "Name",
@@ -49,6 +63,7 @@ const MIN_RISER_WIDTH = 34;
 const MIN_RISER_HEIGHT = 26;
 const DEFAULT_RISER_WIDTH = 70;
 const DEFAULT_RISER_HEIGHT = 50;
+const PASTE_OFFSET = 4;
 
 export interface StageItem {
   id: string;
@@ -95,12 +110,13 @@ export function addStageItem(
   return { ...data, items: [...data.items, item] };
 }
 
-export function removeStageItem(
+export function removeStageItems(
   data: StageMapSectionData,
-  itemId: string,
+  itemIds: readonly string[],
 ): StageMapSectionData {
-  if (!data.items.some((i) => i.id === itemId)) return data;
-  return { ...data, items: data.items.filter((i) => i.id !== itemId) };
+  const idSet = new Set(itemIds);
+  if (!data.items.some((i) => idSet.has(i.id))) return data;
+  return { ...data, items: data.items.filter((i) => !idSet.has(i.id)) };
 }
 
 export function updateStageItemLabel(
@@ -197,4 +213,93 @@ export function bringStageItemToFront(
 ): StageMapSectionData {
   const items = bringToFront(data.items, itemId);
   return items === data.items ? data : { ...data, items };
+}
+
+/**
+ * Group version of {@link bringToFront} — brings every item in `ids` above
+ * everything else, preserving their order relative to each other (so
+ * bringing a multi-selection forward never scrambles which of the selected
+ * items was already on top within the group).
+ */
+export function bringManyToFront(
+  items: StageItem[],
+  ids: readonly string[],
+): StageItem[] {
+  const idSet = new Set(ids);
+  const targets = items.filter((item) => idSet.has(item.id));
+  if (targets.length === 0) return items;
+
+  const others = items.filter((item) => !idSet.has(item.id));
+  const maxOtherOrder = others.reduce(
+    (max, item) => Math.max(max, item.order),
+    -Infinity,
+  );
+  const isAlreadyUniquelyOnTop = targets.every(
+    (target) => target.order > maxOtherOrder,
+  );
+  if (isAlreadyUniquelyOnTop) return items;
+
+  const sortedTargets = [...targets].sort((a, b) => a.order - b.order);
+  const maxOrder = items.reduce(
+    (max, item) => Math.max(max, item.order),
+    -Infinity,
+  );
+  const newOrderById = new Map(
+    sortedTargets.map((item, index) => [item.id, maxOrder + 1 + index]),
+  );
+
+  return items.map((item) => {
+    const newOrder = newOrderById.get(item.id);
+    return newOrder === undefined ? item : { ...item, order: newOrder };
+  });
+}
+
+/**
+ * Moves every item in `ids` by the same percentage delta, each still
+ * independently clamped to the canvas margins — the group-drag counterpart
+ * to {@link moveStageItem}.
+ */
+export function moveStageItemsBy(
+  data: StageMapSectionData,
+  ids: readonly string[],
+  dxPercent: number,
+  dyPercent: number,
+): StageMapSectionData {
+  const idSet = new Set(ids);
+  if (!data.items.some((item) => idSet.has(item.id))) return data;
+  return {
+    ...data,
+    items: data.items.map((item) =>
+      idSet.has(item.id)
+        ? {
+            ...item,
+            x: clamp(item.x + dxPercent, 3, 97),
+            y: clamp(item.y + dyPercent, 8, 92),
+          }
+        : item,
+    ),
+  };
+}
+
+/**
+ * Appends a fresh, offset copy of each given item to `data` — the paste
+ * half of copy/paste. `items` is deliberately independent of `data.items`
+ * (it comes from the clipboard, which may hold a snapshot from a different
+ * Stage Map section), so ids are always regenerated rather than assumed
+ * unique against `data`.
+ */
+export function cloneStageItemsForPaste(
+  data: StageMapSectionData,
+  items: readonly StageItem[],
+): StageMapSectionData {
+  if (items.length === 0) return data;
+  const baseOrder = nextOrder(data.items);
+  const clones = items.map((item, index) => ({
+    ...item,
+    id: createId("stage-item"),
+    x: clamp(item.x + PASTE_OFFSET, 3, 97),
+    y: clamp(item.y + PASTE_OFFSET, 8, 92),
+    order: baseOrder + index,
+  }));
+  return { ...data, items: [...data.items, ...clones] };
 }

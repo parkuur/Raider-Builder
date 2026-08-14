@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { Section } from "../../model/section-types";
+  import { SvelteSet } from "svelte/reactivity";
   import { pointerDrag } from "../../actions/pointer-drag";
   import {
     STAGE_ITEM_CATEGORIES,
     addStageItem,
-    bringStageItemToFront,
-    moveStageItem,
-    removeStageItem,
+    bringManyToFront,
+    cloneStageItemsForPaste,
+    moveStageItemsBy,
+    removeStageItems,
     resizeStageItem,
     setCanvasHeight,
     updateStageItemLabel,
@@ -14,8 +16,11 @@
   } from "../../model/stage-map";
   import type { StageItem, StageItemCategory } from "../../model/stage-map";
   import { setStageMapData } from "../../state/document.svelte";
+  import {
+    copyStageItems,
+    getStageMapClipboard,
+  } from "../../state/stage-map-clipboard";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
-  import RemoveButton from "../../components/RemoveButton.svelte";
   import { autoFitText } from "../../components/auto-fit-text";
 
   let {
@@ -30,12 +35,154 @@
 
   let canvasEl: HTMLDivElement | undefined = $state();
   let scrollEl: HTMLDivElement | undefined = $state();
+  const selectedIds = new SvelteSet<string>();
+
+  // A click inside the canvas already clears the selection through its own
+  // pointerDrag (an empty-rect marquee, see finishMarquee below) — this
+  // covers everywhere else on the page, which that handler never sees.
+  $effect(() => {
+    function handleWindowPointerDown(event: PointerEvent): void {
+      if (selectedIds.size === 0) return;
+      if (canvasEl?.contains(event.target as Node)) return;
+      selectedIds.clear();
+    }
+    window.addEventListener("pointerdown", handleWindowPointerDown);
+    return () =>
+      window.removeEventListener("pointerdown", handleWindowPointerDown);
+  });
+
+  // Ctrl/Cmd+click toggles an item's own membership. A plain click replaces
+  // the selection with just that item — unless it's already part of a
+  // multi-item selection, in which case the whole selection is left intact
+  // so a drag starting from it can move the group.
+  function resolveClickSelection(item: StageItem, event: PointerEvent): void {
+    if (event.ctrlKey || event.metaKey) {
+      if (selectedIds.has(item.id)) selectedIds.delete(item.id);
+      else selectedIds.add(item.id);
+      return;
+    }
+    if (!selectedIds.has(item.id)) {
+      selectedIds.clear();
+      selectedIds.add(item.id);
+    }
+  }
+
+  // The set of item ids a drag gesture moves together, fixed for the
+  // duration of that gesture (selection changes mid-drag don't retarget it).
+  let dragGroupIds: string[] = [];
+
+  function beginItemDrag(item: StageItem, event: PointerEvent): void {
+    canvasEl?.focus({ preventScroll: true });
+    resolveClickSelection(item, event);
+    dragGroupIds = selectedIds.has(item.id) ? [...selectedIds] : [item.id];
+    commit({
+      ...section.data,
+      items: bringManyToFront(section.data.items, dragGroupIds),
+    });
+  }
+
+  // Backspace/Delete/Escape/Ctrl+C/Ctrl+V only act while the canvas element
+  // itself is focused — not a descendant like the label textarea or name
+  // input — so typing/backspacing/copy-paste inside those fields is
+  // completely unaffected. Every item-click, marquee-drag, or
+  // canvas-background interaction focuses the canvas first, so whichever
+  // Stage Map section was last interacted with is naturally where these
+  // keys apply — including as the paste target for a copy made elsewhere.
+  function handleCanvasKeydown(event: KeyboardEvent): void {
+    if (event.target !== canvasEl) return;
+    const withModifier = event.ctrlKey || event.metaKey;
+
+    if (event.key === "Backspace" || event.key === "Delete") {
+      if (selectedIds.size === 0) return;
+      event.preventDefault();
+      commit(removeStageItems(section.data, [...selectedIds]));
+      selectedIds.clear();
+    } else if (event.key === "Escape") {
+      selectedIds.clear();
+    } else if (withModifier && event.key.toLowerCase() === "c") {
+      if (selectedIds.size === 0) return;
+      event.preventDefault();
+      copyStageItems(
+        section.data.items.filter((item) => selectedIds.has(item.id)),
+      );
+    } else if (withModifier && event.key.toLowerCase() === "v") {
+      const clipboardItems = getStageMapClipboard();
+      if (clipboardItems.length === 0) return;
+      event.preventDefault();
+      const originalCount = section.data.items.length;
+      const pasted = cloneStageItemsForPaste(section.data, clipboardItems);
+      commit(pasted);
+      selectedIds.clear();
+      for (const newItem of pasted.items.slice(originalCount)) {
+        selectedIds.add(newItem.id);
+      }
+    }
+  }
+
+  interface ClientPoint {
+    x: number;
+    y: number;
+  }
+
+  let marqueeStartClient: ClientPoint | undefined = $state();
+  let marqueeCurrentClient: ClientPoint | undefined = $state();
+  let marqueeAdditive = false;
+
+  // Converts a viewport point into the canvas's own (unscaled) local
+  // coordinate space — the space item x/y percentages and the marquee
+  // overlay's own inline position are both expressed in, since the overlay
+  // is a descendant of the canvas and inherits its CSS `transform: scale()`.
+  function canvasLocalPoint(client: ClientPoint): ClientPoint {
+    if (!canvasEl) return { x: 0, y: 0 };
+    const rect = canvasEl.getBoundingClientRect();
+    return {
+      x: (client.x - rect.left) / canvasScale,
+      y: (client.y - rect.top) / canvasScale,
+    };
+  }
+
+  // Hit-testing happens directly in viewport coordinates (both the marquee
+  // corners and each item's own getBoundingClientRect() are already in that
+  // space), sidestepping any scale conversion entirely.
+  function finishMarquee(): void {
+    const start = marqueeStartClient;
+    const current = marqueeCurrentClient;
+    marqueeStartClient = undefined;
+    marqueeCurrentClient = undefined;
+    if (!start || !current || !canvasEl) return;
+
+    const left = Math.min(start.x, current.x);
+    const right = Math.max(start.x, current.x);
+    const top = Math.min(start.y, current.y);
+    const bottom = Math.max(start.y, current.y);
+
+    const matchedIds = section.data.items
+      .filter((item) => {
+        const el = canvasEl!.querySelector<HTMLElement>(
+          `[data-item-id="${item.id}"]`,
+        );
+        if (!el) return false;
+        const box = el.getBoundingClientRect();
+        return (
+          box.left < right &&
+          box.right > left &&
+          box.top < bottom &&
+          box.bottom > top
+        );
+      })
+      .map((item) => item.id);
+
+    if (!marqueeAdditive) selectedIds.clear();
+    for (const id of matchedIds) selectedIds.add(id);
+  }
 
   const categories: StageItemCategory[] = [
     "mic",
     "di",
+    "io",
     "xlr",
     "amp",
+    "rack",
     "drum",
     "mon",
     "power",
@@ -77,14 +224,12 @@
     };
   });
 
-  function moveByPixelDelta(item: StageItem, dx: number, dy: number) {
+  function moveByPixelDelta(dx: number, dy: number) {
     if (!canvasEl) return;
     const rect = canvasEl.getBoundingClientRect();
     const deltaX = (dx / rect.width) * 100;
     const deltaY = (dy / rect.height) * 100;
-    commit(
-      moveStageItem(section.data, item.id, item.x + deltaX, item.y + deltaY),
-    );
+    commit(moveStageItemsBy(section.data, dragGroupIds, deltaX, deltaY));
   }
 
   // Divided by the current scale so a resize/height-drag tracks the pointer
@@ -120,6 +265,15 @@
       ? `${section.data.canvasHeight * canvasScale}px`
       : undefined}
   >
+    <!--
+      role="application" plus a focusable, keydown-handling canvas is the
+      free-form editing-surface pattern (a whiteboard/diagram canvas, not a
+      document-flow region) — svelte's a11y checks don't recognize it as
+      "interactive" on its own, but the role and keyboard handling here are
+      intentional and paired.
+    -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="stage-map__canvas"
       bind:this={canvasEl}
@@ -127,12 +281,29 @@
       style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
       style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
       style:transform-origin="top left"
+      role="application"
+      aria-label="Stage map canvas"
+      tabindex="0"
+      onkeydown={handleCanvasKeydown}
+      use:pointerDrag={{
+        onStart: (event) => {
+          canvasEl?.focus({ preventScroll: true });
+          marqueeAdditive = event.ctrlKey || event.metaKey;
+          marqueeStartClient = { x: event.clientX, y: event.clientY };
+          marqueeCurrentClient = marqueeStartClient;
+        },
+        onMove: (_dx, _dy, event) => {
+          marqueeCurrentClient = { x: event.clientX, y: event.clientY };
+        },
+        onEnd: () => finishMarquee(),
+      }}
     >
       {#each section.data.items as item (item.id)}
         {@const meta = STAGE_ITEM_CATEGORIES[item.category]}
         <div
           class="stage-map__item stage-map__item--{meta.shape}"
           class:stage-map__item--dashed={meta.dashed}
+          class:stage-map__item--selected={selectedIds.has(item.id)}
           style:left="{item.x}%"
           style:top="{item.y}%"
           style:width={item.w ? `${item.w}px` : undefined}
@@ -141,8 +312,9 @@
           data-item-id={item.id}
           data-category={item.category}
           use:pointerDrag={{
-            onStart: () => commit(bringStageItemToFront(section.data, item.id)),
-            onMove: (dx, dy) => moveByPixelDelta(item, dx, dy),
+            stopPropagation: true,
+            onStart: (event) => beginItemDrag(item, event),
+            onMove: (dx, dy) => moveByPixelDelta(dx, dy),
           }}
         >
           {#if meta.shape === "triangle"}
@@ -168,6 +340,9 @@
                     e.currentTarget.value,
                   ),
                 )}
+              onkeydown={(e) => {
+                if (e.key === "Escape") e.currentTarget.blur();
+              }}
             />
           {:else}
             <span class="stage-map__abbr">{meta.abbreviation}</span>
@@ -181,12 +356,6 @@
               }}
             ></div>
           {/if}
-          <div class="stage-map__remove no-print">
-            <RemoveButton
-              label="Remove item"
-              onclick={() => commit(removeStageItem(section.data, item.id))}
-            />
-          </div>
           <textarea
             class="stage-map__label"
             rows={item.label.split("\n").length}
@@ -200,16 +369,25 @@
                 ),
               )}
             onkeydown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                e.currentTarget.blur();
-              }
+              if (e.key === "Escape") e.currentTarget.blur();
             }}></textarea>
         </div>
       {/each}
+      {#if marqueeStartClient && marqueeCurrentClient}
+        {@const a = canvasLocalPoint(marqueeStartClient)}
+        {@const b = canvasLocalPoint(marqueeCurrentClient)}
+        <div
+          class="stage-map__marquee no-print"
+          style:left="{Math.min(a.x, b.x)}px"
+          style:top="{Math.min(a.y, b.y)}px"
+          style:width="{Math.abs(b.x - a.x)}px"
+          style:height="{Math.abs(b.y - a.y)}px"
+        ></div>
+      {/if}
       <div
         class="stage-map__depth-handle no-print"
         use:pointerDrag={{
+          stopPropagation: true,
           onMove: (dx, dy) =>
             commit(
               setCanvasHeight(
@@ -245,6 +423,14 @@
      * legitimately needs vertical scroll.
      */
     overflow-y: hidden;
+    /*
+     * The depth handle (below) intentionally sits half outside the
+     * canvas's own box, centered on its bottom edge — at its current size
+     * that's 9px of overflow below the canvas, which `overflow-y: hidden`
+     * above would otherwise clip. This padding gives it room without
+     * reintroducing scroll on this axis.
+     */
+    padding-bottom: 12px;
   }
 
   /*
@@ -267,6 +453,11 @@
     .stage-map__scale-box {
       width: 100% !important;
       height: auto !important;
+    }
+
+    /* Selection is an editing affordance only, never printed. */
+    .stage-map__item--selected {
+      outline: none !important;
     }
   }
 
@@ -319,6 +510,18 @@
       );
   }
 
+  /*
+   * The canvas is a focusable keyboard-shortcut target (Backspace/Delete,
+   * Ctrl/Cmd+C/V, Escape — see handleCanvasKeydown), which is otherwise
+   * exactly the kind of element that should keep its default focus ring for
+   * keyboard users. Its own border already reads clearly as the canvas's
+   * boundary, so the browser's default focus ring just doubled that edge
+   * with a second, heavier one — dropped in favor of the existing border.
+   */
+  .stage-map__canvas:focus {
+    outline: none;
+  }
+
   .stage-map__item {
     position: absolute;
     transform: translate(-50%, -50%);
@@ -342,6 +545,11 @@
 
   .stage-map__item--dashed {
     border-style: dashed;
+  }
+
+  .stage-map__item--selected {
+    outline: 2px solid #d64545;
+    outline-offset: 2px;
   }
 
   .stage-map__item--rectangle {
@@ -407,6 +615,13 @@
     touch-action: none;
   }
 
+  .stage-map__marquee {
+    position: absolute;
+    border: 1px dashed #d64545;
+    background: color-mix(in srgb, #d64545 12%, transparent);
+    pointer-events: none;
+  }
+
   .stage-map__resize-handle {
     position: absolute;
     right: -4px;
@@ -417,12 +632,6 @@
     background: var(--color-background);
     cursor: nwse-resize;
     touch-action: none;
-  }
-
-  .stage-map__remove {
-    position: absolute;
-    top: -10px;
-    right: -10px;
   }
 
   .stage-map__label {
@@ -445,10 +654,10 @@
   .stage-map__depth-handle {
     position: absolute;
     left: 50%;
-    bottom: -3px;
+    bottom: -9px;
     transform: translateX(-50%);
     width: 40px;
-    height: 6px;
+    height: 18px;
     border: 1px solid var(--color-border);
     background: var(--color-background);
     cursor: ns-resize;

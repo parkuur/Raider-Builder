@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   addStageItem,
+  bringManyToFront,
   bringToFront,
+  cloneStageItemsForPaste,
   defaultStageMapData,
   moveStageItem,
-  removeStageItem,
+  moveStageItemsBy,
+  removeStageItems,
   resizeStageItem,
   setCanvasHeight,
   updateStageItemName,
@@ -43,12 +46,44 @@ describe("addStageItem", () => {
     const micData = addStageItem(defaultStageMapData(), "mic");
     expect(micData.items[0]!.w).toBeUndefined();
   });
+
+  it("gives rack and io items their default labels and no fixed size", () => {
+    const rackData = addStageItem(defaultStageMapData(), "rack");
+    expect(rackData.items[0]).toMatchObject({
+      category: "rack",
+      label: "Rack",
+      w: undefined,
+      h: undefined,
+    });
+    const ioData = addStageItem(defaultStageMapData(), "io");
+    expect(ioData.items[0]).toMatchObject({
+      category: "io",
+      label: "I/O",
+      w: undefined,
+      h: undefined,
+    });
+  });
 });
 
-describe("removeStageItem", () => {
-  it("is a no-op for an unknown id", () => {
+describe("removeStageItems", () => {
+  it("removes every listed item that's present", () => {
+    const data = {
+      items: [item("a", 1), item("b", 2), item("c", 3)],
+      canvasHeight: 260,
+    };
+    const result = removeStageItems(data, ["a", "c"]);
+    expect(result.items.map((i) => i.id)).toEqual(["b"]);
+  });
+
+  it("is a no-op when none of the ids are present", () => {
     const data = defaultStageMapData();
-    expect(removeStageItem(data, "missing")).toBe(data);
+    expect(removeStageItems(data, ["missing"])).toBe(data);
+  });
+
+  it("ignores ids that aren't present, removing only the ones that are", () => {
+    const data = { items: [item("a", 1)], canvasHeight: 260 };
+    const result = removeStageItems(data, ["a", "missing"]);
+    expect(result.items).toEqual([]);
   });
 });
 
@@ -98,6 +133,46 @@ describe("setCanvasHeight", () => {
   });
 });
 
+describe("cloneStageItemsForPaste", () => {
+  it("appends offset copies with fresh ids stacked above the existing max order", () => {
+    const data = { items: [item("a", 5)], canvasHeight: 260 };
+    const source = { ...item("a", 5), label: "Vox", nameText: "" };
+    const result = cloneStageItemsForPaste(data, [source]);
+
+    expect(result.items).toHaveLength(2);
+    const pasted = result.items[1]!;
+    expect(pasted.id).not.toBe(source.id);
+    expect(pasted.x).toBe(source.x + 4);
+    expect(pasted.y).toBe(source.y + 4);
+    expect(pasted.order).toBeGreaterThan(data.items[0]!.order);
+    expect(pasted.label).toBe("Vox");
+  });
+
+  it("clamps the offset position within the canvas margins", () => {
+    const data = defaultStageMapData();
+    const source = { ...item("a", 1), x: 96, y: 91 };
+    const result = cloneStageItemsForPaste(data, [source]);
+    expect(result.items[0]).toMatchObject({ x: 97, y: 92 });
+  });
+
+  it("stacks multiple pasted items above each other, preserving order", () => {
+    const data = defaultStageMapData();
+    const result = cloneStageItemsForPaste(data, [item("a", 1), item("b", 2)]);
+    expect(result.items[1]!.order).toBeGreaterThan(result.items[0]!.order);
+  });
+
+  it("leaves the original data untouched", () => {
+    const data = { items: [item("a", 1)], canvasHeight: 260 };
+    cloneStageItemsForPaste(data, [item("a", 1)]);
+    expect(data.items).toHaveLength(1);
+  });
+
+  it("is a no-op for an empty clipboard", () => {
+    const data = defaultStageMapData();
+    expect(cloneStageItemsForPaste(data, [])).toBe(data);
+  });
+});
+
 describe("bringToFront", () => {
   it("brings an earlier-created item above a later-created one when clicked", () => {
     const items = [item("a", 1), item("b", 2)];
@@ -123,5 +198,61 @@ describe("bringToFront", () => {
     const a = result.find((i) => i.id === "a")!;
     const b = result.find((i) => i.id === "b")!;
     expect(a.order).toBeGreaterThan(b.order);
+  });
+});
+
+describe("bringManyToFront", () => {
+  it("brings a group above a later item, preserving order within the group", () => {
+    const items = [item("a", 1), item("b", 2), item("c", 3)];
+    const result = bringManyToFront(items, ["a", "b"]);
+    const a = result.find((i) => i.id === "a")!;
+    const b = result.find((i) => i.id === "b")!;
+    const c = result.find((i) => i.id === "c")!;
+    expect(a.order).toBeGreaterThan(c.order);
+    expect(b.order).toBeGreaterThan(c.order);
+    // a was already below b before the bump — that relative order holds.
+    expect(a.order).toBeLessThan(b.order);
+  });
+
+  it("is a no-op when the group is already uniquely on top", () => {
+    const items = [item("a", 1), item("b", 2), item("c", 3)];
+    expect(bringManyToFront(items, ["b", "c"])).toBe(items);
+  });
+
+  it("is a no-op when none of the ids exist", () => {
+    const items = [item("a", 1)];
+    expect(bringManyToFront(items, ["missing"])).toBe(items);
+  });
+
+  it("ignores unknown ids mixed in with a real one", () => {
+    const items = [item("a", 1), item("b", 2), item("c", 3)];
+    const result = bringManyToFront(items, ["a", "missing"]);
+    const a = result.find((i) => i.id === "a")!;
+    const c = result.find((i) => i.id === "c")!;
+    expect(a.order).toBeGreaterThan(c.order);
+    expect(result.some((i) => i.id === "missing")).toBe(false);
+  });
+});
+
+describe("moveStageItemsBy", () => {
+  it("moves every listed item by the same delta, each independently clamped", () => {
+    const data = {
+      items: [item("a", 1), { ...item("b", 2), x: 95 }],
+      canvasHeight: 260,
+    };
+    const result = moveStageItemsBy(data, ["a", "b"], 10, 0);
+    expect(result.items[0]).toMatchObject({ x: 60 });
+    expect(result.items[1]).toMatchObject({ x: 97 });
+  });
+
+  it("is a no-op when none of the ids exist", () => {
+    const data = defaultStageMapData();
+    expect(moveStageItemsBy(data, ["missing"], 10, 10)).toBe(data);
+  });
+
+  it("only moves ids that exist, ignoring the rest", () => {
+    const data = { items: [item("a", 1)], canvasHeight: 260 };
+    const result = moveStageItemsBy(data, ["a", "missing"], 5, 5);
+    expect(result.items[0]).toMatchObject({ x: 55, y: 55 });
   });
 });
