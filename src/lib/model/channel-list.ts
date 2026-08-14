@@ -11,12 +11,54 @@ export interface ChannelRow {
   notes: string;
 }
 
+export interface ChannelListColumnLabels {
+  ch: string;
+  channel: string;
+  source: string;
+  phantom: string;
+  notes: string;
+}
+
+export function defaultChannelListColumnLabels(): ChannelListColumnLabels {
+  return {
+    ch: "Ch",
+    channel: "Channel",
+    source: "Source",
+    phantom: "48V",
+    notes: "Notes",
+  };
+}
+
 export interface ChannelListSectionData {
   rows: ChannelRow[];
+  columnLabels?: Partial<ChannelListColumnLabels>;
 }
 
 export function defaultChannelListData(): ChannelListSectionData {
   return { rows: [] };
+}
+
+/**
+ * Missing/partial `columnLabels` (documents saved before this field
+ * existed) self-heals here rather than in persistence.ts — matching how
+ * every other section's `data` shape is trusted once it passes the
+ * generic "is this an object?" check on load, not deep-validated.
+ */
+export function channelListColumnLabels(
+  data: ChannelListSectionData,
+): ChannelListColumnLabels {
+  return { ...defaultChannelListColumnLabels(), ...data.columnLabels };
+}
+
+export function setChannelListColumnLabel(
+  data: ChannelListSectionData,
+  key: keyof ChannelListColumnLabels,
+  label: string,
+): ChannelListSectionData {
+  return {
+    ...data,
+    columnLabels: { ...channelListColumnLabels(data), [key]: label },
+  };
 }
 
 function makeChannelRow(): ChannelRow {

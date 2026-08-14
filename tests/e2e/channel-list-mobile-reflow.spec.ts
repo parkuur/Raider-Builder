@@ -17,11 +17,9 @@ test.describe("Channel List mobile reflow", () => {
 
     // Header keeps 48V but drops the Notes column entirely on mobile.
     await expect(
-      page.locator(".channel-list thead th", { hasText: "48V" }),
-    ).toBeVisible();
-    await expect(
-      page.locator(".channel-list thead th", { hasText: "Notes" }),
-    ).toHaveCount(0);
+      page.locator(".channel-list thead th.channel-list__phantom input"),
+    ).toHaveValue("48V");
+    await expect(page.locator(".channel-list thead th input")).toHaveCount(4);
 
     // Primary row keeps 48V but no longer carries Notes/stereo.
     const primaryRow = page.locator(".channel-list tbody tr").first();
@@ -152,11 +150,9 @@ test.describe("Channel List mobile reflow", () => {
     await page.emulateMedia({ media: "print" });
 
     await expect(
-      page.locator(".channel-list thead th", { hasText: "48V" }),
-    ).toBeVisible();
-    await expect(
-      page.locator(".channel-list thead th", { hasText: "Notes" }),
-    ).toBeVisible();
+      page.locator(".channel-list thead th.channel-list__phantom input"),
+    ).toHaveValue("48V");
+    await expect(page.locator(".channel-list thead th input")).toHaveCount(5);
     await expect(page.locator(".channel-list__phantom").first()).toBeVisible();
     await expect(page.locator(".channel-list__notes").first()).toBeVisible();
     await expect(page.locator(".channel-list__row-mobile")).toBeHidden();

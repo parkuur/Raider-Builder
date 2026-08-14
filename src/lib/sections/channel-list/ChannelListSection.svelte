@@ -2,11 +2,14 @@
   import type { Section } from "../../model/section-types";
   import {
     addChannelRow,
+    channelListColumnLabels,
     numberChannelRows,
     removeChannelRow,
     reorderChannelRows,
+    setChannelListColumnLabel,
     updateChannelRow,
   } from "../../model/channel-list";
+  import type { ChannelListColumnLabels } from "../../model/channel-list";
   import { fitColumnChars } from "../../model/column-fit";
   import { setChannelListData } from "../../state/document.svelte";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
@@ -29,6 +32,11 @@
   const numbered = $derived(numberChannelRows(section.data));
   function labelFor(id: string): string {
     return numbered.find((n) => n.id === id)?.label ?? "";
+  }
+
+  const columnLabels = $derived(channelListColumnLabels(section.data));
+  function setColumnLabel(key: keyof ChannelListColumnLabels, label: string) {
+    commit(setChannelListColumnLabel(section.data, key, label));
   }
 
   const nameChars = $derived(
@@ -70,12 +78,42 @@
     <thead>
       <tr>
         <th class="no-print"></th>
-        <th class="channel-list__num">Ch</th>
-        <th>Channel</th>
-        <th>Source</th>
-        <th class="channel-list__phantom">48V</th>
+        <th class="channel-list__num">
+          <input
+            class="channel-list__header-input"
+            value={columnLabels.ch}
+            oninput={(e) => setColumnLabel("ch", e.currentTarget.value)}
+          />
+        </th>
+        <th>
+          <input
+            class="channel-list__header-input"
+            value={columnLabels.channel}
+            oninput={(e) => setColumnLabel("channel", e.currentTarget.value)}
+          />
+        </th>
+        <th>
+          <input
+            class="channel-list__header-input"
+            value={columnLabels.source}
+            oninput={(e) => setColumnLabel("source", e.currentTarget.value)}
+          />
+        </th>
+        <th class="channel-list__phantom">
+          <input
+            class="channel-list__header-input"
+            value={columnLabels.phantom}
+            oninput={(e) => setColumnLabel("phantom", e.currentTarget.value)}
+          />
+        </th>
         {#if !isNarrowViewport}
-          <th>Notes</th>
+          <th>
+            <input
+              class="channel-list__header-input"
+              value={columnLabels.notes}
+              oninput={(e) => setColumnLabel("notes", e.currentTarget.value)}
+            />
+          </th>
         {/if}
         <th class="no-print"></th>
       </tr>
@@ -177,7 +215,7 @@
         {#if isNarrowViewport}
           <tr class="channel-list__row-mobile no-print">
             <td colspan="2" class="channel-list__notes-label">
-              <label for="channel-notes-{row.id}">Notes</label>
+              <label for="channel-notes-{row.id}">{columnLabels.notes}</label>
             </td>
             <td colspan="2">
               <textarea
@@ -249,6 +287,36 @@
     color: var(--color-text-muted);
     padding: 4px var(--space-1);
     border-bottom: 1px solid var(--color-border);
+  }
+
+  /*
+   * `.channel-list th` above pairs a class with an element selector, which
+   * out-specifies the plain single-class `.channel-list__num`/
+   * `.channel-list__phantom` rules below on a `<th>` that carries both
+   * classes — without this, Ch/48V headers render left-aligned despite the
+   * centering rule existing. Qualifying with `th` here beats it back.
+   */
+  .channel-list th.channel-list__num,
+  .channel-list th.channel-list__phantom {
+    text-align: center;
+  }
+
+  /*
+   * Beats the later, more general `.channel-list input` rule (class+type,
+   * specificity 0-1-1) below, which would otherwise reapply its border/
+   * padding/background here — this selector adds the `th` ancestor to stay
+   * above it regardless of source order.
+   */
+  .channel-list th .channel-list__header-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-align: inherit;
+    padding: 0;
   }
 
   .channel-list td {
