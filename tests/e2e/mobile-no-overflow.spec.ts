@@ -62,7 +62,8 @@ test.describe("no horizontal overflow at a 360px viewport", () => {
     await page
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
+    await page.getByRole("button", { name: "+ Add Topic" }).click();
+    await page.getByRole("menuitem", { name: "Row", exact: true }).click();
 
     const checks: Locator[] = [
       page.locator(".band-members__grid"),

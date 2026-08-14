@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { pointerDragTo } from "./utils/pointer-drag";
+
+async function addTopic(
+  page: Page,
+  kind: "Row" | "Table" | "Text",
+): Promise<void> {
+  await page.getByRole("button", { name: "+ Add Topic" }).click();
+  await page.getByRole("menuitem", { name: kind, exact: true }).click();
+}
 
 test.describe("Quick Look section", () => {
   test("row and table topics both render an icon, and changing a table topic's icon via the picker updates it", async ({
@@ -13,8 +22,8 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await addTopic(page, "Row");
+    await addTopic(page, "Table");
 
     const topics = page.locator(".quicklook-section__topic");
     await expect(topics).toHaveCount(2);
@@ -54,7 +63,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
+    await addTopic(page, "Row");
     const rowTopic = page.locator(".quicklook-section__topic").first();
     await rowTopic
       .locator(".quicklook-topic-header__title")
@@ -68,7 +77,7 @@ test.describe("Quick Look section", () => {
       "right",
     );
 
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await addTopic(page, "Table");
     const tableTopic = page.locator(".quicklook-section__topic").nth(1);
     await tableTopic.locator(".quicklook-topic-header__title").fill("Schedule");
 
@@ -95,8 +104,8 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
+    await addTopic(page, "Row");
+    await addTopic(page, "Row");
 
     const topics = page.locator(".quicklook-section__topic");
     await topics.nth(0).locator(".quicklook-topic-header__title").fill("First");
@@ -130,7 +139,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await addTopic(page, "Table");
     const tableTopic = page.locator(".quicklook-section__topic").first();
     await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
     await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
@@ -164,7 +173,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await addTopic(page, "Table");
     const tableTopic = page.locator(".quicklook-section__topic").first();
     await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
     await tableTopic.getByRole("button", { name: "+ Add Line" }).click();
@@ -206,8 +215,8 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
-    await page.getByRole("button", { name: "+ Add Table Topic" }).click();
+    await addTopic(page, "Table");
+    await addTopic(page, "Table");
 
     const topics = page.locator(".quicklook-section__topic");
     const firstTopic = topics.nth(0);
@@ -245,7 +254,7 @@ test.describe("Quick Look section", () => {
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
 
-    await page.getByRole("button", { name: "+ Add Text Topic" }).click();
+    await addTopic(page, "Text");
     const topic = page.locator(".quicklook-section__topic").first();
     await topic.locator(".quicklook-topic-header__title").fill("Notes");
 
@@ -275,6 +284,34 @@ test.describe("Quick Look section", () => {
     );
   });
 
+  test("all three topic kinds are reachable through the Add Topic dropdown", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Quick Look (half)", exact: true })
+      .click();
+
+    await addTopic(page, "Row");
+    await addTopic(page, "Table");
+    await addTopic(page, "Text");
+
+    const topics = page.locator(".quicklook-section__topic");
+    await expect(topics).toHaveCount(3);
+    await expect(
+      topics.nth(0).locator(".quicklook-section__value"),
+    ).toBeVisible();
+    await expect(topics.nth(1).locator(".quicklook-section__line")).toHaveCount(
+      0,
+    );
+    await expect(
+      topics.nth(2).locator(".quicklook-section__text-body"),
+    ).toBeVisible();
+  });
+
   test("editing controls are hidden in print, content stays visible", async ({
     page,
   }) => {
@@ -285,14 +322,14 @@ test.describe("Quick Look section", () => {
     await page
       .getByRole("button", { name: "Quick Look (half)", exact: true })
       .click();
-    await page.getByRole("button", { name: "+ Add Row Topic" }).click();
+    await addTopic(page, "Row");
     await page.locator(".quicklook-topic-header__title").fill("Wireless");
     await page.locator(".quicklook-section__value").fill("2 handhelds");
 
     await page.emulateMedia({ media: "print" });
 
     await expect(
-      page.getByRole("button", { name: "+ Add Row Topic" }),
+      page.getByRole("button", { name: "+ Add Topic" }),
     ).toBeHidden();
     await expect(
       page.getByRole("button", { name: "Remove topic" }),
