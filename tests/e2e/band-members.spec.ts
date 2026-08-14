@@ -125,6 +125,32 @@ test.describe("Band Members section", () => {
     await expect(page.locator(".band-members__card")).toHaveCount(0);
   });
 
+  test("the avatar circle's side gaps match its top gap, so it isn't off-center in its card", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Band Members", exact: true })
+      .click();
+    await page.getByRole("button", { name: "+ Add Member" }).click();
+    await page.getByText("Show member photos").click();
+
+    const card = page.locator(".band-members__card").first();
+    const avatar = page.locator(".band-members__avatar").first();
+    const cardBox = (await card.boundingBox())!;
+    const avatarBox = (await avatar.boundingBox())!;
+
+    const topGap = avatarBox.y - cardBox.y;
+    const leftGap = avatarBox.x - cardBox.x;
+    const rightGap =
+      cardBox.x + cardBox.width - (avatarBox.x + avatarBox.width);
+    expect(leftGap).toBeCloseTo(topGap, 0);
+    expect(rightGap).toBeCloseTo(topGap, 0);
+  });
+
   test("show member photos toggle reveals the upload control", async ({
     page,
   }) => {

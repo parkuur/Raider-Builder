@@ -210,9 +210,17 @@
     right: 4px;
   }
 
+  /*
+   * Sized so the gap beside the circle (from its edge to the card's own
+   * left/right edge) matches the gap above it (from its edge to the
+   * card's top edge) — 13px each, both derived from .band-members__card's
+   * fixed border/padding, not independently chosen. Bigger than a
+   * decorative circle would otherwise be, so an uploaded photo actually
+   * reads at this size.
+   */
   .band-members__avatar {
-    width: 60px;
-    height: 60px;
+    width: 98px;
+    height: 98px;
     border-radius: 50%;
     border: 1px solid var(--color-border);
     display: grid;
