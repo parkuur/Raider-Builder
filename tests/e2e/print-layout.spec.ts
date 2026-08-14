@@ -70,7 +70,7 @@ test.describe("print layout", () => {
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
       .getByRole("button", { name: "Quick Look (split)", exact: true })
@@ -120,7 +120,7 @@ test.describe("print layout", () => {
     expect(rowCounts).toEqual([4, 3]);
   });
 
-  test("hiding one side of a paired row drops the divider in print, and hiding both hides the row", async ({
+  test("hiding one side of a split row drops the divider in print, and hiding both hides the row", async ({
     page,
   }) => {
     await page.goto("/");
@@ -128,7 +128,7 @@ test.describe("print layout", () => {
     await page
       .locator(".row-view")
       .filter({ has: page.locator(".contacts-section") })
-      .getByRole("button", { name: "Add paired section" })
+      .locator(".split-edge-slot__button")
       .click();
     await page
       .getByRole("button", { name: "Quick Look (split)", exact: true })
@@ -139,10 +139,11 @@ test.describe("print layout", () => {
       .filter({ has: page.locator(".contacts-section") });
     const contactsFrame = row.locator(".section-frame").first();
     const quicklookFrame = row.locator(".section-frame").nth(1);
+    const secondColumn = row.locator(".row-view__column").nth(1);
 
     await contactsFrame.getByRole("button", { name: "Hide section" }).click();
     await page.emulateMedia({ media: "print" });
-    await expect(quicklookFrame).toHaveCSS("border-left-style", "none");
+    await expect(secondColumn).toHaveCSS("border-left-style", "none");
 
     await page.emulateMedia({ media: "screen" });
     await quicklookFrame.getByRole("button", { name: "Hide section" }).click();
