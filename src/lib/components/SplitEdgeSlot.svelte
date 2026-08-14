@@ -1,4 +1,6 @@
 <script lang="ts">
+  import PlusIcon from "phosphor-svelte/lib/PlusIcon";
+
   let {
     available,
     mode,
@@ -12,48 +14,60 @@
   } = $props();
 
   const placeLabel = $derived(
-    mode === "copy" ? "Place copy here to pair" : "Move here to pair",
+    mode === "copy" ? "Place copy here to split" : "Move here to split",
   );
 </script>
 
-<div class="pair-slot no-print" class:pair-slot--available={available}>
+<div
+  class="split-edge-slot no-print"
+  class:split-edge-slot--available={available}
+>
   <button
     type="button"
-    class="pair-slot__button"
+    class="split-edge-slot__button"
     data-lift-ui
-    aria-label={available ? placeLabel : "Add paired section"}
+    aria-label={available ? placeLabel : "Add split section"}
+    title={available ? placeLabel : "Add split section"}
     onclick={available ? onPlaceClick : onAddClick}
   >
-    {available ? placeLabel : "+ Add Section"}
+    <PlusIcon size={14} />
   </button>
 </div>
 
 <style>
-  .pair-slot {
-    flex: 1;
-    min-width: 0;
+  .split-edge-slot {
+    flex: 0 0 auto;
+    align-self: stretch;
     display: flex;
   }
 
-  .pair-slot__button {
+  .split-edge-slot__button {
     flex: 1;
-    min-height: 64px;
+    width: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px dashed var(--color-border);
     background: transparent;
     cursor: pointer;
-    font-size: var(--font-size-label);
     color: var(--color-accent);
-    font-family: var(--font-heading);
-    font-weight: 600;
-    letter-spacing: 0.02em;
   }
 
-  .pair-slot--available .pair-slot__button {
+  .split-edge-slot--available .split-edge-slot__button {
     border-style: solid;
     border-color: var(--color-accent);
     background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+
+  @media screen and (max-width: 640px) {
+    .split-edge-slot {
+      align-self: auto;
+      width: 100%;
+    }
+
+    .split-edge-slot__button {
+      width: 100%;
+      min-height: 40px;
+    }
   }
 </style>
