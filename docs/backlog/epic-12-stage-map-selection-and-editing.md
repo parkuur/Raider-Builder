@@ -10,6 +10,14 @@ I/O) and fixes two standing ergonomics issues: the canvas depth-resize handle is
 partly clipped on mobile, and the label field's Enter/Shift+Enter behavior is backwards for mobile
 typing (holding Shift for a newline is awkward; committing on plain Enter surprises mid-sentence).
 
+A follow-up pass (this branch) closes two remaining ergonomics gaps the original 8 stories left in
+place: copy/paste/delete are only reachable via keyboard shortcuts, with no equivalent on mobile (no
+on-screen delete affordance and no way to trigger Ctrl/Cmd+C/V), and every `"name"` category item is
+permanently stuck as a live text input, which blocks it from ever being selected, dragged, or grouped
+like other items. It also explores two materially larger, optional mobile-canvas affordances —
+pinch-to-zoom and two-finger pan — which the canvas has never had any form of, marked as stretch work
+given the added complexity.
+
 ## Scope
 
 - Two new `StageItemCategory` values: `rack` (square, like `amp`) and `io` (rectangle, like
@@ -34,6 +42,18 @@ typing (holding Shift for a newline is awkward; committing on plain Enter surpri
   Works between any two Stage Map sections rendered in the same page, since the clipboard is shared
   page state rather than per-component.
 
+**Follow-up scope (this branch):**
+- A right-click (desktop) / long-press (mobile) context menu on Stage Map items offering Copy,
+  Paste, and Delete, acting on the current selection with the same select-then-act semantics as a
+  plain click.
+- The `"name"` category item renders a static label by default (selectable/draggable like any other
+  item) and only becomes an editable `<input>` after a double-click/double-tap, exiting back to the
+  static label on blur.
+- *Stretch:* a user-controlled pinch-to-zoom on the canvas below the mobile breakpoint, composed
+  with the existing auto-fit scale.
+- *Stretch:* a two-finger pan on the canvas below the mobile breakpoint, with one finger still
+  reserved for the existing item-drag/marquee-select interactions.
+
 ## Non-goals
 
 - OS clipboard integration (`navigator.clipboard`) — the in-app clipboard does not survive a page
@@ -43,6 +63,17 @@ typing (holding Shift for a newline is awkward; committing on plain Enter surpri
 - Arrow-key nudging of selected items, or any other new keyboard interaction beyond
   delete/copy/paste/escape.
 - Persisting selection state itself in the saved `.json` document.
+
+**Follow-up non-goals (this branch):**
+- Generalizing the new context-menu component or long-press action to any section type other than
+  Stage Map — it's written generically, but Stage Map remains its only consumer.
+- Any OS/browser-native context menu behavior — Stage Map items suppress the browser's own
+  `contextmenu` entirely in favor of the new custom menu, rather than supplementing it.
+- Persisting zoom or pan state, or adding any new `StageItem`/`StageMapSectionData` geometry field
+  for either — both are transient view state with the same lifecycle as the existing `canvasScale`.
+- Any change to `pointerDrag`'s public single-pointer contract beyond the minimal cancel hook the
+  pinch/pan stories add — every other existing drag/marquee/resize call site keeps behaving exactly
+  as before.
 
 ## Stories
 
@@ -143,3 +174,106 @@ typing (holding Shift for a newline is awkward; committing on plain Enter surpri
 - E2e coverage: copying and pasting a single item and a multi-item selection within one Stage Map
   section (offset applied, pasted items become the new selection); copying in one Stage Map section
   and pasting into a second Stage Map section in the same document.
+
+### Story: Right-click / long-press context menu — Copy, Paste, Delete
+
+**Acceptance criteria**
+- A new `src/lib/components/ContextMenu.svelte` renders a `no-print`, fixed-positioned menu clamped
+  inside the viewport at a given `x`/`y`, with its item content supplied by the caller via a
+  `children` snippet.
+- `ContextMenu` closes itself (calls its `onClose` prop) on a `pointerdown` anywhere outside the
+  menu, the `Escape` key, or a scroll of the page or the Stage Map's own scroll container.
+- A new `src/lib/actions/long-press.ts` exports a `longPress` action: on a non-mouse `pointerdown`,
+  starts a ~500ms timer that fires `onLongPress(event)` unless cancelled by the pointer moving past
+  a ~14px threshold or being released/cancelled first — it does not rely on the native `contextmenu`
+  event, which fires unreliably from a touch long-press on iOS Safari. The threshold is deliberately
+  more generous than a typical click/drag threshold so ordinary hand tremor during the hold doesn't
+  cancel the gesture before it fires; it is independent of and does not modify `pointerDrag`'s own
+  movement handling.
+- `oncontextmenu` on a Stage Map item (desktop) calls `preventDefault()` and opens the context menu
+  at the event's coordinates; the same `use:longPress` action on the item opens the identical menu
+  from a mobile long-press.
+- Right-clicking or long-pressing an item not already part of the current selection first selects
+  just that item, using the same rule a plain click uses (`resolveClickSelection`, widened to accept
+  any event exposing `ctrlKey`/`metaKey`); an item already part of a multi-selection is left fully
+  intact.
+- The menu offers Copy, Paste, and Delete, calling the same `copySelection`/`pasteClipboard`/
+  `deleteSelection` functions the existing keyboard shortcuts use (extracted from
+  `handleCanvasKeydown`, no duplicated logic); Paste is disabled when the clipboard is empty at the
+  moment the menu opens.
+- E2e coverage in `tests/e2e/stage-map.spec.ts`: right-click opens the menu and Delete removes the
+  selection; right-clicking an unselected item while another is selected switches the selection
+  first; right-clicking a member of a multi-selection leaves the group intact; Copy then Paste via
+  the menu duplicates the selection with the existing paste offset; Escape and an outside click both
+  close the menu; a simulated long-press (synthetic `pointerdown` with `pointerType: "touch"`,
+  waiting out the delay) opens the same menu.
+
+### Story: Double-click/double-tap edit mode for Name items
+
+**Acceptance criteria**
+- The `"name"` category item no longer always renders an `<input>`; by default it renders a static
+  label (`item.nameText`, or a distinctly-styled "Name" placeholder when empty) in the input's
+  current position, and is selectable/draggable through the normal `pointerDrag` path exactly like
+  every other category — the always-present input previously covered the entire hit area and blocked
+  drag/select entirely.
+- `StageMapSection.svelte` holds a new local `editingNameId: string | undefined` (`$state`, not
+  persisted); `ondblclick` on a Name item's static label sets it to that item's id, swapping in the
+  `<input>` (autofocused with its text selected, via a new `src/lib/actions/focus-and-select.ts`
+  action).
+- The input's existing Escape-blurs / live-autosave behavior is unchanged; its `onblur` (from any
+  cause) additionally clears `editingNameId`, returning the item to its static-label rendering.
+- `editingNameId` is also cleared when the item being edited is removed (Backspace/Delete or the
+  context menu's Delete), when a different item is double-clicked into edit mode, and defensively
+  alongside the canvas's existing Escape-clears-selection handling.
+- `tests/e2e/stage-map.spec.ts`'s existing Name-marker test is updated to double-click the label
+  before asserting the input, and gains cases: a plain pointerdown/drag on a non-editing Name item
+  selects and moves it like any other item; double-click enters edit mode and typing updates the
+  name; Escape/blur exits edit mode without losing the typed value.
+
+### Story: Pinch-to-zoom on the stage map canvas, mobile only (stretch)
+
+*Stretch/optional — materially larger and riskier than the two stories above, since it's the first
+change to touch `pointer-drag.ts` and the coordinate-conversion math shared by every existing
+drag/marquee/resize interaction. Recommended as a separate pass after both stories above are merged
+and validated, with the full existing `stage-map.spec.ts` suite re-run as a regression gate.*
+
+**Acceptance criteria**
+- A new local `userZoom: number` (`$state`, default `1`, clamped e.g. `[1, 3]`, not persisted)
+  composes multiplicatively with the existing auto-fit `canvasScale` everywhere it's applied to the
+  canvas's transform or divided out of a pixel-delta-to-model conversion (`canvasLocalPoint`,
+  resize/depth-handle math).
+- A new `src/lib/actions/multi-touch-gesture.ts` tracks concurrent `touch`-type pointers by
+  `pointerId`; on a second concurrent touch pointer it calls a new `cancelAllPointerDrags()` (added
+  to `pointer-drag.ts`) so any in-progress single-finger drag/marquee cleanly stops rather than
+  continuing alongside the new gesture.
+- Pinch (converging/diverging distance between the two active pointers) adjusts `userZoom` within
+  its clamp, zooming around the pinch's midpoint.
+- `userZoom` is inert above the existing 640px mobile breakpoint and resets to `1` on layout change
+  back above it; it is never persisted to the document.
+- `tests/e2e/stage-map.spec.ts` exercises the gesture via synthetic multi-pointer `dispatchEvent`
+  sequences at the existing narrow-viewport breakpoint; Playwright has no first-class multi-touch
+  simulation API, so this validates the component's own gesture code path rather than real touch
+  hardware, with a manual-device pass called out as part of sign-off.
+
+### Story: Two-finger pan on the stage map canvas, mobile only (stretch)
+
+*Stretch/optional, same risk profile and recommended sequencing as the pinch-zoom story above;
+shares its gesture-tracking module.*
+
+**Acceptance criteria**
+- Shares `multi-touch-gesture.ts`'s two-pointer tracking with the pinch-zoom story; the same
+  detected gesture also computes the pointer midpoint's frame-to-frame delta and applies it as a new
+  local `panX`/`panY` (`$state`, not persisted), composed into the canvas's transform alongside
+  `userZoom`.
+- A single finger continues to drive the existing item-drag and marquee-select interactions
+  completely unchanged; a second concurrent touch pointer is required to engage pan (and pinch, if
+  both land).
+- The existing native horizontal scroll on `.stage-map__scroll` is disabled in favor of the new pan
+  once a two-finger gesture has been used at least once for that instance, avoiding the two
+  mechanisms fighting over the same content's position; native scroll remains the fallback until
+  then.
+- A `no-print` hint, visible only below the 640px mobile breakpoint, tells the user to use two
+  fingers to move the map.
+- `tests/e2e/stage-map.spec.ts` gains synthetic two-pointer coverage analogous to the pinch-zoom
+  story, plus a regression case confirming a single-finger item drag never pans the canvas; the same
+  Playwright multi-touch-simulation caveat applies.
