@@ -5,6 +5,45 @@ async function zIndexOf(locator: Locator): Promise<number> {
   return locator.evaluate((el) => Number(getComputedStyle(el).zIndex));
 }
 
+// A real MouseEvent constructed and dispatched in-page, rather than a real
+// Playwright `.click({ button: "right" })` (items can fully overlap — they
+// all spawn at the canvas's default center position — which would fail a
+// real click's hit-test even though the element is a perfectly valid
+// target) and rather than locator.dispatchEvent("contextmenu", { clientX,
+// clientY, ... }) (confirmed directly: Playwright's dispatchEvent doesn't
+// construct "contextmenu" as a MouseEvent, so clientX/clientY are silently
+// dropped — event.clientX arrives as undefined in the page).
+async function dispatchContextMenuAt(
+  locator: Locator,
+  clientX: number,
+  clientY: number,
+): Promise<void> {
+  await locator.evaluate(
+    (el, [clientX, clientY]) => {
+      el.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          clientX,
+          clientY,
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+        }),
+      );
+    },
+    [clientX, clientY],
+  );
+}
+
+async function rightClick(locator: Locator): Promise<void> {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("element has no bounding box");
+  await dispatchContextMenuAt(
+    locator,
+    box.x + box.width / 2,
+    box.y + box.height / 2,
+  );
+}
+
 test.describe("Stage Map section", () => {
   test("clicking an earlier-created item brings it above a later-created one", async ({
     page,
@@ -332,6 +371,253 @@ test.describe("Stage Map section", () => {
     await expect(canvasB.locator('[data-category="mic"]')).toHaveCount(1);
   });
 
+  test("right-click opens the context menu and Delete removes the selection", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const item = page.locator('[data-category="mic"]');
+    await rightClick(item);
+
+    const menu = page.locator(".context-menu");
+    await expect(menu).toBeVisible();
+    await expect(item).toHaveClass(/stage-map__item--selected/);
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(item).toHaveCount(0);
+    await expect(menu).toBeHidden();
+  });
+
+  test("right-clicking an unselected item switches the selection to just that item", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+    const selected = /stage-map__item--selected/;
+
+    await itemA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await expect(itemA).toHaveClass(selected);
+
+    await rightClick(itemB);
+    await expect(page.locator(".context-menu")).toBeVisible();
+    await expect(itemA).not.toHaveClass(selected);
+    await expect(itemB).toHaveClass(selected);
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(itemA).toHaveCount(1);
+    await expect(itemB).toHaveCount(0);
+  });
+
+  test("right-clicking a member of a multi-selection leaves the whole group intact", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+    const selected = /stage-map__item--selected/;
+
+    await itemA.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await itemB.dispatchEvent("pointerdown", { button: 0, ctrlKey: true });
+    await page.mouse.up();
+    await expect(itemA).toHaveClass(selected);
+    await expect(itemB).toHaveClass(selected);
+
+    await rightClick(itemB);
+    await expect(itemA).toHaveClass(selected);
+    await expect(itemB).toHaveClass(selected);
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(itemA).toHaveCount(0);
+    await expect(itemB).toHaveCount(0);
+  });
+
+  test("Copy then Paste via the context menu duplicates the selection at the paste location, not next to the original", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const original = page.locator('[data-category="mic"]');
+    await rightClick(original);
+    await page.getByRole("menuitem", { name: "Copy" }).click();
+    await expect(page.locator(".context-menu")).toBeHidden();
+
+    // Paste somewhere else entirely on the canvas — the pasted copy should
+    // land there, not offset next to the original.
+    const canvas = page.locator(".stage-map__canvas");
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) throw new Error("canvas has no bounding box");
+    const targetX = canvasBox.x + canvasBox.width - 40;
+    const targetY = canvasBox.y + 30;
+    await dispatchContextMenuAt(canvas, targetX, targetY);
+    await page.getByRole("menuitem", { name: "Paste" }).click();
+
+    const items = page.locator('[data-category="mic"]');
+    await expect(items).toHaveCount(2);
+    const pastedBox = await items.nth(1).boundingBox();
+    if (!pastedBox) throw new Error("pasted item has no bounding box");
+    // A few px of slack for the percent<->pixel round-trip through storage
+    // (StageItem.x/y are percentages), not a precise pixel match.
+    expect(Math.abs(pastedBox.x + pastedBox.width / 2 - targetX)).toBeLessThan(
+      3,
+    );
+    expect(Math.abs(pastedBox.y + pastedBox.height / 2 - targetY)).toBeLessThan(
+      3,
+    );
+  });
+
+  test("Cut removes the selection and makes it available to Paste", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const item = page.locator('[data-category="mic"]');
+    await rightClick(item);
+    await page.getByRole("menuitem", { name: "Cut" }).click();
+    await expect(item).toHaveCount(0);
+
+    const canvas = page.locator(".stage-map__canvas");
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) throw new Error("canvas has no bounding box");
+    await dispatchContextMenuAt(
+      canvas,
+      canvasBox.x + canvasBox.width / 2,
+      canvasBox.y + canvasBox.height / 2,
+    );
+    await page.getByRole("menuitem", { name: "Paste" }).click();
+    await expect(page.locator('[data-category="mic"]')).toHaveCount(1);
+  });
+
+  test("right-clicking empty canvas opens a menu; Paste works there and Cut/Copy/Delete are disabled without a selection", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) throw new Error("canvas has no bounding box");
+    const cornerX = canvasBox.x + canvasBox.width - 10;
+    const cornerY = canvasBox.y + 10;
+
+    // Nothing selected, clipboard empty — every action but opening the menu
+    // itself is unavailable.
+    await dispatchContextMenuAt(canvas, cornerX, cornerY);
+    await expect(page.getByRole("menuitem", { name: "Cut" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Copy" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Paste" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Delete" })).toBeDisabled();
+    await page.keyboard.press("Escape");
+
+    // Select and copy the item via keyboard, then deselect before reopening
+    // the canvas's own menu — Paste should now work with nothing selected.
+    const item = page.locator('[data-category="mic"]');
+    await item.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await page.keyboard.press("Control+c");
+    await page.mouse.click(5, 5);
+
+    await dispatchContextMenuAt(canvas, cornerX, cornerY);
+    await expect(page.getByRole("menuitem", { name: "Cut" })).toBeDisabled();
+    await expect(page.getByRole("menuitem", { name: "Paste" })).toBeEnabled();
+    await page.getByRole("menuitem", { name: "Paste" }).click();
+
+    await expect(page.locator('[data-category="mic"]')).toHaveCount(2);
+  });
+
+  test("Escape and an outside click both close the context menu", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const item = page.locator('[data-category="mic"]');
+    const menu = page.locator(".context-menu");
+
+    await rightClick(item);
+    await expect(menu).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+
+    await rightClick(item);
+    await expect(menu).toBeVisible();
+    // Outside both the menu and the canvas entirely.
+    await page.mouse.click(5, 5);
+    await expect(menu).toBeHidden();
+  });
+
+  test("a simulated long-press opens the context menu", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const item = page.locator('[data-category="mic"]');
+    const box = await item.boundingBox();
+    if (!box) throw new Error("item has no bounding box");
+    const clientX = box.x + box.width / 2;
+    const clientY = box.y + box.height / 2;
+
+    await item.dispatchEvent("pointerdown", {
+      button: 0,
+      pointerType: "touch",
+      isPrimary: true,
+      clientX,
+      clientY,
+    });
+    // Past the action's ~500ms long-press delay.
+    await page.waitForTimeout(600);
+    await expect(page.locator(".context-menu")).toBeVisible();
+
+    await item.dispatchEvent("pointerup", {
+      button: 0,
+      pointerType: "touch",
+      clientX,
+      clientY,
+    });
+  });
+
   test("dragging one item of a multi-selection moves the whole group", async ({
     page,
   }) => {
@@ -512,7 +798,7 @@ test.describe("Stage Map section", () => {
     expect(ioBox!.height).toBeCloseTo(ioBox!.width / 2, 0);
   });
 
-  test("a Name marker's center text is directly editable and auto-shrinks to fit", async ({
+  test("a Name marker's center text becomes editable on double-click and auto-shrinks to fit", async ({
     page,
   }) => {
     await page.goto("/");
@@ -522,7 +808,11 @@ test.describe("Stage Map section", () => {
     await page.getByRole("button", { name: "Stage Map", exact: true }).click();
     await page.getByRole("button", { name: "NAME", exact: true }).click();
 
+    const item = page.locator('[data-category="name"]');
     const nameInput = page.locator(".stage-map__name-input");
+    await expect(nameInput).not.toBeVisible();
+
+    await item.dblclick();
     await expect(nameInput).toBeVisible();
     const baseFontSize = await nameInput.evaluate(
       (el) => getComputedStyle(el).fontSize,
@@ -536,8 +826,84 @@ test.describe("Stage Map section", () => {
     expect(parseFloat(shrunkFontSize)).toBeLessThan(parseFloat(baseFontSize));
 
     // Same editable label-below field every other marker has.
-    const item = page.locator('[data-category="name"]');
     await expect(item.locator(".stage-map__label")).toBeVisible();
+  });
+
+  test("a non-editing Name item is selectable and draggable like any other item", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "NAME", exact: true }).click();
+
+    const item = page.locator('[data-category="name"]');
+    const before = await item.boundingBox();
+    if (!before) throw new Error("item has no bounding box");
+
+    await item.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.up();
+    await expect(item).toHaveClass(/stage-map__item--selected/);
+
+    await page.mouse.move(
+      before.x + before.width / 2,
+      before.y + before.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(
+      before.x + before.width / 2 + 80,
+      before.y + before.height / 2 + 40,
+    );
+    await page.mouse.up();
+
+    const after = await item.boundingBox();
+    if (!after) throw new Error("item has no bounding box after drag");
+    expect(after.x).toBeGreaterThan(before.x + 40);
+    expect(after.y).toBeGreaterThan(before.y + 20);
+
+    // The drag never entered edit mode.
+    await expect(page.locator(".stage-map__name-input")).not.toBeVisible();
+  });
+
+  test("double-click enters Name edit mode; typing updates the name and Escape/blur exits without losing it", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "NAME", exact: true }).click();
+
+    const item = page.locator('[data-category="name"]');
+    const staticLabel = page.locator(".stage-map__abbr--name");
+    const nameInput = page.locator(".stage-map__name-input");
+
+    await expect(staticLabel).toHaveText("Name");
+
+    await item.dblclick();
+    await expect(nameInput).toBeVisible();
+    await expect(nameInput).toBeFocused();
+    await nameInput.fill("Lead Vox");
+    await expect(nameInput).toHaveValue("Lead Vox");
+
+    await nameInput.press("Escape");
+    await expect(nameInput).not.toBeVisible();
+    await expect(staticLabel).toHaveText("Lead Vox");
+
+    // Editing again and blurring by clicking elsewhere (not just Escape)
+    // also exits edit mode and keeps the value.
+    await item.dblclick();
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill("Backing Vox");
+    const canvas = page.locator(".stage-map__canvas");
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) throw new Error("canvas has no bounding box");
+    await page.mouse.click(canvasBox.x + 5, canvasBox.y + 5);
+    await expect(nameInput).not.toBeVisible();
+    await expect(staticLabel).toHaveText("Backing Vox");
   });
 
   test("Enter adds a line break in the label; Escape exits editing without losing the text", async ({
@@ -723,5 +1089,171 @@ test.describe("Stage Map section at a narrow viewport", () => {
       .locator(".stage-map__scroll")
       .evaluate((el) => getComputedStyle(el).overflowY);
     expect(overflow).toBe("hidden");
+  });
+
+  // Playwright has no first-class multi-touch simulation API, so these
+  // dispatch synthetic two-pointer PointerEvent sequences (as the existing
+  // long-press test above already does for a single touch pointer) rather
+  // than driving real touch hardware — this validates the component's own
+  // multiTouchGesture/pan code path, not a real device. A manual pass on an
+  // actual touch device is part of this story's sign-off.
+  test("a two-finger drag pans the canvas", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas has no bounding box");
+    const x1 = box.x + box.width * 0.3;
+    const y1 = box.y + box.height * 0.5;
+    const x2 = box.x + box.width * 0.7;
+    const y2 = box.y + box.height * 0.5;
+
+    const panBefore = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+    );
+
+    await canvas.dispatchEvent("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: x1,
+      clientY: y1,
+    });
+    await canvas.dispatchEvent("pointerdown", {
+      pointerId: 2,
+      pointerType: "touch",
+      button: 0,
+      clientX: x2,
+      clientY: y2,
+    });
+
+    // Two ticks, moving each pointer in turn — moving both fingers together
+    // in a single frame isn't expressible as two separate dispatchEvent
+    // calls, so the gesture's own frame-to-frame midpoint tracking picks up
+    // the combined movement across ticks instead of a single one.
+    for (const dx of [20, 40]) {
+      await canvas.dispatchEvent("pointermove", {
+        pointerId: 1,
+        pointerType: "touch",
+        clientX: x1 + dx,
+        clientY: y1,
+      });
+      await canvas.dispatchEvent("pointermove", {
+        pointerId: 2,
+        pointerType: "touch",
+        clientX: x2 + dx,
+        clientY: y2,
+      });
+    }
+
+    await canvas.dispatchEvent("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+    });
+    await canvas.dispatchEvent("pointerup", {
+      pointerId: 2,
+      pointerType: "touch",
+    });
+
+    const panAfter = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+    );
+    expect(panAfter).toBeGreaterThan(panBefore + 5);
+  });
+
+  test("a single-finger touch drag moves the item but never pans the canvas", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const item = page.locator('[data-category="mic"]');
+    const before = await item.boundingBox();
+    if (!before) throw new Error("item has no bounding box");
+    const startX = before.x + before.width / 2;
+    const startY = before.y + before.height / 2;
+
+    await item.dispatchEvent("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: startX,
+      clientY: startY,
+    });
+    await item.dispatchEvent("pointermove", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: startX + 80,
+      clientY: startY + 40,
+    });
+    await item.dispatchEvent("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+    });
+
+    const after = await item.boundingBox();
+    if (!after) throw new Error("item has no bounding box after drag");
+    expect(after.x).toBeGreaterThan(before.x + 40);
+
+    const pan = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
+    expect(pan.e).toBeCloseTo(0, 0);
+    expect(pan.f).toBeCloseTo(0, 0);
+  });
+
+  test("the two-finger-pan hint is hidden without a coarse (touch) pointer, even below the mobile breakpoint", async ({
+    page,
+  }) => {
+    // No matchMedia stub here — real Chromium reports "(pointer: coarse)"
+    // as non-matching regardless of viewport width, the same as a real
+    // mouse-driven narrow desktop window or a mouse/trackpad-driven iPad
+    // session. The width breakpoint alone (360px viewport, set above) must
+    // not be enough to show the hint.
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    await expect(page.locator(".stage-map__gesture-hint")).not.toBeVisible();
+  });
+
+  test("the two-finger-pan hint shows when both the mobile breakpoint and a coarse pointer match", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const originalMatchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) => {
+        if (query !== "(pointer: coarse)") return originalMatchMedia(query);
+        return {
+          matches: true,
+          media: query,
+          onchange: null,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+          dispatchEvent: () => false,
+        } as unknown as MediaQueryList;
+      };
+    });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    await expect(page.locator(".stage-map__gesture-hint")).toBeVisible();
   });
 });

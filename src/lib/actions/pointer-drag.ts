@@ -20,6 +20,17 @@ export interface PointerDragOptions {
   stopPropagation?: boolean;
 }
 
+// Every mounted pointerDrag instance registers a cancel callback here for
+// the lifetime of its mount (not just while dragging), so a two-finger
+// gesture starting anywhere on the page can cleanly stop whichever single
+// pointerDrag instance (if any) is currently mid-drag, without either side
+// needing a reference to the other.
+const activeDrags = new Set<() => void>();
+
+export function cancelAllPointerDrags(): void {
+  for (const cancel of activeDrags) cancel();
+}
+
 /**
  * Purely mechanical pointer-capture + delta tracking, with zero business
  * logic (no clamping, no percent conversion, no data mutation) — the
@@ -35,6 +46,14 @@ export const pointerDrag: Action<HTMLElement, PointerDragOptions> = (
   let dragging = false;
   let lastX = 0;
   let lastY = 0;
+  let lastEvent: PointerEvent | undefined;
+
+  function endDrag(e?: PointerEvent) {
+    dragging = false;
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerUp);
+    current.onEnd?.(e ?? lastEvent!);
+  }
 
   function onPointerMove(e: PointerEvent) {
     if (!dragging) return;
@@ -42,14 +61,12 @@ export const pointerDrag: Action<HTMLElement, PointerDragOptions> = (
     const dy = e.clientY - lastY;
     lastX = e.clientX;
     lastY = e.clientY;
+    lastEvent = e;
     current.onMove(dx, dy, e);
   }
 
   function onPointerUp(e: PointerEvent) {
-    dragging = false;
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerUp);
-    current.onEnd?.(e);
+    endDrag(e);
   }
 
   function onPointerDown(e: PointerEvent) {
@@ -60,21 +77,29 @@ export const pointerDrag: Action<HTMLElement, PointerDragOptions> = (
     dragging = true;
     lastX = e.clientX;
     lastY = e.clientY;
+    lastEvent = e;
     current.onStart?.(e);
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
   }
 
+  function cancelThisDrag(): void {
+    if (dragging) endDrag();
+  }
+
   node.addEventListener("pointerdown", onPointerDown);
+  activeDrags.add(cancelThisDrag);
 
   return {
     update(newOptions) {
       current = newOptions;
     },
     destroy() {
+      if (dragging) endDrag();
       node.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      activeDrags.delete(cancelThisDrag);
     },
   };
 };

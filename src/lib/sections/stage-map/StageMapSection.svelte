@@ -2,6 +2,10 @@
   import type { Section } from "../../model/section-types";
   import { SvelteSet } from "svelte/reactivity";
   import { pointerDrag } from "../../actions/pointer-drag";
+  import { longPress } from "../../actions/long-press";
+  import { multiTouchGesture } from "../../actions/multi-touch-gesture";
+  import { doubleTap } from "../../actions/double-tap";
+  import { focusAndSelect } from "../../actions/focus-and-select";
   import {
     STAGE_ITEM_CATEGORIES,
     addStageItem,
@@ -21,7 +25,12 @@
     getStageMapClipboard,
   } from "../../state/stage-map-clipboard";
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
+  import ContextMenu from "../../components/ContextMenu.svelte";
   import { autoFitText } from "../../components/auto-fit-text";
+  import ScissorsIcon from "phosphor-svelte/lib/ScissorsIcon";
+  import CopyIcon from "phosphor-svelte/lib/CopyIcon";
+  import ClipboardTextIcon from "phosphor-svelte/lib/ClipboardTextIcon";
+  import TrashIcon from "phosphor-svelte/lib/TrashIcon";
 
   let {
     rowId,
@@ -37,6 +46,19 @@
   let scrollEl: HTMLDivElement | undefined = $state();
   const selectedIds = new SvelteSet<string>();
 
+  // Which Name item (if any) currently shows its editable input instead of
+  // its static label — local, transient view state, same lifecycle as
+  // selectedIds (never persisted to the document).
+  let editingNameId: string | undefined = $state();
+
+  interface ContextMenuState {
+    x: number;
+    y: number;
+    clipboardEmpty: boolean;
+    selectionEmpty: boolean;
+  }
+  let contextMenu: ContextMenuState | undefined = $state();
+
   // A click inside the canvas already clears the selection through its own
   // pointerDrag (an empty-rect marquee, see finishMarquee below) — this
   // covers everywhere else on the page, which that handler never sees.
@@ -44,6 +66,13 @@
     function handleWindowPointerDown(event: PointerEvent): void {
       if (selectedIds.size === 0) return;
       if (canvasEl?.contains(event.target as Node)) return;
+      // The context menu renders outside the canvas (so its fixed
+      // positioning isn't broken by an ancestor's CSS transform — see
+      // ContextMenu.svelte) — without this check, the pointerdown half of
+      // clicking one of its own Copy/Cut/Delete buttons would clear the
+      // selection those buttons are about to act on, before their click
+      // handler ever runs.
+      if ((event.target as HTMLElement)?.closest(".context-menu")) return;
       selectedIds.clear();
     }
     window.addEventListener("pointerdown", handleWindowPointerDown);
@@ -55,7 +84,10 @@
   // the selection with just that item — unless it's already part of a
   // multi-item selection, in which case the whole selection is left intact
   // so a drag starting from it can move the group.
-  function resolveClickSelection(item: StageItem, event: PointerEvent): void {
+  function resolveClickSelection(
+    item: StageItem,
+    event: { ctrlKey: boolean; metaKey: boolean },
+  ): void {
     if (event.ctrlKey || event.metaKey) {
       if (selectedIds.has(item.id)) selectedIds.delete(item.id);
       else selectedIds.add(item.id);
@@ -81,7 +113,69 @@
     });
   }
 
-  // Backspace/Delete/Escape/Ctrl+C/Ctrl+V only act while the canvas element
+  // Shared by the keyboard shortcuts below and the context menu, so
+  // copy/paste/delete logic is never duplicated between the two triggers.
+  function deleteSelection(): void {
+    if (selectedIds.size === 0) return;
+    commit(removeStageItems(section.data, [...selectedIds]));
+    if (editingNameId && selectedIds.has(editingNameId)) {
+      editingNameId = undefined;
+    }
+    selectedIds.clear();
+  }
+
+  function copySelection(): void {
+    if (selectedIds.size === 0) return;
+    copyStageItems(
+      section.data.items.filter((item) => selectedIds.has(item.id)),
+    );
+  }
+
+  function cutSelection(): void {
+    if (selectedIds.size === 0) return;
+    copySelection();
+    deleteSelection();
+  }
+
+  // With no target, pastes with the small fixed offset `cloneStageItemsForPaste`
+  // defaults to (used for the keyboard shortcut, which has no cursor position
+  // to anchor to). The context menu passes the point it was opened at, so
+  // Paste lands there instead of next to the original.
+  function pasteClipboard(target?: { x: number; y: number }): void {
+    const clipboardItems = getStageMapClipboard();
+    if (clipboardItems.length === 0) return;
+    const originalCount = section.data.items.length;
+    const pasted = cloneStageItemsForPaste(
+      section.data,
+      clipboardItems,
+      target,
+    );
+    commit(pasted);
+    selectedIds.clear();
+    for (const newItem of pasted.items.slice(originalCount)) {
+      selectedIds.add(newItem.id);
+    }
+  }
+
+  // Converts a viewport point to the percentage-of-canvas coordinates
+  // StageItem.x/y are stored in — using the canvas's actual rendered
+  // bounding box (already reflecting any CSS scale), the same way
+  // moveByPixelDelta derives percentages, rather than canvasLocalPoint's
+  // unscaled space (that one's for children that live inside the scaled
+  // canvas itself, like the marquee overlay).
+  function canvasPercentPoint(
+    clientX: number,
+    clientY: number,
+  ): { x: number; y: number } | undefined {
+    if (!canvasEl) return undefined;
+    const rect = canvasEl.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
+    };
+  }
+
+  // Backspace/Delete/Escape/Ctrl+X/C/V only act while the canvas element
   // itself is focused — not a descendant like the label textarea or name
   // input — so typing/backspacing/copy-paste inside those fields is
   // completely unaffected. Every item-click, marquee-drag, or
@@ -95,28 +189,63 @@
     if (event.key === "Backspace" || event.key === "Delete") {
       if (selectedIds.size === 0) return;
       event.preventDefault();
-      commit(removeStageItems(section.data, [...selectedIds]));
-      selectedIds.clear();
+      deleteSelection();
     } else if (event.key === "Escape") {
       selectedIds.clear();
+      editingNameId = undefined;
+    } else if (withModifier && event.key.toLowerCase() === "x") {
+      if (selectedIds.size === 0) return;
+      event.preventDefault();
+      cutSelection();
     } else if (withModifier && event.key.toLowerCase() === "c") {
       if (selectedIds.size === 0) return;
       event.preventDefault();
-      copyStageItems(
-        section.data.items.filter((item) => selectedIds.has(item.id)),
-      );
+      copySelection();
     } else if (withModifier && event.key.toLowerCase() === "v") {
-      const clipboardItems = getStageMapClipboard();
-      if (clipboardItems.length === 0) return;
+      if (getStageMapClipboard().length === 0) return;
       event.preventDefault();
-      const originalCount = section.data.items.length;
-      const pasted = cloneStageItemsForPaste(section.data, clipboardItems);
-      commit(pasted);
-      selectedIds.clear();
-      for (const newItem of pasted.items.slice(originalCount)) {
-        selectedIds.add(newItem.id);
-      }
+      pasteClipboard();
     }
+  }
+
+  // Right-click (desktop) or long-press (mobile) on an item selects it —
+  // same rule a plain click uses — then opens the context menu at the
+  // pointer's position. clipboardEmpty/selectionEmpty are captured once
+  // here rather than read reactively, since the module-level clipboard
+  // isn't itself reactive and the menu's lifetime is short.
+  function openContextMenuForItem(
+    item: StageItem,
+    event: {
+      clientX: number;
+      clientY: number;
+      ctrlKey: boolean;
+      metaKey: boolean;
+    },
+  ): void {
+    resolveClickSelection(item, event);
+    contextMenu = {
+      x: event.clientX,
+      y: event.clientY,
+      clipboardEmpty: getStageMapClipboard().length === 0,
+      selectionEmpty: selectedIds.size === 0,
+    };
+  }
+
+  // Right-click/long-press on empty canvas — as opposed to on an item —
+  // leaves the current selection untouched (there's no item to select) so
+  // the menu's Copy/Delete act on whatever was already selected, if
+  // anything; this is the only way to reach Paste when the canvas has no
+  // items to right-click yet, or when pasting into an empty section.
+  function openContextMenuForCanvas(event: {
+    clientX: number;
+    clientY: number;
+  }): void {
+    contextMenu = {
+      x: event.clientX,
+      y: event.clientY,
+      clipboardEmpty: getStageMapClipboard().length === 0,
+      selectionEmpty: selectedIds.size === 0,
+    };
   }
 
   interface ClientPoint {
@@ -199,28 +328,64 @@
 
   let canvasScale = $state(1);
 
+  // Two-finger pan, mobile only — transient view state with the same
+  // lifecycle as canvasScale (never persisted). hasUsedTwoFingerGesture is
+  // the exception: it's an instance-lifetime latch, not reset alongside
+  // panX/panY, so native horizontal scroll stays the fallback until the
+  // first two-finger gesture and stays disabled afterward for this instance.
+  let panX = $state(0);
+  let panY = $state(0);
+  let hasUsedTwoFingerGesture = $state(false);
+  let showTwoFingerHint = $state(false);
+
+  const canvasTransform = $derived(
+    canvasScale < 1 || panX !== 0 || panY !== 0
+      ? `translate(${panX}px, ${panY}px) scale(${canvasScale})`
+      : undefined,
+  );
+
+  function handlePanDelta(dx: number, dy: number): void {
+    panX += dx;
+    panY += dy;
+  }
+
   $effect(() => {
     if (!scrollEl) return;
     const query = window.matchMedia("screen and (max-width: 640px)");
+    // The width breakpoint alone isn't a touch-capability check — it's the
+    // same one canvasScale reuses from the rest of the app's responsive
+    // layout. The two-finger hint additionally requires a coarse (touch)
+    // pointer so it doesn't show for a mouse-driven narrow window or a
+    // mouse/trackpad-driven iPad session, neither of which can ever trigger
+    // the gesture itself.
+    const pointerQuery = window.matchMedia("(pointer: coarse)");
 
     function updateScale(): void {
       if (!scrollEl || !query.matches) {
         canvasScale = 1;
-        return;
+        panX = 0;
+        panY = 0;
+      } else {
+        canvasScale = Math.min(
+          1,
+          Math.max(
+            CANVAS_FLOOR_SCALE,
+            scrollEl.clientWidth / CANVAS_BASE_WIDTH,
+          ),
+        );
       }
-      canvasScale = Math.min(
-        1,
-        Math.max(CANVAS_FLOOR_SCALE, scrollEl.clientWidth / CANVAS_BASE_WIDTH),
-      );
+      showTwoFingerHint = query.matches && pointerQuery.matches;
     }
 
     updateScale();
     const resizeObserver = new ResizeObserver(updateScale);
     resizeObserver.observe(scrollEl);
     query.addEventListener("change", updateScale);
+    pointerQuery.addEventListener("change", updateScale);
     return () => {
       resizeObserver.disconnect();
       query.removeEventListener("change", updateScale);
+      pointerQuery.removeEventListener("change", updateScale);
     };
   });
 
@@ -255,7 +420,16 @@
 {#if section.data.items.length === 0}
   <SectionEmptyHint text="No items placed yet — choose a category above." />
 {/if}
-<div class="stage-map__scroll" bind:this={scrollEl}>
+{#if showTwoFingerHint}
+  <p class="stage-map__gesture-hint no-print">
+    Drag with two fingers to move the map.
+  </p>
+{/if}
+<div
+  class="stage-map__scroll"
+  class:stage-map__scroll--gesture-active={hasUsedTwoFingerGesture}
+  bind:this={scrollEl}
+>
   <div
     class="stage-map__scale-box"
     style:width={canvasScale < 1
@@ -279,12 +453,25 @@
       bind:this={canvasEl}
       style:height="{section.data.canvasHeight}px"
       style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
-      style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
+      style:transform={canvasTransform}
       style:transform-origin="top left"
       role="application"
       aria-label="Stage map canvas"
       tabindex="0"
       onkeydown={handleCanvasKeydown}
+      oncontextmenu={(event) => {
+        event.preventDefault();
+        openContextMenuForCanvas(event);
+      }}
+      use:longPress={{
+        onLongPress: (event) => openContextMenuForCanvas(event),
+      }}
+      use:multiTouchGesture={{
+        onGestureStart: () => {
+          hasUsedTwoFingerGesture = true;
+        },
+        onPanDelta: handlePanDelta,
+      }}
       use:pointerDrag={{
         onStart: (event) => {
           canvasEl?.focus({ preventScroll: true });
@@ -300,6 +487,7 @@
     >
       {#each section.data.items as item (item.id)}
         {@const meta = STAGE_ITEM_CATEGORIES[item.category]}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="stage-map__item stage-map__item--{meta.shape}"
           class:stage-map__item--dashed={meta.dashed}
@@ -316,6 +504,19 @@
             onStart: (event) => beginItemDrag(item, event),
             onMove: (dx, dy) => moveByPixelDelta(dx, dy),
           }}
+          use:longPress={{
+            onLongPress: (event) => openContextMenuForItem(item, event),
+          }}
+          use:doubleTap={{
+            onDoubleTap: () => {
+              if (item.category === "name") editingNameId = item.id;
+            },
+          }}
+          oncontextmenu={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openContextMenuForItem(item, event);
+          }}
         >
           {#if meta.shape === "triangle"}
             <svg
@@ -327,23 +528,35 @@
             </svg>
           {/if}
           {#if item.category === "name"}
-            <input
-              class="stage-map__name-input"
-              value={item.nameText}
-              placeholder="Name"
-              use:autoFitText={{ min: 6 }}
-              oninput={(e) =>
-                commit(
-                  updateStageItemName(
-                    section.data,
-                    item.id,
-                    e.currentTarget.value,
-                  ),
-                )}
-              onkeydown={(e) => {
-                if (e.key === "Escape") e.currentTarget.blur();
-              }}
-            />
+            {#if editingNameId === item.id}
+              <input
+                class="stage-map__name-input"
+                value={item.nameText}
+                placeholder="Name"
+                use:autoFitText={{ min: 6 }}
+                use:focusAndSelect
+                oninput={(e) =>
+                  commit(
+                    updateStageItemName(
+                      section.data,
+                      item.id,
+                      e.currentTarget.value,
+                    ),
+                  )}
+                onblur={() => {
+                  if (editingNameId === item.id) editingNameId = undefined;
+                }}
+                onkeydown={(e) => {
+                  if (e.key === "Escape") e.currentTarget.blur();
+                }}
+              />
+            {:else}
+              <span
+                class="stage-map__abbr stage-map__abbr--name"
+                class:stage-map__abbr--placeholder={!item.nameText}
+                >{item.nameText || "Name"}</span
+              >
+            {/if}
           {:else}
             <span class="stage-map__abbr">{meta.abbreviation}</span>
           {/if}
@@ -401,6 +614,67 @@
   </div>
 </div>
 
+{#if contextMenu}
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    onClose={() => (contextMenu = undefined)}
+  >
+    <button
+      type="button"
+      class="context-menu__item"
+      role="menuitem"
+      disabled={contextMenu.selectionEmpty}
+      onclick={() => {
+        cutSelection();
+        contextMenu = undefined;
+      }}
+    >
+      <ScissorsIcon size={14} />
+      Cut
+    </button>
+    <button
+      type="button"
+      class="context-menu__item"
+      role="menuitem"
+      disabled={contextMenu.selectionEmpty}
+      onclick={() => {
+        copySelection();
+        contextMenu = undefined;
+      }}
+    >
+      <CopyIcon size={14} />
+      Copy
+    </button>
+    <button
+      type="button"
+      class="context-menu__item"
+      role="menuitem"
+      disabled={contextMenu.clipboardEmpty}
+      onclick={() => {
+        pasteClipboard(canvasPercentPoint(contextMenu!.x, contextMenu!.y));
+        contextMenu = undefined;
+      }}
+    >
+      <ClipboardTextIcon size={14} />
+      Paste
+    </button>
+    <button
+      type="button"
+      class="context-menu__item context-menu__item--danger"
+      role="menuitem"
+      disabled={contextMenu.selectionEmpty}
+      onclick={() => {
+        deleteSelection();
+        contextMenu = undefined;
+      }}
+    >
+      <TrashIcon size={14} />
+      Delete
+    </button>
+  </ContextMenu>
+{/if}
+
 <style>
   /*
    * Items sit at 0–100% of the canvas but are fixed-px boxes centered on
@@ -431,6 +705,21 @@
      * reintroducing scroll on this axis.
      */
     padding-bottom: 12px;
+  }
+
+  /*
+   * Ceded to the two-finger pan gesture only once it's actually been used
+   * for this instance — native touch-scroll stays the fallback until then,
+   * so the two mechanisms never fight over the same content's position.
+   */
+  .stage-map__scroll--gesture-active {
+    touch-action: none;
+  }
+
+  .stage-map__gesture-hint {
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-1);
   }
 
   /*
@@ -615,6 +904,29 @@
     touch-action: none;
   }
 
+  /*
+   * Shares the input's centered position/typography so switching in and out
+   * of edit mode (double-click/double-tap) causes no visible jump.
+   */
+  .stage-map__abbr--name {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    font-weight: 600;
+    font-size: 10px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stage-map__abbr--placeholder {
+    color: var(--color-text-muted);
+    font-weight: 400;
+  }
+
   .stage-map__marquee {
     position: absolute;
     border: 1px dashed #d64545;
@@ -662,5 +974,33 @@
     background: var(--color-background);
     cursor: ns-resize;
     touch-action: none;
+  }
+
+  .context-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    text-align: left;
+    font-family: inherit;
+    font-size: var(--font-size-body);
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+  }
+
+  .context-menu__item:hover:not(:disabled),
+  .context-menu__item:focus-visible {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+
+  .context-menu__item:disabled {
+    color: var(--color-text-muted);
+    cursor: default;
+  }
+
+  .context-menu__item--danger {
+    color: var(--color-danger);
   }
 </style>
