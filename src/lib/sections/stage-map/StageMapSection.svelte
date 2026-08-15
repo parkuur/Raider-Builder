@@ -136,16 +136,42 @@
     deleteSelection();
   }
 
-  function pasteClipboard(): void {
+  // With no target, pastes with the small fixed offset `cloneStageItemsForPaste`
+  // defaults to (used for the keyboard shortcut, which has no cursor position
+  // to anchor to). The context menu passes the point it was opened at, so
+  // Paste lands there instead of next to the original.
+  function pasteClipboard(target?: { x: number; y: number }): void {
     const clipboardItems = getStageMapClipboard();
     if (clipboardItems.length === 0) return;
     const originalCount = section.data.items.length;
-    const pasted = cloneStageItemsForPaste(section.data, clipboardItems);
+    const pasted = cloneStageItemsForPaste(
+      section.data,
+      clipboardItems,
+      target,
+    );
     commit(pasted);
     selectedIds.clear();
     for (const newItem of pasted.items.slice(originalCount)) {
       selectedIds.add(newItem.id);
     }
+  }
+
+  // Converts a viewport point to the percentage-of-canvas coordinates
+  // StageItem.x/y are stored in — using the canvas's actual rendered
+  // bounding box (already reflecting any CSS scale), the same way
+  // moveByPixelDelta derives percentages, rather than canvasLocalPoint's
+  // unscaled space (that one's for children that live inside the scaled
+  // canvas itself, like the marquee overlay).
+  function canvasPercentPoint(
+    clientX: number,
+    clientY: number,
+  ): { x: number; y: number } | undefined {
+    if (!canvasEl) return undefined;
+    const rect = canvasEl.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
+    };
   }
 
   // Backspace/Delete/Escape/Ctrl+X/C/V only act while the canvas element
@@ -574,7 +600,7 @@
       role="menuitem"
       disabled={contextMenu.clipboardEmpty}
       onclick={() => {
-        pasteClipboard();
+        pasteClipboard(canvasPercentPoint(contextMenu!.x, contextMenu!.y));
         contextMenu = undefined;
       }}
     >
@@ -823,6 +849,7 @@
     width: 44px;
     font-weight: 600;
     font-size: 10px;
+    text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

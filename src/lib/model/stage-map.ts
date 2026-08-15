@@ -282,23 +282,43 @@ export function moveStageItemsBy(
 }
 
 /**
- * Appends a fresh, offset copy of each given item to `data` — the paste
- * half of copy/paste. `items` is deliberately independent of `data.items`
- * (it comes from the clipboard, which may hold a snapshot from a different
- * Stage Map section), so ids are always regenerated rather than assumed
- * unique against `data`.
+ * Appends a fresh copy of each given item to `data` — the paste half of
+ * copy/paste. `items` is deliberately independent of `data.items` (it comes
+ * from the clipboard, which may hold a snapshot from a different Stage Map
+ * section), so ids are always regenerated rather than assumed unique
+ * against `data`.
+ *
+ * With no `targetCenter` (a keyboard Ctrl/Cmd+V, which has no cursor
+ * position to anchor to), each item is offset by a small fixed amount from
+ * its own copied position. With a `targetCenter` (a context-menu Paste,
+ * which does have one — where the menu was opened), the whole pasted group
+ * is shifted as a unit so its centroid lands there instead, preserving each
+ * item's position relative to the others in a multi-item paste.
  */
 export function cloneStageItemsForPaste(
   data: StageMapSectionData,
   items: readonly StageItem[],
+  targetCenter?: { x: number; y: number },
 ): StageMapSectionData {
   if (items.length === 0) return data;
   const baseOrder = nextOrder(data.items);
+
+  let dx = PASTE_OFFSET;
+  let dy = PASTE_OFFSET;
+  if (targetCenter) {
+    const centroidX =
+      items.reduce((sum, item) => sum + item.x, 0) / items.length;
+    const centroidY =
+      items.reduce((sum, item) => sum + item.y, 0) / items.length;
+    dx = targetCenter.x - centroidX;
+    dy = targetCenter.y - centroidY;
+  }
+
   const clones = items.map((item, index) => ({
     ...item,
     id: createId("stage-item"),
-    x: clamp(item.x + PASTE_OFFSET, 3, 97),
-    y: clamp(item.y + PASTE_OFFSET, 8, 92),
+    x: clamp(item.x + dx, 3, 97),
+    y: clamp(item.y + dy, 8, 92),
     order: baseOrder + index,
   }));
   return { ...data, items: [...data.items, ...clones] };

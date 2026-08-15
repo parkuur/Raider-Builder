@@ -207,14 +207,20 @@ given the added complexity.
   Backspace/Delete keyboard shortcuts, extracted from `handleCanvasKeydown` — no duplicated logic).
   Cut, Copy, and Delete are disabled when the current selection is empty; Paste is disabled when the
   clipboard is empty — both states captured at the moment the menu opens.
+- Paste from the context menu lands the pasted group at the point the menu was opened (converted to
+  canvas-percent coordinates via `canvasPercentPoint`), not at a fixed offset from the copied items'
+  original position — `cloneStageItemsForPaste` takes an optional `targetCenter`, shifting the whole
+  pasted group so its centroid lands there while preserving each item's position relative to the
+  others in a multi-item paste. The keyboard `Ctrl/Cmd+V` shortcut has no cursor position to anchor
+  to, so it omits `targetCenter` and keeps the original small fixed-offset behavior.
 - E2e coverage in `tests/e2e/stage-map.spec.ts`: right-click opens the menu and Delete removes the
   selection; right-clicking an unselected item while another is selected switches the selection
   first; right-clicking a member of a multi-selection leaves the group intact; Copy then Paste via
-  the menu duplicates the selection with the existing paste offset; Cut removes the selection and
-  makes it available to Paste; right-clicking empty canvas opens a menu whose Paste works and whose
-  Cut/Copy/Delete are disabled when nothing is selected; Escape and an outside click both close the
-  menu; a simulated long-press (synthetic `pointerdown` with `pointerType: "touch"`, waiting out the
-  delay) opens the same menu.
+  the menu duplicates the selection at the paste location rather than next to the original; Cut
+  removes the selection and makes it available to Paste; right-clicking empty canvas opens a menu
+  whose Paste works and whose Cut/Copy/Delete are disabled when nothing is selected; Escape and an
+  outside click both close the menu; a simulated long-press (synthetic `pointerdown` with
+  `pointerType: "touch"`, waiting out the delay) opens the same menu.
 
 ### Story: Double-click/double-tap edit mode for Name items
 

@@ -171,6 +171,39 @@ describe("cloneStageItemsForPaste", () => {
     const data = defaultStageMapData();
     expect(cloneStageItemsForPaste(data, [])).toBe(data);
   });
+
+  it("with a targetCenter, lands the pasted item there instead of at the fixed offset", () => {
+    const data = defaultStageMapData();
+    const source = { ...item("a", 1), x: 20, y: 30 };
+    const result = cloneStageItemsForPaste(data, [source], { x: 70, y: 60 });
+    expect(result.items[0]).toMatchObject({ x: 70, y: 60 });
+  });
+
+  it("with a targetCenter and multiple items, preserves their relative positions around the target's centroid", () => {
+    const data = defaultStageMapData();
+    const left = { ...item("a", 1), x: 20, y: 50 };
+    const right = { ...item("b", 2), x: 30, y: 50 };
+    const result = cloneStageItemsForPaste(data, [left, right], {
+      x: 60,
+      y: 60,
+    });
+    const pastedLeft = result.items.find((i) => i.label === "a")!;
+    const pastedRight = result.items.find((i) => i.label === "b")!;
+    // Centroid of the originals (25, 50) shifts to (60, 60) — a +35/+10
+    // delta applied to both, so their 10%-apart relative spacing survives.
+    expect(pastedLeft).toMatchObject({ x: 55, y: 60 });
+    expect(pastedRight).toMatchObject({ x: 65, y: 60 });
+  });
+
+  it("still clamps a targetCenter paste within the canvas margins", () => {
+    const data = defaultStageMapData();
+    const source = { ...item("a", 1), x: 50, y: 50 };
+    const result = cloneStageItemsForPaste(data, [source], {
+      x: 200,
+      y: -50,
+    });
+    expect(result.items[0]).toMatchObject({ x: 97, y: 8 });
+  });
 });
 
 describe("bringToFront", () => {

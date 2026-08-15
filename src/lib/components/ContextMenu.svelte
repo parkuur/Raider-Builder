@@ -14,17 +14,28 @@
   } = $props();
 
   let menuEl: HTMLDivElement | undefined = $state();
-  let left = $state(0);
-  let top = $state(0);
+
+  // Measured once the menu has a real size, kept in its own state rather
+  // than folded into an effect that also computes left/top — an effect that
+  // both reads and writes the same derived state is exactly the pattern
+  // Svelte warns can loop, so the measurement and the clamped position are
+  // kept as two separate, one-directional reactive steps instead.
+  let measuredWidth = $state(0);
+  let measuredHeight = $state(0);
 
   $effect(() => {
-    left = x;
-    top = y;
     if (!menuEl) return;
     const rect = menuEl.getBoundingClientRect();
-    left = Math.min(x, window.innerWidth - rect.width - 4);
-    top = Math.min(y, window.innerHeight - rect.height - 4);
+    measuredWidth = rect.width;
+    measuredHeight = rect.height;
   });
+
+  const left = $derived(
+    measuredWidth ? Math.min(x, window.innerWidth - measuredWidth - 4) : x,
+  );
+  const top = $derived(
+    measuredHeight ? Math.min(y, window.innerHeight - measuredHeight - 4) : y,
+  );
 
   $effect(() => {
     function handlePointerDown(event: PointerEvent): void {

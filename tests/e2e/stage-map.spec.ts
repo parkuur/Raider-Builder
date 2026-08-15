@@ -5,19 +5,43 @@ async function zIndexOf(locator: Locator): Promise<number> {
   return locator.evaluate((el) => Number(getComputedStyle(el).zIndex));
 }
 
-// Dispatched rather than a real Playwright `.click({ button: "right" })` for
-// the same reason other tests in this file dispatch pointerdown directly:
-// items can fully overlap (they all spawn at the canvas's default center
-// position), which would fail a real click's hit-test even though the
-// element is a perfectly valid target for a synthetic event.
+// A real MouseEvent constructed and dispatched in-page, rather than a real
+// Playwright `.click({ button: "right" })` (items can fully overlap — they
+// all spawn at the canvas's default center position — which would fail a
+// real click's hit-test even though the element is a perfectly valid
+// target) and rather than locator.dispatchEvent("contextmenu", { clientX,
+// clientY, ... }) (confirmed directly: Playwright's dispatchEvent doesn't
+// construct "contextmenu" as a MouseEvent, so clientX/clientY are silently
+// dropped — event.clientX arrives as undefined in the page).
+async function dispatchContextMenuAt(
+  locator: Locator,
+  clientX: number,
+  clientY: number,
+): Promise<void> {
+  await locator.evaluate(
+    (el, [clientX, clientY]) => {
+      el.dispatchEvent(
+        new MouseEvent("contextmenu", {
+          clientX,
+          clientY,
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+        }),
+      );
+    },
+    [clientX, clientY],
+  );
+}
+
 async function rightClick(locator: Locator): Promise<void> {
   const box = await locator.boundingBox();
   if (!box) throw new Error("element has no bounding box");
-  await locator.dispatchEvent("contextmenu", {
-    button: 2,
-    clientX: box.x + box.width / 2,
-    clientY: box.y + box.height / 2,
-  });
+  await dispatchContextMenuAt(
+    locator,
+    box.x + box.width / 2,
+    box.y + box.height / 2,
+  );
 }
 
 test.describe("Stage Map section", () => {
@@ -429,7 +453,7 @@ test.describe("Stage Map section", () => {
     await expect(itemB).toHaveCount(0);
   });
 
-  test("Copy then Paste via the context menu duplicates the selection with the paste offset", async ({
+  test("Copy then Paste via the context menu duplicates the selection at the paste location, not next to the original", async ({
     page,
   }) => {
     await page.goto("/");
@@ -440,22 +464,32 @@ test.describe("Stage Map section", () => {
     await page.getByRole("button", { name: "MIC", exact: true }).click();
 
     const original = page.locator('[data-category="mic"]');
-    const before = await original.boundingBox();
-    if (!before) throw new Error("item has no bounding box");
-
     await rightClick(original);
     await page.getByRole("menuitem", { name: "Copy" }).click();
     await expect(page.locator(".context-menu")).toBeHidden();
 
-    await rightClick(original);
+    // Paste somewhere else entirely on the canvas — the pasted copy should
+    // land there, not offset next to the original.
+    const canvas = page.locator(".stage-map__canvas");
+    const canvasBox = await canvas.boundingBox();
+    if (!canvasBox) throw new Error("canvas has no bounding box");
+    const targetX = canvasBox.x + canvasBox.width - 40;
+    const targetY = canvasBox.y + 30;
+    await dispatchContextMenuAt(canvas, targetX, targetY);
     await page.getByRole("menuitem", { name: "Paste" }).click();
 
     const items = page.locator('[data-category="mic"]');
     await expect(items).toHaveCount(2);
     const pastedBox = await items.nth(1).boundingBox();
     if (!pastedBox) throw new Error("pasted item has no bounding box");
-    expect(pastedBox.x).toBeGreaterThan(before.x);
-    expect(pastedBox.y).toBeGreaterThan(before.y);
+    // A few px of slack for the percent<->pixel round-trip through storage
+    // (StageItem.x/y are percentages), not a precise pixel match.
+    expect(Math.abs(pastedBox.x + pastedBox.width / 2 - targetX)).toBeLessThan(
+      3,
+    );
+    expect(Math.abs(pastedBox.y + pastedBox.height / 2 - targetY)).toBeLessThan(
+      3,
+    );
   });
 
   test("Cut removes the selection and makes it available to Paste", async ({
@@ -476,11 +510,11 @@ test.describe("Stage Map section", () => {
     const canvas = page.locator(".stage-map__canvas");
     const canvasBox = await canvas.boundingBox();
     if (!canvasBox) throw new Error("canvas has no bounding box");
-    await canvas.dispatchEvent("contextmenu", {
-      button: 2,
-      clientX: canvasBox.x + canvasBox.width / 2,
-      clientY: canvasBox.y + canvasBox.height / 2,
-    });
+    await dispatchContextMenuAt(
+      canvas,
+      canvasBox.x + canvasBox.width / 2,
+      canvasBox.y + canvasBox.height / 2,
+    );
     await page.getByRole("menuitem", { name: "Paste" }).click();
     await expect(page.locator('[data-category="mic"]')).toHaveCount(1);
   });
@@ -498,14 +532,12 @@ test.describe("Stage Map section", () => {
     const canvas = page.locator(".stage-map__canvas");
     const canvasBox = await canvas.boundingBox();
     if (!canvasBox) throw new Error("canvas has no bounding box");
-    const corner = {
-      clientX: canvasBox.x + canvasBox.width - 10,
-      clientY: canvasBox.y + 10,
-    };
+    const cornerX = canvasBox.x + canvasBox.width - 10;
+    const cornerY = canvasBox.y + 10;
 
     // Nothing selected, clipboard empty — every action but opening the menu
     // itself is unavailable.
-    await canvas.dispatchEvent("contextmenu", { button: 2, ...corner });
+    await dispatchContextMenuAt(canvas, cornerX, cornerY);
     await expect(page.getByRole("menuitem", { name: "Cut" })).toBeDisabled();
     await expect(page.getByRole("menuitem", { name: "Copy" })).toBeDisabled();
     await expect(page.getByRole("menuitem", { name: "Paste" })).toBeDisabled();
@@ -520,7 +552,7 @@ test.describe("Stage Map section", () => {
     await page.keyboard.press("Control+c");
     await page.mouse.click(5, 5);
 
-    await canvas.dispatchEvent("contextmenu", { button: 2, ...corner });
+    await dispatchContextMenuAt(canvas, cornerX, cornerY);
     await expect(page.getByRole("menuitem", { name: "Cut" })).toBeDisabled();
     await expect(page.getByRole("menuitem", { name: "Paste" })).toBeEnabled();
     await page.getByRole("menuitem", { name: "Paste" }).click();
