@@ -43,9 +43,9 @@ given the added complexity.
   page state rather than per-component.
 
 **Follow-up scope (this branch):**
-- A right-click (desktop) / long-press (mobile) context menu on Stage Map items offering Copy,
-  Paste, and Delete, acting on the current selection with the same select-then-act semantics as a
-  plain click.
+- A right-click (desktop) / long-press (mobile) context menu on Stage Map items, and on the canvas
+  background itself, offering Cut, Copy, Paste, and Delete, acting on the current selection with the
+  same select-then-act semantics as a plain click when triggered on an item.
 - The `"name"` category item renders a static label by default (selectable/draggable like any other
   item) and only becomes an editable `<input>` after a double-click/double-tap, exiting back to the
   static label on blur.
@@ -175,7 +175,7 @@ given the added complexity.
   section (offset applied, pasted items become the new selection); copying in one Stage Map section
   and pasting into a second Stage Map section in the same document.
 
-### Story: Right-click / long-press context menu — Copy, Paste, Delete
+### Story: Right-click / long-press context menu — Cut, Copy, Paste, Delete
 
 **Acceptance criteria**
 - A new `src/lib/components/ContextMenu.svelte` renders a `no-print`, fixed-positioned menu clamped
@@ -190,23 +190,31 @@ given the added complexity.
   more generous than a typical click/drag threshold so ordinary hand tremor during the hold doesn't
   cancel the gesture before it fires; it is independent of and does not modify `pointerDrag`'s own
   movement handling.
-- `oncontextmenu` on a Stage Map item (desktop) calls `preventDefault()` and opens the context menu
-  at the event's coordinates; the same `use:longPress` action on the item opens the identical menu
-  from a mobile long-press.
+- `oncontextmenu` on a Stage Map item (desktop) calls `preventDefault()`/`stopPropagation()` and
+  opens the context menu at the event's coordinates; the same `use:longPress` action on the item
+  opens the identical menu from a mobile long-press.
 - Right-clicking or long-pressing an item not already part of the current selection first selects
   just that item, using the same rule a plain click uses (`resolveClickSelection`, widened to accept
   any event exposing `ctrlKey`/`metaKey`); an item already part of a multi-selection is left fully
   intact.
-- The menu offers Copy, Paste, and Delete, calling the same `copySelection`/`pasteClipboard`/
-  `deleteSelection` functions the existing keyboard shortcuts use (extracted from
-  `handleCanvasKeydown`, no duplicated logic); Paste is disabled when the clipboard is empty at the
-  moment the menu opens.
+- The canvas background itself (not just individual items) also carries `oncontextmenu` and
+  `use:longPress`, opening the same menu without changing the current selection — this is the only
+  way to reach Paste when the canvas has no items yet, or when the user wants to paste without
+  targeting an existing item. The item-level handler stops propagation so a right-click/long-press on
+  an item never also triggers the canvas's handler.
+- The menu offers Cut, Copy, Paste, and Delete, calling shared `cutSelection`/`copySelection`/
+  `pasteClipboard`/`deleteSelection` functions (also reused by matching `Ctrl/Cmd+X/C/V` and
+  Backspace/Delete keyboard shortcuts, extracted from `handleCanvasKeydown` — no duplicated logic).
+  Cut, Copy, and Delete are disabled when the current selection is empty; Paste is disabled when the
+  clipboard is empty — both states captured at the moment the menu opens.
 - E2e coverage in `tests/e2e/stage-map.spec.ts`: right-click opens the menu and Delete removes the
   selection; right-clicking an unselected item while another is selected switches the selection
   first; right-clicking a member of a multi-selection leaves the group intact; Copy then Paste via
-  the menu duplicates the selection with the existing paste offset; Escape and an outside click both
-  close the menu; a simulated long-press (synthetic `pointerdown` with `pointerType: "touch"`,
-  waiting out the delay) opens the same menu.
+  the menu duplicates the selection with the existing paste offset; Cut removes the selection and
+  makes it available to Paste; right-clicking empty canvas opens a menu whose Paste works and whose
+  Cut/Copy/Delete are disabled when nothing is selected; Escape and an outside click both close the
+  menu; a simulated long-press (synthetic `pointerdown` with `pointerType: "touch"`, waiting out the
+  delay) opens the same menu.
 
 ### Story: Double-click/double-tap edit mode for Name items
 
