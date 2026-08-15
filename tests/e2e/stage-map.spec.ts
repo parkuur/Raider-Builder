@@ -1090,4 +1090,170 @@ test.describe("Stage Map section at a narrow viewport", () => {
       .evaluate((el) => getComputedStyle(el).overflowY);
     expect(overflow).toBe("hidden");
   });
+
+  // Playwright has no first-class multi-touch simulation API, so these
+  // dispatch synthetic two-pointer PointerEvent sequences (as the existing
+  // long-press test above already does for a single touch pointer) rather
+  // than driving real touch hardware — this validates the component's own
+  // multiTouchGesture/pan code path, not a real device. A manual pass on an
+  // actual touch device is part of this story's sign-off.
+  test("a two-finger drag pans the canvas", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas has no bounding box");
+    const x1 = box.x + box.width * 0.3;
+    const y1 = box.y + box.height * 0.5;
+    const x2 = box.x + box.width * 0.7;
+    const y2 = box.y + box.height * 0.5;
+
+    const panBefore = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+    );
+
+    await canvas.dispatchEvent("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: x1,
+      clientY: y1,
+    });
+    await canvas.dispatchEvent("pointerdown", {
+      pointerId: 2,
+      pointerType: "touch",
+      button: 0,
+      clientX: x2,
+      clientY: y2,
+    });
+
+    // Two ticks, moving each pointer in turn — moving both fingers together
+    // in a single frame isn't expressible as two separate dispatchEvent
+    // calls, so the gesture's own frame-to-frame midpoint tracking picks up
+    // the combined movement across ticks instead of a single one.
+    for (const dx of [20, 40]) {
+      await canvas.dispatchEvent("pointermove", {
+        pointerId: 1,
+        pointerType: "touch",
+        clientX: x1 + dx,
+        clientY: y1,
+      });
+      await canvas.dispatchEvent("pointermove", {
+        pointerId: 2,
+        pointerType: "touch",
+        clientX: x2 + dx,
+        clientY: y2,
+      });
+    }
+
+    await canvas.dispatchEvent("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+    });
+    await canvas.dispatchEvent("pointerup", {
+      pointerId: 2,
+      pointerType: "touch",
+    });
+
+    const panAfter = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+    );
+    expect(panAfter).toBeGreaterThan(panBefore + 5);
+  });
+
+  test("a single-finger touch drag moves the item but never pans the canvas", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const item = page.locator('[data-category="mic"]');
+    const before = await item.boundingBox();
+    if (!before) throw new Error("item has no bounding box");
+    const startX = before.x + before.width / 2;
+    const startY = before.y + before.height / 2;
+
+    await item.dispatchEvent("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: startX,
+      clientY: startY,
+    });
+    await item.dispatchEvent("pointermove", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: startX + 80,
+      clientY: startY + 40,
+    });
+    await item.dispatchEvent("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+    });
+
+    const after = await item.boundingBox();
+    if (!after) throw new Error("item has no bounding box after drag");
+    expect(after.x).toBeGreaterThan(before.x + 40);
+
+    const pan = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
+    expect(pan.e).toBeCloseTo(0, 0);
+    expect(pan.f).toBeCloseTo(0, 0);
+  });
+
+  test("the two-finger-pan hint is hidden without a coarse (touch) pointer, even below the mobile breakpoint", async ({
+    page,
+  }) => {
+    // No matchMedia stub here — real Chromium reports "(pointer: coarse)"
+    // as non-matching regardless of viewport width, the same as a real
+    // mouse-driven narrow desktop window or a mouse/trackpad-driven iPad
+    // session. The width breakpoint alone (360px viewport, set above) must
+    // not be enough to show the hint.
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    await expect(page.locator(".stage-map__gesture-hint")).not.toBeVisible();
+  });
+
+  test("the two-finger-pan hint shows when both the mobile breakpoint and a coarse pointer match", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const originalMatchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query: string) => {
+        if (query !== "(pointer: coarse)") return originalMatchMedia(query);
+        return {
+          matches: true,
+          media: query,
+          onchange: null,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          addListener: () => {},
+          removeListener: () => {},
+          dispatchEvent: () => false,
+        } as unknown as MediaQueryList;
+      };
+    });
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    await expect(page.locator(".stage-map__gesture-hint")).toBeVisible();
+  });
 });

@@ -49,10 +49,10 @@ given the added complexity.
 - The `"name"` category item renders a static label by default (selectable/draggable like any other
   item) and only becomes an editable `<input>` after a double-click/double-tap, exiting back to the
   static label on blur.
-- *Stretch:* a user-controlled pinch-to-zoom on the canvas below the mobile breakpoint, composed
-  with the existing auto-fit scale.
 - *Stretch:* a two-finger pan on the canvas below the mobile breakpoint, with one finger still
-  reserved for the existing item-drag/marquee-select interactions.
+  reserved for the existing item-drag/marquee-select interactions. (Pinch-to-zoom was considered
+  alongside this but dropped: it isn't part of the desktop version, and the canvas's existing
+  auto-fit scale already keeps content legible without a user-controlled zoom.)
 
 ## Non-goals
 
@@ -69,11 +69,11 @@ given the added complexity.
   Stage Map — it's written generically, but Stage Map remains its only consumer.
 - Any OS/browser-native context menu behavior — Stage Map items suppress the browser's own
   `contextmenu` entirely in favor of the new custom menu, rather than supplementing it.
-- Persisting zoom or pan state, or adding any new `StageItem`/`StageMapSectionData` geometry field
-  for either — both are transient view state with the same lifecycle as the existing `canvasScale`.
+- Persisting pan state, or adding any new `StageItem`/`StageMapSectionData` geometry field for it —
+  it's transient view state with the same lifecycle as the existing `canvasScale`.
 - Any change to `pointerDrag`'s public single-pointer contract beyond the minimal cancel hook the
-  pinch/pan stories add — every other existing drag/marquee/resize call site keeps behaving exactly
-  as before.
+  pan story adds — every other existing drag/marquee/resize call site keeps behaving exactly as
+  before.
 
 ## Stories
 
@@ -244,50 +244,34 @@ given the added complexity.
   selects and moves it like any other item; double-click enters edit mode and typing updates the
   name; Escape/blur exits edit mode without losing the typed value.
 
-### Story: Pinch-to-zoom on the stage map canvas, mobile only (stretch)
+### Story: Two-finger pan on the stage map canvas, mobile only (stretch)
 
-*Stretch/optional — materially larger and riskier than the two stories above, since it's the first
+*Stretch/optional — materially larger and riskier than the stories above, since it's the first
 change to touch `pointer-drag.ts` and the coordinate-conversion math shared by every existing
-drag/marquee/resize interaction. Recommended as a separate pass after both stories above are merged
+drag/marquee/resize interaction. Recommended as a separate pass after the stories above are merged
 and validated, with the full existing `stage-map.spec.ts` suite re-run as a regression gate.*
 
 **Acceptance criteria**
-- A new local `userZoom: number` (`$state`, default `1`, clamped e.g. `[1, 3]`, not persisted)
-  composes multiplicatively with the existing auto-fit `canvasScale` everywhere it's applied to the
-  canvas's transform or divided out of a pixel-delta-to-model conversion (`canvasLocalPoint`,
-  resize/depth-handle math).
 - A new `src/lib/actions/multi-touch-gesture.ts` tracks concurrent `touch`-type pointers by
   `pointerId`; on a second concurrent touch pointer it calls a new `cancelAllPointerDrags()` (added
   to `pointer-drag.ts`) so any in-progress single-finger drag/marquee cleanly stops rather than
-  continuing alongside the new gesture.
-- Pinch (converging/diverging distance between the two active pointers) adjusts `userZoom` within
-  its clamp, zooming around the pinch's midpoint.
-- `userZoom` is inert above the existing 640px mobile breakpoint and resets to `1` on layout change
-  back above it; it is never persisted to the document.
-- `tests/e2e/stage-map.spec.ts` exercises the gesture via synthetic multi-pointer `dispatchEvent`
-  sequences at the existing narrow-viewport breakpoint; Playwright has no first-class multi-touch
-  simulation API, so this validates the component's own gesture code path rather than real touch
-  hardware, with a manual-device pass called out as part of sign-off.
-
-### Story: Two-finger pan on the stage map canvas, mobile only (stretch)
-
-*Stretch/optional, same risk profile and recommended sequencing as the pinch-zoom story above;
-shares its gesture-tracking module.*
-
-**Acceptance criteria**
-- Shares `multi-touch-gesture.ts`'s two-pointer tracking with the pinch-zoom story; the same
-  detected gesture also computes the pointer midpoint's frame-to-frame delta and applies it as a new
-  local `panX`/`panY` (`$state`, not persisted), composed into the canvas's transform alongside
-  `userZoom`.
+  continuing alongside the new gesture, then computes the pointer midpoint's frame-to-frame delta and
+  applies it as a new local `panX`/`panY` (`$state`, not persisted), composed into the canvas's
+  transform alongside the existing auto-fit `canvasScale`.
 - A single finger continues to drive the existing item-drag and marquee-select interactions
-  completely unchanged; a second concurrent touch pointer is required to engage pan (and pinch, if
-  both land).
+  completely unchanged; a second concurrent touch pointer is required to engage pan.
 - The existing native horizontal scroll on `.stage-map__scroll` is disabled in favor of the new pan
   once a two-finger gesture has been used at least once for that instance, avoiding the two
   mechanisms fighting over the same content's position; native scroll remains the fallback until
   then.
-- A `no-print` hint, visible only below the 640px mobile breakpoint, tells the user to use two
-  fingers to move the map.
-- `tests/e2e/stage-map.spec.ts` gains synthetic two-pointer coverage analogous to the pinch-zoom
-  story, plus a regression case confirming a single-finger item drag never pans the canvas; the same
-  Playwright multi-touch-simulation caveat applies.
+- A `no-print` hint, visible only below the 640px mobile breakpoint **and** when
+  `matchMedia("(pointer: coarse)")` matches, tells the user to use two fingers to move the map — the
+  width breakpoint alone isn't a touch-capability check (it's reused as-is from the rest of the app
+  for `canvasScale`), so a mouse-driven narrow desktop window or a mouse/trackpad-driven iPad session
+  would otherwise see a hint that doesn't apply to them, even though the pan gesture itself already
+  correctly never engages for non-touch pointers either way.
+- `tests/e2e/stage-map.spec.ts` gains synthetic two-pointer `dispatchEvent` coverage at the existing
+  narrow-viewport breakpoint, plus a regression case confirming a single-finger item drag never pans
+  the canvas; Playwright has no first-class multi-touch simulation API, so this validates the
+  component's own gesture code path rather than real touch hardware, with a manual-device pass called
+  out as part of sign-off.

@@ -3,6 +3,7 @@
   import { SvelteSet } from "svelte/reactivity";
   import { pointerDrag } from "../../actions/pointer-drag";
   import { longPress } from "../../actions/long-press";
+  import { multiTouchGesture } from "../../actions/multi-touch-gesture";
   import { doubleTap } from "../../actions/double-tap";
   import { focusAndSelect } from "../../actions/focus-and-select";
   import {
@@ -327,28 +328,64 @@
 
   let canvasScale = $state(1);
 
+  // Two-finger pan, mobile only — transient view state with the same
+  // lifecycle as canvasScale (never persisted). hasUsedTwoFingerGesture is
+  // the exception: it's an instance-lifetime latch, not reset alongside
+  // panX/panY, so native horizontal scroll stays the fallback until the
+  // first two-finger gesture and stays disabled afterward for this instance.
+  let panX = $state(0);
+  let panY = $state(0);
+  let hasUsedTwoFingerGesture = $state(false);
+  let showTwoFingerHint = $state(false);
+
+  const canvasTransform = $derived(
+    canvasScale < 1 || panX !== 0 || panY !== 0
+      ? `translate(${panX}px, ${panY}px) scale(${canvasScale})`
+      : undefined,
+  );
+
+  function handlePanDelta(dx: number, dy: number): void {
+    panX += dx;
+    panY += dy;
+  }
+
   $effect(() => {
     if (!scrollEl) return;
     const query = window.matchMedia("screen and (max-width: 640px)");
+    // The width breakpoint alone isn't a touch-capability check — it's the
+    // same one canvasScale reuses from the rest of the app's responsive
+    // layout. The two-finger hint additionally requires a coarse (touch)
+    // pointer so it doesn't show for a mouse-driven narrow window or a
+    // mouse/trackpad-driven iPad session, neither of which can ever trigger
+    // the gesture itself.
+    const pointerQuery = window.matchMedia("(pointer: coarse)");
 
     function updateScale(): void {
       if (!scrollEl || !query.matches) {
         canvasScale = 1;
-        return;
+        panX = 0;
+        panY = 0;
+      } else {
+        canvasScale = Math.min(
+          1,
+          Math.max(
+            CANVAS_FLOOR_SCALE,
+            scrollEl.clientWidth / CANVAS_BASE_WIDTH,
+          ),
+        );
       }
-      canvasScale = Math.min(
-        1,
-        Math.max(CANVAS_FLOOR_SCALE, scrollEl.clientWidth / CANVAS_BASE_WIDTH),
-      );
+      showTwoFingerHint = query.matches && pointerQuery.matches;
     }
 
     updateScale();
     const resizeObserver = new ResizeObserver(updateScale);
     resizeObserver.observe(scrollEl);
     query.addEventListener("change", updateScale);
+    pointerQuery.addEventListener("change", updateScale);
     return () => {
       resizeObserver.disconnect();
       query.removeEventListener("change", updateScale);
+      pointerQuery.removeEventListener("change", updateScale);
     };
   });
 
@@ -383,7 +420,16 @@
 {#if section.data.items.length === 0}
   <SectionEmptyHint text="No items placed yet — choose a category above." />
 {/if}
-<div class="stage-map__scroll" bind:this={scrollEl}>
+{#if showTwoFingerHint}
+  <p class="stage-map__gesture-hint no-print">
+    Drag with two fingers to move the map.
+  </p>
+{/if}
+<div
+  class="stage-map__scroll"
+  class:stage-map__scroll--gesture-active={hasUsedTwoFingerGesture}
+  bind:this={scrollEl}
+>
   <div
     class="stage-map__scale-box"
     style:width={canvasScale < 1
@@ -407,7 +453,7 @@
       bind:this={canvasEl}
       style:height="{section.data.canvasHeight}px"
       style:width={canvasScale < 1 ? `${CANVAS_BASE_WIDTH}px` : undefined}
-      style:transform={canvasScale < 1 ? `scale(${canvasScale})` : undefined}
+      style:transform={canvasTransform}
       style:transform-origin="top left"
       role="application"
       aria-label="Stage map canvas"
@@ -419,6 +465,12 @@
       }}
       use:longPress={{
         onLongPress: (event) => openContextMenuForCanvas(event),
+      }}
+      use:multiTouchGesture={{
+        onGestureStart: () => {
+          hasUsedTwoFingerGesture = true;
+        },
+        onPanDelta: handlePanDelta,
       }}
       use:pointerDrag={{
         onStart: (event) => {
@@ -653,6 +705,21 @@
      * reintroducing scroll on this axis.
      */
     padding-bottom: 12px;
+  }
+
+  /*
+   * Ceded to the two-finger pan gesture only once it's actually been used
+   * for this instance — native touch-scroll stays the fallback until then,
+   * so the two mechanisms never fight over the same content's position.
+   */
+  .stage-map__scroll--gesture-active {
+    touch-action: none;
+  }
+
+  .stage-map__gesture-hint {
+    font-size: var(--font-size-label);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-1);
   }
 
   /*
