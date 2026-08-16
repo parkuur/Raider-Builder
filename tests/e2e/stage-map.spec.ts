@@ -1091,6 +1091,38 @@ test.describe("Stage Map section at a narrow viewport", () => {
     expect(overflow).toBe("hidden");
   });
 
+  test("the canvas starts centered, not flush against its left edge, once it overflows the wrapper", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const overflow = await canvas.evaluate((el, scrollSelector) => {
+      const scrollEl = document.querySelector(scrollSelector);
+      if (!scrollEl) throw new Error("no scroll wrapper");
+      return Math.max(
+        0,
+        el.getBoundingClientRect().width - scrollEl.clientWidth,
+      );
+    }, ".stage-map__scroll");
+    // Only meaningful if this viewport actually put the canvas below its
+    // floor scale (see the describe block's 360px viewport) — otherwise
+    // there'd be nothing to center and the test would pass vacuously.
+    expect(overflow).toBeGreaterThan(0);
+
+    const panX = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+    );
+    // -overflow/2 splits the hidden overflow evenly left and right, rather
+    // than 0 (flush-left, showing all of the left edge and none of the
+    // right) or -overflow (flush-right, the reverse).
+    expect(panX).toBeCloseTo(-overflow / 2, 0);
+  });
+
   // Playwright has no first-class multi-touch simulation API, so these
   // dispatch synthetic two-pointer PointerEvent sequences (as the existing
   // long-press test above already does for a single touch pointer) rather
@@ -1276,6 +1308,13 @@ test.describe("Stage Map section at a narrow viewport", () => {
     if (!before) throw new Error("item has no bounding box");
     const startX = before.x + before.width / 2;
     const startY = before.y + before.height / 2;
+    // The canvas starts centered (not flush-left) below the mobile
+    // breakpoint, so "never pans" means "stays wherever it started," not
+    // "stays at 0".
+    const panBefore = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
 
     await item.dispatchEvent("pointerdown", {
       pointerId: 1,
@@ -1299,12 +1338,12 @@ test.describe("Stage Map section at a narrow viewport", () => {
     if (!after) throw new Error("item has no bounding box after drag");
     expect(after.x).toBeGreaterThan(before.x + 40);
 
-    const pan = await canvas.evaluate((el) => {
+    const panAfter = await canvas.evaluate((el) => {
       const matrix = new DOMMatrix(getComputedStyle(el).transform);
       return { e: matrix.e, f: matrix.f };
     });
-    expect(pan.e).toBeCloseTo(0, 0);
-    expect(pan.f).toBeCloseTo(0, 0);
+    expect(panAfter.e).toBeCloseTo(panBefore.e, 0);
+    expect(panAfter.f).toBeCloseTo(panBefore.f, 0);
   });
 
   // Regression for a bug where multiTouchGesture never removed a lone
@@ -1327,6 +1366,13 @@ test.describe("Stage Map section at a narrow viewport", () => {
 
     const canvas = page.locator(".stage-map__canvas");
     const items = page.locator('[data-category="mic"]');
+    // The canvas starts centered (not flush-left) below the mobile
+    // breakpoint, so "never pans" means "stays wherever it started," not
+    // "stays at 0".
+    const panBefore = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
 
     for (const [pointerId, item] of [
       [1, items.nth(0)],
@@ -1361,12 +1407,12 @@ test.describe("Stage Map section at a narrow viewport", () => {
       });
     }
 
-    const pan = await canvas.evaluate((el) => {
+    const panAfter = await canvas.evaluate((el) => {
       const matrix = new DOMMatrix(getComputedStyle(el).transform);
       return { e: matrix.e, f: matrix.f };
     });
-    expect(pan.e).toBeCloseTo(0, 0);
-    expect(pan.f).toBeCloseTo(0, 0);
+    expect(panAfter.e).toBeCloseTo(panBefore.e, 0);
+    expect(panAfter.f).toBeCloseTo(panBefore.f, 0);
   });
 
   // Regression: .stage-map__scroll used to keep native touch-scroll enabled
