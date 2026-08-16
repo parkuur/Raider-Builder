@@ -18,6 +18,7 @@
   import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
   import { autosizeTextarea } from "../../actions/autosize-textarea";
+  import { NarrowViewportState } from "../../state/narrow-viewport.svelte";
 
   let {
     rowId,
@@ -56,18 +57,11 @@
 
   // Notes and the stereo toggle move to a labeled second row per channel
   // below this breakpoint — the table has too many columns to stay
-  // readable on a phone otherwise. `screen` (not just the width condition)
-  // keeps this out of print regardless of the viewport that printed it, the
-  // same guarantee BandMembersSection/EquipmentSection rely on for their
-  // own mobile layouts.
-  let isNarrowViewport = $state(false);
-  $effect(() => {
-    const query = window.matchMedia("screen and (max-width: 640px)");
-    isNarrowViewport = query.matches;
-    const onChange = (e: MediaQueryListEvent) => (isNarrowViewport = e.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  });
+  // readable on a phone otherwise. NarrowViewportState resets to false
+  // before print regardless of the viewport that printed it, the same
+  // guarantee BandMembersSection/EquipmentSection rely on for their own
+  // mobile layouts.
+  const narrowViewport = new NarrowViewportState();
 </script>
 
 {#if section.data.rows.length === 0}
@@ -106,7 +100,7 @@
             oninput={(e) => setColumnLabel("phantom", e.currentTarget.value)}
           />
         </th>
-        {#if !isNarrowViewport}
+        {#if !narrowViewport.matches}
           <th>
             <input
               class="channel-list__header-input"
@@ -140,7 +134,9 @@
             />
           </td>
           <td class="channel-list__num">{labelFor(row.id)}</td>
-          <td style:width={isNarrowViewport ? undefined : `${nameChars}ch`}>
+          <td
+            style:width={narrowViewport.matches ? undefined : `${nameChars}ch`}
+          >
             <input
               class="channel-list__name-input"
               value={row.name}
@@ -177,7 +173,7 @@
                 )}
             />
           </td>
-          {#if !isNarrowViewport}
+          {#if !narrowViewport.matches}
             <td class="channel-list__notes">
               <textarea
                 use:autosizeTextarea={row.notes}
@@ -194,7 +190,7 @@
           {/if}
           <td class="channel-list__actions-cell no-print">
             <div class="channel-list__actions">
-              {#if !isNarrowViewport}
+              {#if !narrowViewport.matches}
                 <StereoToggle
                   active={row.stereo}
                   onToggle={() =>
@@ -212,7 +208,7 @@
             </div>
           </td>
         </tr>
-        {#if isNarrowViewport}
+        {#if narrowViewport.matches}
           <tr class="channel-list__row-mobile no-print">
             <td colspan="2" class="channel-list__notes-label">
               <label for="channel-notes-{row.id}">{columnLabels.notes}</label>
@@ -351,10 +347,10 @@
       border-bottom: 1px solid var(--color-border);
     }
 
-    /* Belt-and-suspenders restatement: isNarrowViewport is already
-     * `screen`-scoped so this row never renders under print, but print
-     * always gets the desktop single-row shape regardless of the device
-     * that printed it, so this is worth being explicit about. */
+    /* Belt-and-suspenders restatement: NarrowViewportState already resets
+     * to false before print so this row never renders under print, but
+     * print always gets the desktop single-row shape regardless of the
+     * device that printed it, so this is worth being explicit about. */
     .channel-list__row-mobile {
       display: none !important;
     }
