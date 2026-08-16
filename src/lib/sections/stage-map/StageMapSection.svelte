@@ -342,8 +342,21 @@
       : undefined,
   );
 
+  // panX === 0 is the canvas's left edge flush with the wrapper's — the
+  // furthest right it should ever go. The furthest left is however much
+  // wider the scaled canvas is than the wrapper (0 if it isn't, i.e. once
+  // canvasScale has room to fit it without hitting CANVAS_FLOOR_SCALE).
+  function clampPanX(value: number): number {
+    if (!scrollEl) return 0;
+    const overflow = Math.max(
+      0,
+      CANVAS_BASE_WIDTH * canvasScale - scrollEl.clientWidth,
+    );
+    return Math.min(0, Math.max(-overflow, value));
+  }
+
   function handlePanDelta(dx: number): void {
-    panX += dx;
+    panX = clampPanX(panX + dx);
   }
 
   $effect(() => {
@@ -369,6 +382,10 @@
             scrollEl.clientWidth / CANVAS_BASE_WIDTH,
           ),
         );
+        // A resize (e.g. a rotation) can shrink the available overflow room
+        // out from under an existing pan, so re-clamp rather than just
+        // recomputing scale.
+        panX = clampPanX(panX);
       }
       showTwoFingerHint = query.matches && pointerQuery.matches;
     }

@@ -1134,8 +1134,13 @@ test.describe("Stage Map section at a narrow viewport", () => {
     // Two ticks, moving each pointer in turn — moving both fingers together
     // in a single frame isn't expressible as two separate dispatchEvent
     // calls, so the gesture's own frame-to-frame midpoint tracking picks up
-    // the combined movement across ticks instead of a single one.
-    for (const dx of [20, 40]) {
+    // the combined movement across ticks instead of a single one. Leftward
+    // (negative dx): the canvas starts flush with the wrapper's left edge
+    // (panX 0, already this pan's upper bound), so a rightward drag would
+    // have nothing to reveal and, correctly, wouldn't move it at all —
+    // panning only has somewhere to go towards the canvas's overflowing
+    // right edge.
+    for (const dx of [-20, -40]) {
       await canvas.dispatchEvent("pointermove", {
         pointerId: 1,
         pointerType: "touch",
@@ -1162,7 +1167,97 @@ test.describe("Stage Map section at a narrow viewport", () => {
     const panAfter = await canvas.evaluate(
       (el) => new DOMMatrix(getComputedStyle(el).transform).e,
     );
-    expect(panAfter).toBeGreaterThan(panBefore + 5);
+    expect(panAfter).toBeLessThan(panBefore - 5);
+  });
+
+  test("a two-finger pan clamps at the canvas's edges instead of overshooting into empty space", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas has no bounding box");
+    const x1 = box.x + box.width * 0.3;
+    const y1 = box.y + box.height * 0.5;
+    const x2 = box.x + box.width * 0.7;
+    const y2 = box.y + box.height * 0.5;
+
+    const overflow = await canvas.evaluate((el, scrollSelector) => {
+      const scrollEl = document.querySelector(scrollSelector);
+      if (!scrollEl) throw new Error("no scroll wrapper");
+      // getBoundingClientRect already reflects the canvas's CSS transform
+      // scale, so this is the same "scaled canvas width" the component's
+      // own clampPanX computes from CANVAS_BASE_WIDTH * canvasScale.
+      return Math.max(
+        0,
+        el.getBoundingClientRect().width - scrollEl.clientWidth,
+      );
+    }, ".stage-map__scroll");
+    // Only meaningful if this viewport actually put the canvas below its
+    // floor scale (see the describe block's 360px viewport) — otherwise
+    // there'd be nothing to clamp and the test would pass vacuously.
+    expect(overflow).toBeGreaterThan(0);
+
+    async function pan(pointerDx: number): Promise<number> {
+      await canvas.dispatchEvent("pointerdown", {
+        pointerId: 1,
+        pointerType: "touch",
+        button: 0,
+        clientX: x1,
+        clientY: y1,
+      });
+      await canvas.dispatchEvent("pointerdown", {
+        pointerId: 2,
+        pointerType: "touch",
+        button: 0,
+        clientX: x2,
+        clientY: y2,
+      });
+      // Two large ticks, deliberately far bigger than any plausible
+      // overflow, to prove the result gets clamped rather than merely
+      // landing inside range by chance.
+      for (const dx of [pointerDx, pointerDx * 2]) {
+        await canvas.dispatchEvent("pointermove", {
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: x1 + dx,
+          clientY: y1,
+        });
+        await canvas.dispatchEvent("pointermove", {
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: x2 + dx,
+          clientY: y2,
+        });
+      }
+      await canvas.dispatchEvent("pointerup", {
+        pointerId: 1,
+        pointerType: "touch",
+      });
+      await canvas.dispatchEvent("pointerup", {
+        pointerId: 2,
+        pointerType: "touch",
+      });
+      return canvas.evaluate(
+        (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+      );
+    }
+
+    // A wildly oversized leftward swipe (fingers moving right-to-left, so a
+    // large negative dx) must stop exactly at -overflow, not go further.
+    const panLeft = await pan(-5000);
+    expect(panLeft).toBeCloseTo(-overflow, 0);
+
+    // Then a wildly oversized rightward swipe must land back at exactly 0,
+    // not overshoot into positive territory (empty space left of the
+    // canvas).
+    const panRight = await pan(5000);
+    expect(panRight).toBeCloseTo(0, 0);
   });
 
   test("a single-finger touch drag moves the item but never pans the canvas", async ({
