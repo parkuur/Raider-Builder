@@ -30,6 +30,19 @@
   box-sizing: border-box;
 }
 
+/*
+ * Form controls don't inherit font-family/font-size from the page by
+ * default in any browser — without this, every input/textarea's typed
+ * value (document title, contact names, notes, ...) silently falls back to
+ * each platform's own UA default font (Arial on desktop, San Francisco on
+ * iOS) instead of Barlow, while surrounding static text renders correctly.
+ */
+input,
+textarea,
+select {
+  font: inherit;
+}
+
 body {
   margin: 0;
   background: var(--color-background);
