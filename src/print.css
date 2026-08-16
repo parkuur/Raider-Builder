@@ -12,6 +12,23 @@
     display: none !important;
   }
 
+  /*
+   * iOS Safari (and other WebKit-based mobile browsers) auto-inflates
+   * rendered text size beyond its declared font-size — "font boosting",
+   * meant to make small text more legible on a phone screen — and that
+   * inflation can leak into printed/PDF output even though every font-size
+   * in this app is already a fixed px value that never changes on its own.
+   * Disabling it (all vendor-prefixed spellings, for older WebKit/Blink/
+   * Trident) forces print to render text at exactly its declared size
+   * regardless of the device it was printed from.
+   */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     background: #fff;
   }
