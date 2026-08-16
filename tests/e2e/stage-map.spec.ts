@@ -1274,6 +1274,102 @@ test.describe("Stage Map section at a narrow viewport", () => {
     expect(pan.f).toBeCloseTo(0, 0);
   });
 
+  // Regression: .stage-map__scroll used to keep native touch-scroll enabled
+  // (touch-action: auto) until a two-finger gesture had been used once for
+  // that instance, so the very first single-finger swipe raced the browser's
+  // own scroll (both horizontal and, since touch-action never restricted the
+  // other axis either, the page's own vertical scroll) against marquee-select
+  // and item-drag. touch-action: none now applies unconditionally, from the
+  // very first render, so JS owns every touch interaction on the canvas from
+  // the start.
+  test("native touch scroll is disabled on the canvas wrapper from the start, before any two-finger gesture has happened", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const touchAction = await page
+      .locator(".stage-map__scroll")
+      .evaluate((el) => getComputedStyle(el).touchAction);
+    expect(touchAction).toBe("none");
+  });
+
+  // Regression: the second finger of a two-finger gesture used to fall
+  // straight through to whatever it landed on, exactly like an ordinary
+  // single-finger touch — starting that item's own drag/select and arming
+  // its own long-press timer, right alongside the pan gesture the pair of
+  // fingers was actually starting. Landing the second finger on a *second*
+  // item makes this unambiguous: on the old code itemB's own long-press
+  // fires (opening its context menu) and itemB steals the selection from
+  // itemA, even though only a two-finger pan was intended.
+  test("the second finger of a two-finger gesture never starts its own drag/select/long-press on whatever it lands on", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+    const boxA = await itemA.boundingBox();
+    if (!boxA) throw new Error("itemA has no bounding box");
+    const x1 = boxA.x + boxA.width / 2;
+    const y1 = boxA.y + boxA.height / 2;
+
+    // itemB spawns overlapping itemA (both default to the canvas center) —
+    // move it clear first via a plain mouse drag so the two fingers below
+    // land on genuinely separate elements.
+    await itemB.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.move(x1 + 150, y1 + 40, { steps: 5 });
+    await page.mouse.up();
+
+    const boxB = await itemB.boundingBox();
+    if (!boxB) throw new Error("itemB has no bounding box");
+    const x2 = boxB.x + boxB.width / 2;
+    const y2 = boxB.y + boxB.height / 2;
+
+    // First finger down on itemA — an ordinary single-finger item-drag/
+    // select starts normally, arming itemA's own long-press timer too.
+    await itemA.dispatchEvent("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: x1,
+      clientY: y1,
+    });
+    // Second finger down on itemB, completing the pair.
+    await itemB.dispatchEvent("pointerdown", {
+      pointerId: 2,
+      pointerType: "touch",
+      button: 0,
+      clientX: x2,
+      clientY: y2,
+    });
+
+    // Past the long-press action's ~500ms delay — itemB's own long-press
+    // must never have started in the first place.
+    await page.waitForTimeout(600);
+    await expect(page.locator(".context-menu")).not.toBeVisible();
+    await expect(itemA).toHaveClass(/stage-map__item--selected/);
+    await expect(itemB).not.toHaveClass(/stage-map__item--selected/);
+
+    await itemA.dispatchEvent("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+    });
+    await itemB.dispatchEvent("pointerup", {
+      pointerId: 2,
+      pointerType: "touch",
+    });
+  });
+
   test("the two-finger-pan hint is hidden without a coarse (touch) pointer, even below the mobile breakpoint", async ({
     page,
   }) => {

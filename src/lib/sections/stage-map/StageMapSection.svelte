@@ -329,16 +329,11 @@
   let canvasScale = $state(1);
 
   // Two-finger pan, mobile only — transient view state with the same
-  // lifecycle as canvasScale (never persisted). hasUsedTwoFingerGesture is
-  // the exception: it's an instance-lifetime latch, not reset alongside
-  // panX, so native horizontal scroll stays the fallback until the first
-  // two-finger gesture and stays disabled afterward for this instance.
-  // Horizontal only — the canvas never needs vertical panning (its height
-  // is user-adjustable via the depth handle and always fits), and the
-  // mobile fallback this replaces (.stage-map__scroll's overflow-x) was
-  // horizontal-only too.
+  // lifecycle as canvasScale (never persisted). Horizontal only — the
+  // canvas never needs vertical panning (its height is user-adjustable via
+  // the depth handle and always fits), and the mobile fallback this
+  // replaces (.stage-map__scroll's overflow-x) was horizontal-only too.
   let panX = $state(0);
-  let hasUsedTwoFingerGesture = $state(false);
   let showTwoFingerHint = $state(false);
 
   const canvasTransform = $derived(
@@ -426,11 +421,7 @@
     Drag with two fingers to move the map.
   </p>
 {/if}
-<div
-  class="stage-map__scroll"
-  class:stage-map__scroll--gesture-active={hasUsedTwoFingerGesture}
-  bind:this={scrollEl}
->
+<div class="stage-map__scroll" bind:this={scrollEl}>
   <div
     class="stage-map__scale-box"
     style:width={canvasScale < 1
@@ -464,14 +455,9 @@
         event.preventDefault();
         openContextMenuForCanvas(event);
       }}
+      use:multiTouchGesture={{ onPanDelta: handlePanDelta }}
       use:longPress={{
         onLongPress: (event) => openContextMenuForCanvas(event),
-      }}
-      use:multiTouchGesture={{
-        onGestureStart: () => {
-          hasUsedTwoFingerGesture = true;
-        },
-        onPanDelta: handlePanDelta,
       }}
       use:pointerDrag={{
         onStart: (event) => {
@@ -706,14 +692,19 @@
      * reintroducing scroll on this axis.
      */
     padding-bottom: 12px;
-  }
-
-  /*
-   * Ceded to the two-finger pan gesture only once it's actually been used
-   * for this instance — native touch-scroll stays the fallback until then,
-   * so the two mechanisms never fight over the same content's position.
-   */
-  .stage-map__scroll--gesture-active {
+    /*
+     * Touch panning is handled entirely by the two-finger gesture, never by
+     * the browser's own native scroll — unconditionally, not just once the
+     * gesture's been used once. A single touch here is always item-drag or
+     * marquee-select, never a scroll: touch-action: auto (the default)
+     * let the browser start its own native scroll on a one-finger swipe
+     * before that swipe's pointerdown/pointermove handlers ever got a
+     * chance to claim it, racing the browser's own scroll against
+     * marquee-select/item-drag and even the page's own vertical scroll.
+     * overflow-x stays auto above for non-touch scrolling (a mouse wheel,
+     * trackpad, or dragging the scrollbar) — touch-action only governs
+     * touch-driven panning/zooming, not those.
+     */
     touch-action: none;
   }
 

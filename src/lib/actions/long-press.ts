@@ -17,6 +17,17 @@ export interface LongPressOptions {
   moveThresholdPx?: number;
 }
 
+// Mirrors pointer-drag.ts's activeDrags/cancelAllPointerDrags — every
+// mounted longPress instance registers a cancel callback here for the
+// lifetime of its mount, so a two-finger gesture landing anywhere on the
+// page can cleanly kill whichever single instance (if any) is still timing
+// a hold, without either side needing a reference to the other.
+const activeLongPresses = new Set<() => void>();
+
+export function cancelAllLongPresses(): void {
+  for (const cancel of activeLongPresses) cancel();
+}
+
 /*
  * Deliberately independent of the native `contextmenu` event, which fires
  * unreliably from a touch long-press on iOS Safari. Also independent of
@@ -67,7 +78,12 @@ export const longPress: Action<HTMLElement, LongPressOptions> = (
     }, current.delayMs ?? DEFAULT_DELAY_MS);
   }
 
+  function cancelThisGesture(): void {
+    if (timer !== undefined) endGesture();
+  }
+
   node.addEventListener("pointerdown", onPointerDown);
+  activeLongPresses.add(cancelThisGesture);
 
   return {
     update(newOptions) {
@@ -76,6 +92,7 @@ export const longPress: Action<HTMLElement, LongPressOptions> = (
     destroy() {
       node.removeEventListener("pointerdown", onPointerDown);
       endGesture();
+      activeLongPresses.delete(cancelThisGesture);
     },
   };
 };
