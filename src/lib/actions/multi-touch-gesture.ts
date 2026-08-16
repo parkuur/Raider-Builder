@@ -74,14 +74,22 @@ export const multiTouchGesture: Action<
   function onPointerDown(e: PointerEvent): void {
     if (e.pointerType !== "touch") return;
     if (pointers.size >= 2 && !pointers.has(e.pointerId)) return;
+    // Listeners are wired up from the very first tracked pointer (not just
+    // once a second one arrives) so a lone finger's id is always cleaned up
+    // on its own pointerup/pointercancel. Gating this behind pointers.size
+    // === 2 left single-finger touches (an ordinary item drag) permanently
+    // stuck in `pointers` — the next touch would then spuriously read as a
+    // second concurrent pointer and misfire the pan gesture.
+    if (pointers.size === 0) {
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+    }
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.size === 2) {
       cancelAllPointerDrags();
       prevMid = undefined;
       current.onGestureStart?.();
-      window.addEventListener("pointermove", onPointerMove);
-      window.addEventListener("pointerup", onPointerUp);
-      window.addEventListener("pointercancel", onPointerUp);
     }
   }
 

@@ -331,22 +331,24 @@
   // Two-finger pan, mobile only — transient view state with the same
   // lifecycle as canvasScale (never persisted). hasUsedTwoFingerGesture is
   // the exception: it's an instance-lifetime latch, not reset alongside
-  // panX/panY, so native horizontal scroll stays the fallback until the
-  // first two-finger gesture and stays disabled afterward for this instance.
+  // panX, so native horizontal scroll stays the fallback until the first
+  // two-finger gesture and stays disabled afterward for this instance.
+  // Horizontal only — the canvas never needs vertical panning (its height
+  // is user-adjustable via the depth handle and always fits), and the
+  // mobile fallback this replaces (.stage-map__scroll's overflow-x) was
+  // horizontal-only too.
   let panX = $state(0);
-  let panY = $state(0);
   let hasUsedTwoFingerGesture = $state(false);
   let showTwoFingerHint = $state(false);
 
   const canvasTransform = $derived(
-    canvasScale < 1 || panX !== 0 || panY !== 0
-      ? `translate(${panX}px, ${panY}px) scale(${canvasScale})`
+    canvasScale < 1 || panX !== 0
+      ? `translate(${panX}px, 0) scale(${canvasScale})`
       : undefined,
   );
 
-  function handlePanDelta(dx: number, dy: number): void {
+  function handlePanDelta(dx: number): void {
     panX += dx;
-    panY += dy;
   }
 
   $effect(() => {
@@ -364,7 +366,6 @@
       if (!scrollEl || !query.matches) {
         canvasScale = 1;
         panX = 0;
-        panY = 0;
       } else {
         canvasScale = Math.min(
           1,

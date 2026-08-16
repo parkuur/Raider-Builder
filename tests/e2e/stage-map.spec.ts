@@ -1212,6 +1212,68 @@ test.describe("Stage Map section at a narrow viewport", () => {
     expect(pan.f).toBeCloseTo(0, 0);
   });
 
+  // Regression for a bug where multiTouchGesture never removed a lone
+  // finger's pointerId once tracked, because its pointerup/pointercancel
+  // listeners were only wired up once a *second* concurrent pointer showed
+  // up. That stale id then made the next unrelated single-finger touch
+  // spuriously register as two concurrent pointers, misfiring the pan
+  // gesture (and cancelling the new drag) even though only one finger was
+  // ever on screen at a time.
+  test("a second single-finger touch drag after the first still never pans the canvas", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const items = page.locator('[data-category="mic"]');
+
+    for (const [pointerId, item] of [
+      [1, items.nth(0)],
+      [2, items.nth(1)],
+    ] as const) {
+      const before = await item.boundingBox();
+      if (!before) throw new Error("item has no bounding box");
+      const startX = before.x + before.width / 2;
+      const startY = before.y + before.height / 2;
+
+      await item.dispatchEvent("pointerdown", {
+        pointerId,
+        pointerType: "touch",
+        button: 0,
+        clientX: startX,
+        clientY: startY,
+      });
+      // Two move ticks (not one) — a stale second pointer from a leaked
+      // prior gesture only produces a pan delta once there are two
+      // midpoints to diff between, same as the real two-finger test above.
+      for (const dx of [30, 60]) {
+        await item.dispatchEvent("pointermove", {
+          pointerId,
+          pointerType: "touch",
+          clientX: startX + dx,
+          clientY: startY,
+        });
+      }
+      await item.dispatchEvent("pointerup", {
+        pointerId,
+        pointerType: "touch",
+      });
+    }
+
+    const pan = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
+    expect(pan.e).toBeCloseTo(0, 0);
+    expect(pan.f).toBeCloseTo(0, 0);
+  });
+
   test("the two-finger-pan hint is hidden without a coarse (touch) pointer, even below the mobile breakpoint", async ({
     page,
   }) => {
