@@ -82,6 +82,13 @@ interface PrintFingerprint {
 
 async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
   await page.emulateMedia({ media: "print" });
+  // NarrowViewportState resets via MediaQueryList's `change` event, which
+  // fires asynchronously — page.emulateMedia() doesn't dispatch a real
+  // beforeprint event (only real printing does, which is what the
+  // synchronous flushSync reset actually targets), so there's a genuine
+  // race between that change event landing and the one-shot page.evaluate()
+  // snapshot below. Wait for it to have actually landed first.
+  await expect(page.locator(".channel-list__row-mobile")).toHaveCount(0);
   const fingerprint = await page.evaluate(() => {
     const frames = Array.from(document.querySelectorAll(".section-frame"));
     const anySectionBordered = frames.some((el) => {
