@@ -1,5 +1,12 @@
 @page {
-  size: A4;
+  /*
+   * Explicit physical dimensions rather than the "A4" keyword, on the
+   * theory that keyword page sizes are interpreted inconsistently across
+   * WebKit versions — tried while chasing the known iOS text-scale issue
+   * documented below. Measured to make no difference to that issue, but
+   * left in place since explicit dimensions are unambiguous regardless.
+   */
+  size: 210mm 297mm;
   margin: 0.7in;
 }
 
@@ -13,14 +20,12 @@
   }
 
   /*
-   * iOS Safari (and other WebKit-based mobile browsers) auto-inflates
-   * rendered text size beyond its declared font-size — "font boosting",
-   * meant to make small text more legible on a phone screen — and that
-   * inflation can leak into printed/PDF output even though every font-size
-   * in this app is already a fixed px value that never changes on its own.
-   * Disabling it (all vendor-prefixed spellings, for older WebKit/Blink/
-   * Trident) forces print to render text at exactly its declared size
-   * regardless of the device it was printed from.
+   * Disables WebKit's/Blink's/Trident's automatic text-size "boosting" —
+   * a legibility heuristic that inflates rendered text beyond its declared
+   * font-size on narrow screens. Doesn't fix the known iOS text-scale issue
+   * documented below (measured: no effect on it), but is still correct to
+   * have regardless, since printing should never apply a screen-legibility
+   * heuristic in the first place.
    */
   html {
     -webkit-text-size-adjust: 100%;
@@ -28,6 +33,22 @@
     -ms-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
+
+  /*
+   * KNOWN LIMITATION: printing this app from iOS Safari (confirmed via
+   * measuring actual PDF output — same page dimensions, same layout/
+   * wrapping, but every text run scaled to ~1.23x its desktop-printed
+   * size) applies a fixed, uniform text-scale factor somewhere inside
+   * iOS's print/PDF pipeline itself, after layout/pagination has already
+   * completed correctly. Neither @page's size format (tried: keyword vs.
+   * explicit mm, no difference) nor text-size-adjust above (a different,
+   * unrelated WebKit mechanism) reaches it — nothing in this stylesheet
+   * can, since it happens downstream of the DOM/CSSOM entirely, during
+   * PDF serialization. Documented as a known limitation rather than worked
+   * around: a device/OS-scoped compensating scale would be fragile (relies
+   * on a specific numeric constant that isn't guaranteed stable across iOS
+   * versions or device models) and wasn't judged worth that risk.
+   */
 
   body {
     background: #fff;
