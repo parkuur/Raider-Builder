@@ -1,5 +1,6 @@
 import type { Action } from "svelte/action";
 import { cancelAllPointerDrags } from "./pointer-drag";
+import { cancelAllLongPresses } from "./long-press";
 
 interface Point {
   x: number;
@@ -22,7 +23,17 @@ export interface MultiTouchGestureOptions {
  *
  * Deliberately listens in the capture phase — item drags stopPropagation()
  * their own bubble-phase pointerdown, so a bubble-phase listener here would
- * never see a first finger that happened to land on an item.
+ * never see a first finger that happened to land on an item. The same
+ * capture-phase position lets it act as a gate: once a second concurrent
+ * touch lands, this handler stopImmediatePropagation()s that pointerdown so
+ * it never reaches whatever's underneath it (an item's own drag/long-press,
+ * or the canvas's own marquee-select/long-press when node itself is the
+ * target — Svelte mounts this action ahead of those on the same element, so
+ * "immediate" also wins against sibling listeners on node). Without this, a
+ * two-finger gesture's second finger would still independently kick off a
+ * fresh single-pointer drag, long-press, or marquee-select right alongside
+ * the pan, and the finger already down would keep whatever it started
+ * (a drag, a long-press timer) running unless explicitly cancelled below.
  */
 export const multiTouchGesture: Action<
   HTMLElement,
@@ -73,15 +84,38 @@ export const multiTouchGesture: Action<
 
   function onPointerDown(e: PointerEvent): void {
     if (e.pointerType !== "touch") return;
-    if (pointers.size >= 2 && !pointers.has(e.pointerId)) return;
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.size === 2) {
-      cancelAllPointerDrags();
-      prevMid = undefined;
-      current.onGestureStart?.();
+    if (pointers.size >= 2 && !pointers.has(e.pointerId)) {
+      // A third+ finger while a two-finger gesture is already engaged —
+      // still not tracked, but also kept from falling through to whatever
+      // it landed on (resting a thumb shouldn't open a context menu).
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return;
+    }
+    // Listeners are wired up from the very first tracked pointer (not just
+    // once a second one arrives) so a lone finger's id is always cleaned up
+    // on its own pointerup/pointercancel. Gating this behind pointers.size
+    // === 2 left single-finger touches (an ordinary item drag) permanently
+    // stuck in `pointers` — the next touch would then spuriously read as a
+    // second concurrent pointer and misfire the pan gesture.
+    if (pointers.size === 0) {
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
       window.addEventListener("pointercancel", onPointerUp);
+    }
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) {
+      // The second finger's own pointerdown must never reach an item's own
+      // drag/long-press, or the canvas's own marquee-select/long-press —
+      // stopImmediatePropagation() (rather than stopPropagation()) is what
+      // blocks the marquee/long-press listeners mounted on this same node,
+      // not just descendants.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      cancelAllPointerDrags();
+      cancelAllLongPresses();
+      prevMid = undefined;
+      current.onGestureStart?.();
     }
   }
 

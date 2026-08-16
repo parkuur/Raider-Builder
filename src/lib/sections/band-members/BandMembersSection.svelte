@@ -14,6 +14,7 @@
   import RemoveButton from "../../components/RemoveButton.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
+  import { NarrowViewportState } from "../../state/narrow-viewport.svelte";
   import CameraIcon from "phosphor-svelte/lib/CameraIcon";
   import TrashIcon from "phosphor-svelte/lib/TrashIcon";
 
@@ -34,19 +35,12 @@
   // layout rather than measuring the section's actual available width, so
   // it's intentionally conservative (2 per row) across the whole mobile
   // range rather than perfectly packing e.g. a 600px-wide tablet viewport.
-  let isNarrowViewport = $state(false);
-  $effect(() => {
-    const query = window.matchMedia("screen and (max-width: 640px)");
-    isNarrowViewport = query.matches;
-    const onChange = (e: MediaQueryListEvent) => (isNarrowViewport = e.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  });
+  const narrowViewport = new NarrowViewportState();
 
   const rows = $derived(
     groupIntoRows(
       section.data.members,
-      balancedRows(section.data.members.length, isNarrowViewport ? 2 : 4),
+      balancedRows(section.data.members.length, narrowViewport.matches ? 2 : 4),
     ),
   );
 

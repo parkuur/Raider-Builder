@@ -1091,6 +1091,38 @@ test.describe("Stage Map section at a narrow viewport", () => {
     expect(overflow).toBe("hidden");
   });
 
+  test("the canvas starts centered, not flush against its left edge, once it overflows the wrapper", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const overflow = await canvas.evaluate((el, scrollSelector) => {
+      const scrollEl = document.querySelector(scrollSelector);
+      if (!scrollEl) throw new Error("no scroll wrapper");
+      return Math.max(
+        0,
+        el.getBoundingClientRect().width - scrollEl.clientWidth,
+      );
+    }, ".stage-map__scroll");
+    // Only meaningful if this viewport actually put the canvas below its
+    // floor scale (see the describe block's 360px viewport) — otherwise
+    // there'd be nothing to center and the test would pass vacuously.
+    expect(overflow).toBeGreaterThan(0);
+
+    const panX = await canvas.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+    );
+    // -overflow/2 splits the hidden overflow evenly left and right, rather
+    // than 0 (flush-left, showing all of the left edge and none of the
+    // right) or -overflow (flush-right, the reverse).
+    expect(panX).toBeCloseTo(-overflow / 2, 0);
+  });
+
   // Playwright has no first-class multi-touch simulation API, so these
   // dispatch synthetic two-pointer PointerEvent sequences (as the existing
   // long-press test above already does for a single touch pointer) rather
@@ -1134,8 +1166,13 @@ test.describe("Stage Map section at a narrow viewport", () => {
     // Two ticks, moving each pointer in turn — moving both fingers together
     // in a single frame isn't expressible as two separate dispatchEvent
     // calls, so the gesture's own frame-to-frame midpoint tracking picks up
-    // the combined movement across ticks instead of a single one.
-    for (const dx of [20, 40]) {
+    // the combined movement across ticks instead of a single one. Leftward
+    // (negative dx): the canvas starts flush with the wrapper's left edge
+    // (panX 0, already this pan's upper bound), so a rightward drag would
+    // have nothing to reveal and, correctly, wouldn't move it at all —
+    // panning only has somewhere to go towards the canvas's overflowing
+    // right edge.
+    for (const dx of [-20, -40]) {
       await canvas.dispatchEvent("pointermove", {
         pointerId: 1,
         pointerType: "touch",
@@ -1162,7 +1199,97 @@ test.describe("Stage Map section at a narrow viewport", () => {
     const panAfter = await canvas.evaluate(
       (el) => new DOMMatrix(getComputedStyle(el).transform).e,
     );
-    expect(panAfter).toBeGreaterThan(panBefore + 5);
+    expect(panAfter).toBeLessThan(panBefore - 5);
+  });
+
+  test("a two-finger pan clamps at the canvas's edges instead of overshooting into empty space", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("canvas has no bounding box");
+    const x1 = box.x + box.width * 0.3;
+    const y1 = box.y + box.height * 0.5;
+    const x2 = box.x + box.width * 0.7;
+    const y2 = box.y + box.height * 0.5;
+
+    const overflow = await canvas.evaluate((el, scrollSelector) => {
+      const scrollEl = document.querySelector(scrollSelector);
+      if (!scrollEl) throw new Error("no scroll wrapper");
+      // getBoundingClientRect already reflects the canvas's CSS transform
+      // scale, so this is the same "scaled canvas width" the component's
+      // own clampPanX computes from CANVAS_BASE_WIDTH * canvasScale.
+      return Math.max(
+        0,
+        el.getBoundingClientRect().width - scrollEl.clientWidth,
+      );
+    }, ".stage-map__scroll");
+    // Only meaningful if this viewport actually put the canvas below its
+    // floor scale (see the describe block's 360px viewport) — otherwise
+    // there'd be nothing to clamp and the test would pass vacuously.
+    expect(overflow).toBeGreaterThan(0);
+
+    async function pan(pointerDx: number): Promise<number> {
+      await canvas.dispatchEvent("pointerdown", {
+        pointerId: 1,
+        pointerType: "touch",
+        button: 0,
+        clientX: x1,
+        clientY: y1,
+      });
+      await canvas.dispatchEvent("pointerdown", {
+        pointerId: 2,
+        pointerType: "touch",
+        button: 0,
+        clientX: x2,
+        clientY: y2,
+      });
+      // Two large ticks, deliberately far bigger than any plausible
+      // overflow, to prove the result gets clamped rather than merely
+      // landing inside range by chance.
+      for (const dx of [pointerDx, pointerDx * 2]) {
+        await canvas.dispatchEvent("pointermove", {
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: x1 + dx,
+          clientY: y1,
+        });
+        await canvas.dispatchEvent("pointermove", {
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: x2 + dx,
+          clientY: y2,
+        });
+      }
+      await canvas.dispatchEvent("pointerup", {
+        pointerId: 1,
+        pointerType: "touch",
+      });
+      await canvas.dispatchEvent("pointerup", {
+        pointerId: 2,
+        pointerType: "touch",
+      });
+      return canvas.evaluate(
+        (el) => new DOMMatrix(getComputedStyle(el).transform).e,
+      );
+    }
+
+    // A wildly oversized leftward swipe (fingers moving right-to-left, so a
+    // large negative dx) must stop exactly at -overflow, not go further.
+    const panLeft = await pan(-5000);
+    expect(panLeft).toBeCloseTo(-overflow, 0);
+
+    // Then a wildly oversized rightward swipe must land back at exactly 0,
+    // not overshoot into positive territory (empty space left of the
+    // canvas).
+    const panRight = await pan(5000);
+    expect(panRight).toBeCloseTo(0, 0);
   });
 
   test("a single-finger touch drag moves the item but never pans the canvas", async ({
@@ -1181,6 +1308,13 @@ test.describe("Stage Map section at a narrow viewport", () => {
     if (!before) throw new Error("item has no bounding box");
     const startX = before.x + before.width / 2;
     const startY = before.y + before.height / 2;
+    // The canvas starts centered (not flush-left) below the mobile
+    // breakpoint, so "never pans" means "stays wherever it started," not
+    // "stays at 0".
+    const panBefore = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
 
     await item.dispatchEvent("pointerdown", {
       pointerId: 1,
@@ -1204,12 +1338,177 @@ test.describe("Stage Map section at a narrow viewport", () => {
     if (!after) throw new Error("item has no bounding box after drag");
     expect(after.x).toBeGreaterThan(before.x + 40);
 
-    const pan = await canvas.evaluate((el) => {
+    const panAfter = await canvas.evaluate((el) => {
       const matrix = new DOMMatrix(getComputedStyle(el).transform);
       return { e: matrix.e, f: matrix.f };
     });
-    expect(pan.e).toBeCloseTo(0, 0);
-    expect(pan.f).toBeCloseTo(0, 0);
+    expect(panAfter.e).toBeCloseTo(panBefore.e, 0);
+    expect(panAfter.f).toBeCloseTo(panBefore.f, 0);
+  });
+
+  // Regression for a bug where multiTouchGesture never removed a lone
+  // finger's pointerId once tracked, because its pointerup/pointercancel
+  // listeners were only wired up once a *second* concurrent pointer showed
+  // up. That stale id then made the next unrelated single-finger touch
+  // spuriously register as two concurrent pointers, misfiring the pan
+  // gesture (and cancelling the new drag) even though only one finger was
+  // ever on screen at a time.
+  test("a second single-finger touch drag after the first still never pans the canvas", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+
+    const canvas = page.locator(".stage-map__canvas");
+    const items = page.locator('[data-category="mic"]');
+    // The canvas starts centered (not flush-left) below the mobile
+    // breakpoint, so "never pans" means "stays wherever it started," not
+    // "stays at 0".
+    const panBefore = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
+
+    for (const [pointerId, item] of [
+      [1, items.nth(0)],
+      [2, items.nth(1)],
+    ] as const) {
+      const before = await item.boundingBox();
+      if (!before) throw new Error("item has no bounding box");
+      const startX = before.x + before.width / 2;
+      const startY = before.y + before.height / 2;
+
+      await item.dispatchEvent("pointerdown", {
+        pointerId,
+        pointerType: "touch",
+        button: 0,
+        clientX: startX,
+        clientY: startY,
+      });
+      // Two move ticks (not one) — a stale second pointer from a leaked
+      // prior gesture only produces a pan delta once there are two
+      // midpoints to diff between, same as the real two-finger test above.
+      for (const dx of [30, 60]) {
+        await item.dispatchEvent("pointermove", {
+          pointerId,
+          pointerType: "touch",
+          clientX: startX + dx,
+          clientY: startY,
+        });
+      }
+      await item.dispatchEvent("pointerup", {
+        pointerId,
+        pointerType: "touch",
+      });
+    }
+
+    const panAfter = await canvas.evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return { e: matrix.e, f: matrix.f };
+    });
+    expect(panAfter.e).toBeCloseTo(panBefore.e, 0);
+    expect(panAfter.f).toBeCloseTo(panBefore.f, 0);
+  });
+
+  // Regression: .stage-map__scroll used to keep native touch-scroll enabled
+  // (touch-action: auto) until a two-finger gesture had been used once for
+  // that instance, so the very first single-finger swipe raced the browser's
+  // own scroll (both horizontal and, since touch-action never restricted the
+  // other axis either, the page's own vertical scroll) against marquee-select
+  // and item-drag. touch-action: none now applies unconditionally, from the
+  // very first render, so JS owns every touch interaction on the canvas from
+  // the start.
+  test("native touch scroll is disabled on the canvas wrapper from the start, before any two-finger gesture has happened", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+
+    const touchAction = await page
+      .locator(".stage-map__scroll")
+      .evaluate((el) => getComputedStyle(el).touchAction);
+    expect(touchAction).toBe("none");
+  });
+
+  // Regression: the second finger of a two-finger gesture used to fall
+  // straight through to whatever it landed on, exactly like an ordinary
+  // single-finger touch — starting that item's own drag/select and arming
+  // its own long-press timer, right alongside the pan gesture the pair of
+  // fingers was actually starting. Landing the second finger on a *second*
+  // item makes this unambiguous: on the old code itemB's own long-press
+  // fires (opening its context menu) and itemB steals the selection from
+  // itemA, even though only a two-finger pan was intended.
+  test("the second finger of a two-finger gesture never starts its own drag/select/long-press on whatever it lands on", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page.getByRole("button", { name: "Stage Map", exact: true }).click();
+    await page.getByRole("button", { name: "MIC", exact: true }).click();
+    await page.getByRole("button", { name: "DI", exact: true }).click();
+
+    const itemA = page.locator('[data-category="mic"]');
+    const itemB = page.locator('[data-category="di"]');
+    const boxA = await itemA.boundingBox();
+    if (!boxA) throw new Error("itemA has no bounding box");
+    const x1 = boxA.x + boxA.width / 2;
+    const y1 = boxA.y + boxA.height / 2;
+
+    // itemB spawns overlapping itemA (both default to the canvas center) —
+    // move it clear first via a plain mouse drag so the two fingers below
+    // land on genuinely separate elements.
+    await itemB.dispatchEvent("pointerdown", { button: 0 });
+    await page.mouse.move(x1 + 150, y1 + 40, { steps: 5 });
+    await page.mouse.up();
+
+    const boxB = await itemB.boundingBox();
+    if (!boxB) throw new Error("itemB has no bounding box");
+    const x2 = boxB.x + boxB.width / 2;
+    const y2 = boxB.y + boxB.height / 2;
+
+    // First finger down on itemA — an ordinary single-finger item-drag/
+    // select starts normally, arming itemA's own long-press timer too.
+    await itemA.dispatchEvent("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+      clientX: x1,
+      clientY: y1,
+    });
+    // Second finger down on itemB, completing the pair.
+    await itemB.dispatchEvent("pointerdown", {
+      pointerId: 2,
+      pointerType: "touch",
+      button: 0,
+      clientX: x2,
+      clientY: y2,
+    });
+
+    // Past the long-press action's ~500ms delay — itemB's own long-press
+    // must never have started in the first place.
+    await page.waitForTimeout(600);
+    await expect(page.locator(".context-menu")).not.toBeVisible();
+    await expect(itemA).toHaveClass(/stage-map__item--selected/);
+    await expect(itemB).not.toHaveClass(/stage-map__item--selected/);
+
+    await itemA.dispatchEvent("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+    });
+    await itemB.dispatchEvent("pointerup", {
+      pointerId: 2,
+      pointerType: "touch",
+    });
   });
 
   test("the two-finger-pan hint is hidden without a coarse (touch) pointer, even below the mobile breakpoint", async ({

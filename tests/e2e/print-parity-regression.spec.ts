@@ -76,10 +76,19 @@ interface PrintFingerprint {
   stageMapTransform: string;
   visibleNoPrintCount: number;
   pageOverflowsHorizontally: boolean;
+  channelListNotesHeaderPresent: boolean;
+  bandMembersRowSizes: number[];
 }
 
 async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
   await page.emulateMedia({ media: "print" });
+  // NarrowViewportState resets via MediaQueryList's `change` event, which
+  // fires asynchronously — page.emulateMedia() doesn't dispatch a real
+  // beforeprint event (only real printing does, which is what the
+  // synchronous flushSync reset actually targets), so there's a genuine
+  // race between that change event landing and the one-shot page.evaluate()
+  // snapshot below. Wait for it to have actually landed first.
+  await expect(page.locator(".channel-list__row-mobile")).toHaveCount(0);
   const fingerprint = await page.evaluate(() => {
     const frames = Array.from(document.querySelectorAll(".section-frame"));
     const anySectionBordered = frames.some((el) => {
@@ -108,6 +117,18 @@ async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
     const pageOverflowsHorizontally =
       document.body.scrollWidth - document.body.clientWidth > 1;
 
+    // Regression coverage for the mobile/desktop print-parity bug: a stale
+    // narrow-viewport snapshot silently drops the Channel List's Notes
+    // column from the DOM (not just CSS-hides it) and keeps Band Members'
+    // narrow 2-per-row card grouping, neither of which the fingerprint
+    // above would have caught.
+    const channelListNotesHeaderPresent =
+      document.querySelectorAll(".channel-list thead th input").length === 5;
+
+    const bandMembersRowSizes = Array.from(
+      document.querySelectorAll(".band-members__row"),
+    ).map((row) => row.children.length);
+
     return {
       anySectionBordered,
       splitRowFlexDirection,
@@ -115,6 +136,8 @@ async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
       stageMapTransform,
       visibleNoPrintCount,
       pageOverflowsHorizontally,
+      channelListNotesHeaderPresent,
+      bandMembersRowSizes,
     };
   });
   await page.emulateMedia({ media: "screen" });
@@ -142,5 +165,43 @@ test("print layout is identical whether the document was opened at a mobile or a
     stageMapTransform: "none",
     visibleNoPrintCount: 0,
     pageOverflowsHorizontally: false,
+    channelListNotesHeaderPresent: true,
+    bandMembersRowSizes: [4, 3],
   });
+});
+
+/**
+ * `page.emulateMedia` (used above) reliably fires `MediaQueryList`'s
+ * `change` event, unlike real browser printing — real Chromium's print
+ * pipeline updates `matches` without firing `change` at all, which is
+ * exactly the gap that let the Channel List Notes column and Band Members
+ * card grouping ship broken on mobile-originated prints despite the
+ * fingerprint test above passing. Dispatching `beforeprint` directly
+ * exercises the actual mechanism (`NarrowViewportState`) the fix relies on,
+ * without going through a real print dialog.
+ */
+test("a raw beforeprint event (not emulateMedia) still resets Channel List and Band Members to their desktop shape", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 360, height: 900 });
+  await buildDocument(page);
+
+  await expect(page.locator(".channel-list__row-mobile").first()).toBeVisible();
+  expect(
+    await page
+      .locator(".band-members__row")
+      .evaluateAll((rows) => rows.map((r) => r.children.length)),
+  ).toEqual([2, 2, 2, 1]);
+
+  await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
+
+  await expect(page.locator(".channel-list thead th input")).toHaveCount(5);
+  expect(
+    await page
+      .locator(".band-members__row")
+      .evaluateAll((rows) => rows.map((r) => r.children.length)),
+  ).toEqual([4, 3]);
+
+  await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
+  await expect(page.locator(".channel-list__row-mobile").first()).toBeVisible();
 });

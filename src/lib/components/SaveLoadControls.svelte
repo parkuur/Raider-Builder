@@ -30,8 +30,15 @@
     downloadDocument(getDocument());
   }
 
-  function print(): void {
+  async function print(): Promise<void> {
     closeMenu();
+    // Barlow/Barlow Condensed load from Google Fonts (index.html) with no
+    // bundled fallback file — printing before they finish downloading (more
+    // likely on a fresh mobile pageview than a desktop tab that's been open
+    // a while) silently substitutes system-ui, whose different character
+    // metrics reflow text and shift page breaks from what the same document
+    // would print once the real fonts are in.
+    await document.fonts.ready;
     // Force every autosized textarea to re-measure synchronously first —
     // see resizeAllAutosizedTextareas' doc comment for why this can't be
     // left to a ResizeObserver callback's own timing for a real print.
