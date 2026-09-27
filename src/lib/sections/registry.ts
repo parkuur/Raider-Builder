@@ -19,6 +19,7 @@ import TextSection from "./text/TextSection.svelte";
 import SetlistSection from "./setlist/SetlistSection.svelte";
 import RfAllocationSection from "./rf-allocation/RfAllocationSection.svelte";
 import PackingListSection from "./packing-list/PackingListSection.svelte";
+import ScheduleSection from "./schedule/ScheduleSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
@@ -32,6 +33,7 @@ import { defaultTextData } from "../model/text";
 import { defaultSetlistData } from "../model/setlist";
 import { defaultRfAllocationData } from "../model/rf-allocation";
 import { defaultPackingListData } from "../model/packing-list";
+import { defaultScheduleData } from "../model/schedule";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -168,5 +170,13 @@ export const sectionRegistry: SectionRegistry = {
     category: "planning",
     defaultData: defaultPackingListData,
     component: PackingListSection,
+  },
+  schedule: {
+    type: "schedule",
+    label: "Schedule",
+    split: false,
+    category: "planning",
+    defaultData: defaultScheduleData,
+    component: ScheduleSection,
   },
 };

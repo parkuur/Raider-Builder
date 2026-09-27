@@ -280,8 +280,10 @@
     padding: 2px 0;
   }
 
-  /* Grouped rows are indented under their heading's text. */
-  .grouped-table__row--in-group :global(td:nth-child(2)) {
+  /* Grouped rows are indented under their heading's text — only an
+   * entry's first `<tr>` carries the leading cells, so only it is indented
+   * (Schedule's later item rows start straight at their own content). */
+  .grouped-table__row--in-group :global(tr:first-child > td:nth-child(2)) {
     padding-left: var(--space-4);
   }
 

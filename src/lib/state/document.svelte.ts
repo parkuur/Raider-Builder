@@ -20,6 +20,7 @@ import type { TextSectionData } from "../model/text";
 import type { SetlistSectionData } from "../model/setlist";
 import type { RfAllocationSectionData } from "../model/rf-allocation";
 import type { PackingListSectionData } from "../model/packing-list";
+import type { ScheduleSectionData } from "../model/schedule";
 
 const restored = loadDocumentFromLocalStorage(Object.keys(sectionRegistry));
 
@@ -354,6 +355,14 @@ export function setPackingListData(
     "packing-list",
     data,
   );
+}
+
+export function setScheduleData(
+  rowId: string,
+  sectionId: string,
+  data: ScheduleSectionData,
+): void {
+  state = mutations.setSectionData(state, rowId, sectionId, "schedule", data);
 }
 
 export function setHeaderField<K extends keyof Header>(
