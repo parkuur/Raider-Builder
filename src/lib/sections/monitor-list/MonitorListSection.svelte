@@ -15,6 +15,7 @@
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import ColumnHeaderInput from "../../components/ColumnHeaderInput.svelte";
   import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
   import { autosizeTextarea } from "../../actions/autosize-textarea";
@@ -64,31 +65,27 @@
       <tr>
         <th class="no-print"></th>
         <th class="monitor-list__num">
-          <input
-            class="monitor-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.mon}
-            oninput={(e) => setColumnLabel("mon", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("mon", label)}
           />
         </th>
         <th>
-          <input
-            class="monitor-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.player}
-            oninput={(e) => setColumnLabel("player", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("player", label)}
           />
         </th>
         <th>
-          <input
-            class="monitor-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.type}
-            oninput={(e) => setColumnLabel("type", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("type", label)}
           />
         </th>
         <th>
-          <input
-            class="monitor-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.notes}
-            oninput={(e) => setColumnLabel("notes", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("notes", label)}
           />
         </th>
         <th class="no-print"></th>
@@ -221,24 +218,6 @@
    */
   .monitor-list th.monitor-list__num {
     text-align: center;
-  }
-
-  /*
-   * Beats the later, more general `.monitor-list input` rule (class+type,
-   * specificity 0-1-1) below, which would otherwise reapply its border/
-   * padding/background here — this selector adds the `th` ancestor to stay
-   * above it regardless of source order.
-   */
-  .monitor-list th .monitor-list__header-input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    text-align: inherit;
-    padding: 0;
   }
 
   .monitor-list td {

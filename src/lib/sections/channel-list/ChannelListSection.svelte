@@ -15,6 +15,7 @@
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import ColumnHeaderInput from "../../components/ColumnHeaderInput.svelte";
   import RowHideToggle from "../../components/RowHideToggle.svelte";
   import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
@@ -74,39 +75,34 @@
       <tr>
         <th class="no-print"></th>
         <th class="channel-list__num">
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.ch}
-            oninput={(e) => setColumnLabel("ch", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("ch", label)}
           />
         </th>
         <th>
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.channel}
-            oninput={(e) => setColumnLabel("channel", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("channel", label)}
           />
         </th>
         <th>
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.source}
-            oninput={(e) => setColumnLabel("source", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("source", label)}
           />
         </th>
         <th class="channel-list__phantom">
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.phantom}
-            oninput={(e) => setColumnLabel("phantom", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("phantom", label)}
           />
         </th>
         {#if !narrowViewport.matches}
           <th>
-            <input
-              class="channel-list__header-input"
+            <ColumnHeaderInput
               value={columnLabels.notes}
-              oninput={(e) => setColumnLabel("notes", e.currentTarget.value)}
+              onChange={(label) => setColumnLabel("notes", label)}
             />
           </th>
         {/if}
@@ -311,24 +307,6 @@
   .channel-list th.channel-list__num,
   .channel-list th.channel-list__phantom {
     text-align: center;
-  }
-
-  /*
-   * Beats the later, more general `.channel-list input` rule (class+type,
-   * specificity 0-1-1) below, which would otherwise reapply its border/
-   * padding/background here — this selector adds the `th` ancestor to stay
-   * above it regardless of source order.
-   */
-  .channel-list th .channel-list__header-input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    text-align: inherit;
-    padding: 0;
   }
 
   .channel-list td {
