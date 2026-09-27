@@ -18,6 +18,7 @@ import type { ContactsSectionData } from "../model/contacts";
 import type { QuickLookSectionData } from "../model/quicklook";
 import type { TextSectionData } from "../model/text";
 import type { SetlistSectionData } from "../model/setlist";
+import type { RfAllocationSectionData } from "../model/rf-allocation";
 
 const restored = loadDocumentFromLocalStorage(Object.keys(sectionRegistry));
 
@@ -324,6 +325,20 @@ export function setSetlistData(
   data: SetlistSectionData,
 ): void {
   state = mutations.setSectionData(state, rowId, sectionId, "setlist", data);
+}
+
+export function setRfAllocationData(
+  rowId: string,
+  sectionId: string,
+  data: RfAllocationSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "rf-allocation",
+    data,
+  );
 }
 
 export function setHeaderField<K extends keyof Header>(

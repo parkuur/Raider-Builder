@@ -17,6 +17,7 @@ import QuickLookSection from "./quicklook/QuickLookSection.svelte";
 import PageBreakSection from "./page-break/PageBreakSection.svelte";
 import TextSection from "./text/TextSection.svelte";
 import SetlistSection from "./setlist/SetlistSection.svelte";
+import RfAllocationSection from "./rf-allocation/RfAllocationSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
@@ -28,6 +29,7 @@ import { defaultQuickLookData } from "../model/quicklook";
 import { defaultPageBreakData } from "../model/page-break";
 import { defaultTextData } from "../model/text";
 import { defaultSetlistData } from "../model/setlist";
+import { defaultRfAllocationData } from "../model/rf-allocation";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -148,5 +150,13 @@ export const sectionRegistry: SectionRegistry = {
     category: "planning",
     defaultData: defaultSetlistData,
     component: SetlistSection,
+  },
+  "rf-allocation": {
+    type: "rf-allocation",
+    label: "RF Allocation",
+    split: false,
+    category: "planning",
+    defaultData: defaultRfAllocationData,
+    component: RfAllocationSection,
   },
 };

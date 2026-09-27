@@ -12,6 +12,14 @@
   .data-table-scroll {
     overflow-x: auto;
   }
+
+  /* Tables with several short columns (RF Allocation, Packing List,
+   * Schedule) would otherwise squeeze every column to a sliver on a phone;
+   * a floor width makes them scroll sideways inside `.data-table-scroll`
+   * instead. Not applied to Setlist, which wraps fine in a narrow column. */
+  .data-table--wide {
+    min-width: 600px;
+  }
 }
 
 .data-table {
