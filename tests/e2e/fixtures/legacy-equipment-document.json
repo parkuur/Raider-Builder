@@ -1,0 +1,35 @@
+{
+  "header": {
+    "title": "Old Equipment Rider",
+    "band": "Legacy Band",
+    "metaFields": [],
+    "logos": [],
+    "creditHidden": false
+  },
+  "rows": [
+    {
+      "id": "row-1",
+      "kind": "full",
+      "section": {
+        "id": "section-1",
+        "type": "equipment",
+        "title": "Equipment",
+        "hidden": false,
+        "data": {
+          "lists": [
+            {
+              "id": "list-1",
+              "title": "Band Provides",
+              "items": [{ "id": "item-1", "name": "Guitar amp", "count": "2" }]
+            },
+            {
+              "id": "list-2",
+              "title": "Venue Provides",
+              "items": [{ "id": "item-2", "name": "PA system", "count": "1" }]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

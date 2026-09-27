@@ -15,6 +15,8 @@
   import SectionEmptyHint from "../../components/SectionEmptyHint.svelte";
   import DragHandle from "../../components/DragHandle.svelte";
   import RemoveButton from "../../components/RemoveButton.svelte";
+  import ColumnHeaderInput from "../../components/ColumnHeaderInput.svelte";
+  import RowHideToggle from "../../components/RowHideToggle.svelte";
   import StereoToggle from "../../components/StereoToggle.svelte";
   import { DragReorderState } from "../../components/drag-reorder.svelte";
   import { autosizeTextarea } from "../../actions/autosize-textarea";
@@ -73,39 +75,34 @@
       <tr>
         <th class="no-print"></th>
         <th class="channel-list__num">
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.ch}
-            oninput={(e) => setColumnLabel("ch", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("ch", label)}
           />
         </th>
         <th>
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.channel}
-            oninput={(e) => setColumnLabel("channel", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("channel", label)}
           />
         </th>
         <th>
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.source}
-            oninput={(e) => setColumnLabel("source", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("source", label)}
           />
         </th>
         <th class="channel-list__phantom">
-          <input
-            class="channel-list__header-input"
+          <ColumnHeaderInput
             value={columnLabels.phantom}
-            oninput={(e) => setColumnLabel("phantom", e.currentTarget.value)}
+            onChange={(label) => setColumnLabel("phantom", label)}
           />
         </th>
         {#if !narrowViewport.matches}
           <th>
-            <input
-              class="channel-list__header-input"
+            <ColumnHeaderInput
               value={columnLabels.notes}
-              oninput={(e) => setColumnLabel("notes", e.currentTarget.value)}
+              onChange={(label) => setColumnLabel("notes", label)}
             />
           </th>
         {/if}
@@ -117,6 +114,8 @@
         <tr
           data-reorder-item={row.id}
           class:channel-list__row--drag-over={drag.isOver(row.id)}
+          class:channel-list__row--hidden={row.hidden}
+          class:hidden-from-print={row.hidden}
         >
           <td class="channel-list__drag no-print">
             <DragHandle
@@ -201,6 +200,16 @@
                     )}
                 />
               {/if}
+              <RowHideToggle
+                hidden={row.hidden ?? false}
+                noun="channel"
+                onToggle={() =>
+                  commit(
+                    updateChannelRow(section.data, row.id, {
+                      hidden: !row.hidden,
+                    }),
+                  )}
+              />
               <RemoveButton
                 label="Remove channel"
                 onclick={() => commit(removeChannelRow(section.data, row.id))}
@@ -209,7 +218,10 @@
           </td>
         </tr>
         {#if narrowViewport.matches}
-          <tr class="channel-list__row-mobile no-print">
+          <tr
+            class="channel-list__row-mobile no-print"
+            class:channel-list__row--hidden={row.hidden}
+          >
             <td colspan="2" class="channel-list__notes-label">
               <label for="channel-notes-{row.id}">{columnLabels.notes}</label>
             </td>
@@ -297,26 +309,8 @@
     text-align: center;
   }
 
-  /*
-   * Beats the later, more general `.channel-list input` rule (class+type,
-   * specificity 0-1-1) below, which would otherwise reapply its border/
-   * padding/background here — this selector adds the `th` ancestor to stay
-   * above it regardless of source order.
-   */
-  .channel-list th .channel-list__header-input {
-    width: 100%;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    letter-spacing: inherit;
-    text-transform: inherit;
-    text-align: inherit;
-    padding: 0;
-  }
-
   .channel-list td {
-    padding: 2px var(--space-1);
+    padding: var(--list-cell-pad-y) var(--space-1);
     vertical-align: middle;
   }
 
@@ -337,13 +331,26 @@
     text-align: center;
   }
 
+  /* Hidden rows stay editable on screen, just visibly set apart; print
+   * drops them entirely via the global `.hidden-from-print` rule. */
+  .channel-list__row--hidden {
+    opacity: 0.45;
+  }
+
+  .channel-list__row--hidden .channel-list__name-input {
+    font-style: italic;
+  }
+
   .channel-list__row--drag-over {
     outline: 2px solid var(--color-accent);
     outline-offset: -2px;
   }
 
   @media print {
-    .channel-list tbody tr:not(:last-child) td {
+    /* A rule under every row that has a later *printed* row — not
+     * `:not(:last-child)`, which would leave a stray rule under the last
+     * visible row whenever the rows after it are hidden. */
+    .channel-list tbody tr:has(~ tr:not(.hidden-from-print):not(.no-print)) td {
       border-bottom: 1px solid var(--color-border);
     }
 
@@ -382,7 +389,8 @@
     color: var(--color-text);
     font-family: inherit;
     font-size: var(--font-size-body);
-    padding: 3px var(--space-1);
+    padding: var(--list-field-pad-y) var(--space-1);
+    line-height: var(--list-line-height);
     box-sizing: border-box;
   }
 

@@ -1,4 +1,5 @@
 import { createId } from "./id";
+import { resolveColumnLabels, setColumnLabel } from "./column-labels";
 import { addListRow, reorderListRows } from "./row-list";
 import type { NumberedRow } from "./row-list";
 
@@ -41,16 +42,10 @@ export function defaultMonitorListData(): MonitorListSectionData {
   return { rows: [] };
 }
 
-/**
- * Missing/partial `columnLabels` (documents saved before this field
- * existed) self-heals here rather than in persistence.ts — matching how
- * every other section's `data` shape is trusted once it passes the
- * generic "is this an object?" check on load, not deep-validated.
- */
 export function monitorListColumnLabels(
   data: MonitorListSectionData,
 ): MonitorListColumnLabels {
-  return { ...defaultMonitorListColumnLabels(), ...data.columnLabels };
+  return resolveColumnLabels(defaultMonitorListColumnLabels(), data);
 }
 
 export function setMonitorListColumnLabel(
@@ -58,10 +53,7 @@ export function setMonitorListColumnLabel(
   key: keyof MonitorListColumnLabels,
   label: string,
 ): MonitorListSectionData {
-  return {
-    ...data,
-    columnLabels: { ...monitorListColumnLabels(data), [key]: label },
-  };
+  return setColumnLabel(data, defaultMonitorListColumnLabels(), key, label);
 }
 
 function makeMonitorRow(): MonitorRow {

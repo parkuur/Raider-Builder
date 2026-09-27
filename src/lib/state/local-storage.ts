@@ -11,9 +11,15 @@ export function saveDocumentToLocalStorage(doc: RiderDocument): void {
   }
 }
 
+export interface LoadedDocument {
+  document: RiderDocument;
+  /** See `ValidationResult` — non-empty means it was converted on load. */
+  migrated: string[];
+}
+
 export function loadDocumentFromLocalStorage(
   knownSectionTypes: readonly string[],
-): RiderDocument | null {
+): LoadedDocument | null {
   let raw: string | null;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
@@ -22,7 +28,9 @@ export function loadDocumentFromLocalStorage(
   }
   if (!raw) return null;
   const result = parseDocumentJson(raw, knownSectionTypes);
-  return result.ok ? result.document : null;
+  return result.ok
+    ? { document: result.document, migrated: result.migrated }
+    : null;
 }
 
 export function clearDocumentFromLocalStorage(): void {

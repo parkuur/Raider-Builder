@@ -211,8 +211,8 @@
   .quicklook-section__topic {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
-    padding: var(--space-2) 0;
+    gap: 2px;
+    padding: var(--list-block-pad-y) 0;
   }
 
   .quicklook-section__topic:not(:first-child) {
@@ -232,15 +232,16 @@
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
-    padding: 4px var(--space-2);
+    padding: var(--list-field-pad-y) var(--space-2);
+    line-height: var(--list-line-height);
   }
 
   .quicklook-section__align-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     padding: 0;
     border: 1px solid var(--color-border);
     background: transparent;
@@ -269,7 +270,8 @@
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
-    padding: 4px var(--space-2);
+    padding: var(--list-field-pad-y) var(--space-2);
+    line-height: var(--list-line-height);
   }
 
   .quicklook-section__line-label {
@@ -304,7 +306,7 @@
     display: block;
     flex: 1;
     min-width: 0;
-    min-height: 56px;
+    min-height: 44px;
     resize: none;
     overflow: hidden;
     border: 1px solid var(--color-border);
@@ -312,9 +314,18 @@
     color: var(--color-text);
     font-family: var(--font-body);
     font-size: var(--font-size-body);
-    padding: var(--space-2);
+    line-height: var(--list-line-height);
+    padding: var(--space-1) var(--space-2);
     box-sizing: border-box;
     field-sizing: content;
+  }
+
+  @media print {
+    .quicklook-section__text-body {
+      min-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
   }
 
   .quicklook-section__add-line {

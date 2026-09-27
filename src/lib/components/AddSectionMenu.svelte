@@ -1,6 +1,6 @@
 <script lang="ts">
   import { sectionRegistry } from "../sections/registry";
-  import { groupSectionTypesByWidth } from "../model/registry-grouping";
+  import { groupSectionTypes } from "../model/registry-grouping";
   import type { SectionType } from "../model/section-types";
   import SquareSplitHorizontalIcon from "phosphor-svelte/lib/SquareSplitHorizontalIcon";
   import Modal from "./Modal.svelte";
@@ -18,33 +18,44 @@
   } = $props();
 
   const groups = $derived(
-    groupSectionTypesByWidth(
+    groupSectionTypes(
       Object.values(sectionRegistry).filter((entry) => entry.addable !== false),
+      { splitOnly: filterSplitOnly },
     ),
-  );
-  const entries = $derived(
-    filterSplitOnly ? groups.split : [...groups.full, ...groups.split],
   );
 </script>
 
 <Modal {open} title="Add Section" {onClose}>
-  <div class="add-section-menu__grid">
-    {#each entries as entry (entry.type)}
-      <button
-        type="button"
-        class="add-section-menu__option"
-        onclick={() => onPick(entry.type as SectionType)}
+  {#each groups as group (group.category)}
+    <section
+      class="add-section-menu__group"
+      aria-labelledby="add-section-menu-{group.category}"
+    >
+      <h3
+        class="add-section-menu__group-heading"
+        id="add-section-menu-{group.category}"
       >
-        {entry.label}
-        {#if entry.split}
-          <span class="add-section-menu__split-tag" aria-hidden="true">
-            <SquareSplitHorizontalIcon size={14} />
-          </span>
-          <span class="add-section-menu__split-sr">(split)</span>
-        {/if}
-      </button>
-    {/each}
-  </div>
+        {group.label}
+      </h3>
+      <div class="add-section-menu__grid">
+        {#each group.entries as entry (entry.type)}
+          <button
+            type="button"
+            class="add-section-menu__option"
+            onclick={() => onPick(entry.type as SectionType)}
+          >
+            {entry.label}
+            {#if entry.split}
+              <span class="add-section-menu__split-tag" aria-hidden="true">
+                <SquareSplitHorizontalIcon size={14} />
+              </span>
+              <span class="add-section-menu__split-sr">(split)</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+    </section>
+  {/each}
   <div class="add-section-menu__footer">
     <button type="button" class="add-section-menu__cancel" onclick={onClose}
       >Cancel</button
@@ -53,6 +64,20 @@
 </Modal>
 
 <style>
+  .add-section-menu__group + .add-section-menu__group {
+    margin-top: var(--space-4);
+  }
+
+  .add-section-menu__group-heading {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: var(--font-size-label);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
   .add-section-menu__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

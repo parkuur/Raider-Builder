@@ -4,124 +4,91 @@ import {
   defaultEquipmentData,
   removeEquipmentItem,
   reorderEquipmentItem,
-  setEquipmentListTitle,
   updateEquipmentItem,
 } from "../../../src/lib/model/equipment";
 import type { EquipmentSectionData } from "../../../src/lib/model/equipment";
 
 function dataWith(
-  bandItems: { id: string; name?: string; count?: string }[],
-  venueItems: { id: string; name?: string; count?: string }[] = [],
+  ...items: { id: string; name?: string; count?: string }[]
 ): EquipmentSectionData {
   return {
-    lists: [
-      {
-        id: "band",
-        title: "Band Provides",
-        items: bandItems.map((i) => ({
-          id: i.id,
-          name: i.name ?? "",
-          count: i.count ?? "",
-        })),
-      },
-      {
-        id: "venue",
-        title: "Venue Provides",
-        items: venueItems.map((i) => ({
-          id: i.id,
-          name: i.name ?? "",
-          count: i.count ?? "",
-        })),
-      },
-    ],
+    items: items.map((i) => ({
+      id: i.id,
+      name: i.name ?? "",
+      count: i.count ?? "",
+    })),
   };
 }
 
 describe("defaultEquipmentData", () => {
-  it("starts with the standard two empty lists", () => {
-    const data = defaultEquipmentData();
-    expect(data.lists).toHaveLength(2);
-    expect(data.lists[0].title).toBe("Band Provides");
-    expect(data.lists[1].title).toBe("Venue Provides");
-    expect(data.lists[0].items).toEqual([]);
-    expect(data.lists[1].items).toEqual([]);
-  });
-});
-
-describe("setEquipmentListTitle", () => {
-  it("renames only the targeted list", () => {
-    const data = dataWith([]);
-    const result = setEquipmentListTitle(data, 0, "Our Gear");
-    expect(result.lists[0].title).toBe("Our Gear");
-    expect(result.lists[1].title).toBe("Venue Provides");
+  it("starts with one empty list", () => {
+    expect(defaultEquipmentData()).toEqual({ items: [] });
   });
 });
 
 describe("addEquipmentItem", () => {
-  it("appends an empty item to only the targeted list", () => {
-    const data = dataWith([{ id: "i1" }]);
-    const result = addEquipmentItem(data, 0);
-    expect(result.lists[0].items).toHaveLength(2);
-    expect(result.lists[1].items).toHaveLength(0);
-    expect(result.lists[0].items[1]).toMatchObject({ name: "", count: "" });
+  it("appends an empty item", () => {
+    const result = addEquipmentItem(dataWith({ id: "i1" }));
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0]!.id).toBe("i1");
+    expect(result.items[1]).toMatchObject({ name: "", count: "" });
+  });
+
+  it("inserts at a given index", () => {
+    const result = addEquipmentItem(dataWith({ id: "i1" }, { id: "i2" }), 1);
+    expect(result.items[0]!.id).toBe("i1");
+    expect(result.items[2]!.id).toBe("i2");
+  });
+
+  it("gives each new item a unique id", () => {
+    const result = addEquipmentItem(addEquipmentItem(dataWith()));
+    expect(result.items[0]!.id).not.toBe(result.items[1]!.id);
   });
 });
 
 describe("removeEquipmentItem", () => {
-  it("removes the targeted item from the targeted list", () => {
-    const data = dataWith([{ id: "i1" }, { id: "i2" }]);
-    const result = removeEquipmentItem(data, 0, "i1");
-    expect(result.lists[0].items.map((i) => i.id)).toEqual(["i2"]);
+  it("removes the targeted item", () => {
+    const result = removeEquipmentItem(
+      dataWith({ id: "i1" }, { id: "i2" }),
+      "i1",
+    );
+    expect(result.items.map((i) => i.id)).toEqual(["i2"]);
   });
 
   it("is a no-op for an unknown item id", () => {
-    const data = dataWith([{ id: "i1" }]);
-    expect(removeEquipmentItem(data, 0, "missing")).toBe(data);
-  });
-
-  it("doesn't remove an item from the other list even if the id collides", () => {
-    const data = dataWith([{ id: "shared" }], [{ id: "shared" }]);
-    const result = removeEquipmentItem(data, 0, "shared");
-    expect(result.lists[0].items).toHaveLength(0);
-    expect(result.lists[1].items).toHaveLength(1);
+    const data = dataWith({ id: "i1" });
+    expect(removeEquipmentItem(data, "missing")).toBe(data);
   });
 });
 
 describe("reorderEquipmentItem", () => {
-  it("moves an item within the targeted list", () => {
-    const data = dataWith([{ id: "i1" }, { id: "i2" }, { id: "i3" }]);
-    const result = reorderEquipmentItem(data, 0, 0, 2);
-    expect(result.lists[0].items.map((i) => i.id)).toEqual(["i2", "i3", "i1"]);
-  });
-
-  it("does not affect the other list", () => {
-    const data = dataWith(
-      [{ id: "i1" }, { id: "i2" }],
-      [{ id: "v1" }, { id: "v2" }],
-    );
-    const result = reorderEquipmentItem(data, 0, 0, 1);
-    expect(result.lists[1].items.map((i) => i.id)).toEqual(["v1", "v2"]);
+  it("moves an item within the list", () => {
+    const data = dataWith({ id: "i1" }, { id: "i2" }, { id: "i3" });
+    const result = reorderEquipmentItem(data, 0, 2);
+    expect(result.items.map((i) => i.id)).toEqual(["i2", "i3", "i1"]);
   });
 
   it("is a no-op for an out-of-range fromIndex", () => {
-    const data = dataWith([{ id: "i1" }]);
-    expect(reorderEquipmentItem(data, 0, 5, 0)).toEqual(data);
+    const data = dataWith({ id: "i1" });
+    expect(reorderEquipmentItem(data, 5, 0)).toBe(data);
+  });
+
+  it("is a no-op when moving onto itself", () => {
+    const data = dataWith({ id: "i1" }, { id: "i2" });
+    expect(reorderEquipmentItem(data, 1, 1)).toBe(data);
   });
 });
 
 describe("updateEquipmentItem", () => {
   it("patches only the targeted item's fields", () => {
-    const data = dataWith([
-      { id: "i1", name: "a" },
-      { id: "i2", name: "b" },
-    ]);
-    const result = updateEquipmentItem(data, 0, "i1", { name: "changed" });
-    expect(result.lists[0].items[0]!.name).toBe("changed");
-    expect(result.lists[0].items[1]!.name).toBe("b");
+    const data = dataWith({ id: "i1", name: "a" }, { id: "i2", name: "b" });
+    const result = updateEquipmentItem(data, "i1", { name: "changed" });
+    expect(result.items[0]).toEqual({ id: "i1", name: "changed", count: "" });
+    expect(result.items[1]!.name).toBe("b");
   });
 
   it("is a no-op for an unknown item id", () => {
-    const data = dataWith([{ id: "i1" }]);
-    expect(updateEquipmentItem(data, 0, "missing", { name: "x" })).toBe(data);
+    const data = dataWith({ id: "i1" });
+    expect(updateEquipmentItem(data, "missing", { name: "x" })).toBe(data);
   });
 });

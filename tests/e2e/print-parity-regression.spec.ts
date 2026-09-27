@@ -41,7 +41,9 @@ async function buildDocument(page: Page): Promise<void> {
   await page.locator(".requirements-section__heading").fill("Power");
 
   await page.getByRole("button", { name: "Add Section" }).last().click();
-  await page.getByRole("button", { name: "Equipment", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Equipment (split)", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "+ Add item", exact: true })
     .first()
@@ -72,7 +74,6 @@ async function buildDocument(page: Page): Promise<void> {
 interface PrintFingerprint {
   anySectionBordered: boolean;
   splitRowFlexDirection: string;
-  equipmentColumnCount: number;
   stageMapTransform: string;
   visibleNoPrintCount: number;
   pageOverflowsHorizontally: boolean;
@@ -101,12 +102,6 @@ async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
       ? getComputedStyle(splitSections).flexDirection
       : "";
 
-    const equipment = document.querySelector(".equipment-section");
-    const equipmentColumnCount = equipment
-      ? getComputedStyle(equipment).gridTemplateColumns.trim().split(/\s+/)
-          .length
-      : 0;
-
     const canvas = document.querySelector(".stage-map__canvas");
     const stageMapTransform = canvas ? getComputedStyle(canvas).transform : "";
 
@@ -132,7 +127,6 @@ async function capturePrintFingerprint(page: Page): Promise<PrintFingerprint> {
     return {
       anySectionBordered,
       splitRowFlexDirection,
-      equipmentColumnCount,
       stageMapTransform,
       visibleNoPrintCount,
       pageOverflowsHorizontally,
@@ -161,7 +155,6 @@ test("print layout is identical whether the document was opened at a mobile or a
   expect(mobileOriginated).toEqual({
     anySectionBordered: false,
     splitRowFlexDirection: "row",
-    equipmentColumnCount: 2,
     stageMapTransform: "none",
     visibleNoPrintCount: 0,
     pageOverflowsHorizontally: false,

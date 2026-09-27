@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addListRow, reorderListRows } from "../../../src/lib/model/row-list";
+import {
+  addListRow,
+  numberListRows,
+  removeListRow,
+  reorderListRows,
+  updateListRow,
+} from "../../../src/lib/model/row-list";
 import type { ListRow } from "../../../src/lib/model/row-list";
 
 interface Row extends ListRow {
@@ -49,5 +55,46 @@ describe("reorderListRows", () => {
       "c",
       "a",
     ]);
+  });
+});
+
+describe("removeListRow", () => {
+  it("removes the row with the given id", () => {
+    const result = removeListRow([row("a"), row("b"), row("c")], "b");
+    expect(result.map((r) => r.id)).toEqual(["a", "c"]);
+  });
+
+  it("returns the same array for an unknown id", () => {
+    const rows = [row("a")];
+    expect(removeListRow(rows, "missing")).toBe(rows);
+  });
+});
+
+describe("updateListRow", () => {
+  it("patches only the targeted row", () => {
+    const result = updateListRow([row("a"), row("b")], "b", { label: "B!" });
+    expect(result).toEqual([
+      { id: "a", label: "a" },
+      { id: "b", label: "B!" },
+    ]);
+  });
+
+  it("returns the same array for an unknown id", () => {
+    const rows = [row("a")];
+    expect(updateListRow(rows, "missing", { label: "x" })).toBe(rows);
+  });
+});
+
+describe("numberListRows", () => {
+  it("numbers rows 1..n in order", () => {
+    expect(numberListRows([row("x"), row("y"), row("z")])).toEqual([
+      { id: "x", label: "1" },
+      { id: "y", label: "2" },
+      { id: "z", label: "3" },
+    ]);
+  });
+
+  it("returns an empty list for no rows", () => {
+    expect(numberListRows([])).toEqual([]);
   });
 });

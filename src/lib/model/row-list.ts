@@ -32,3 +32,27 @@ export function reorderListRows<R extends ListRow>(
   next.splice(target, 0, moved!);
   return next;
 }
+
+/** Returns `rows` itself (not a copy) when no row has `rowId`. */
+export function removeListRow<R extends ListRow>(
+  rows: R[],
+  rowId: string,
+): R[] {
+  if (!rows.some((r) => r.id === rowId)) return rows;
+  return rows.filter((r) => r.id !== rowId);
+}
+
+/** Returns `rows` itself (not a copy) when no row has `rowId`. */
+export function updateListRow<R extends ListRow>(
+  rows: R[],
+  rowId: string,
+  patch: Partial<Omit<R, "id">>,
+): R[] {
+  if (!rows.some((r) => r.id === rowId)) return rows;
+  return rows.map((r) => (r.id === rowId ? { ...r, ...patch } : r));
+}
+
+/** One sequential number per row, starting at 1. */
+export function numberListRows<R extends ListRow>(rows: R[]): NumberedRow[] {
+  return rows.map((row, index) => ({ id: row.id, label: String(index + 1) }));
+}

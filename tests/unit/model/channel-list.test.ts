@@ -6,13 +6,14 @@ import {
   defaultChannelListData,
   numberChannelRows,
   removeChannelRow,
+  reorderChannelRows,
   setChannelListColumnLabel,
   updateChannelRow,
 } from "../../../src/lib/model/channel-list";
 import type { ChannelListSectionData } from "../../../src/lib/model/channel-list";
 
 function dataWith(
-  ...rows: { id: string; name?: string; stereo?: boolean }[]
+  ...rows: { id: string; name?: string; stereo?: boolean; hidden?: boolean }[]
 ): ChannelListSectionData {
   return {
     rows: rows.map((r) => ({
@@ -22,6 +23,7 @@ function dataWith(
       phantom: false,
       stereo: r.stereo ?? false,
       notes: "",
+      ...(r.hidden === undefined ? {} : { hidden: r.hidden }),
     })),
   };
 }
@@ -43,6 +45,7 @@ describe("addChannelRow", () => {
       phantom: false,
       stereo: false,
       notes: "",
+      hidden: false,
     });
   });
 });
@@ -137,6 +140,69 @@ describe("numberChannelRows", () => {
 
   it("handles an empty list", () => {
     expect(numberChannelRows(defaultChannelListData())).toEqual([]);
+  });
+
+  it("skips a hidden row in the middle of the list", () => {
+    const data = dataWith({ id: "a" }, { id: "b", hidden: true }, { id: "c" });
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1" },
+      { id: "b", label: "" },
+      { id: "c", label: "2" },
+    ]);
+  });
+
+  it("gives a hidden stereo row no numbers at all", () => {
+    const data = dataWith(
+      { id: "a" },
+      { id: "b", stereo: true, hidden: true },
+      { id: "c", stereo: true },
+    );
+    expect(numberChannelRows(data)).toEqual([
+      { id: "a", label: "1" },
+      { id: "b", label: "" },
+      { id: "c", label: "2–3" },
+    ]);
+  });
+
+  it("treats a row without a hidden field (older documents) as visible", () => {
+    const data = dataWith({ id: "a" }, { id: "b" });
+    expect(data.rows[0]).not.toHaveProperty("hidden");
+    expect(numberChannelRows(data).map((n) => n.label)).toEqual(["1", "2"]);
+  });
+
+  it("still skips a hidden row after it is reordered", () => {
+    const data = dataWith({ id: "a", hidden: true }, { id: "b" }, { id: "c" });
+    const moved = reorderChannelRows(data, 0, 2);
+    expect(numberChannelRows(moved)).toEqual([
+      { id: "b", label: "1" },
+      { id: "c", label: "2" },
+      { id: "a", label: "" },
+    ]);
+  });
+
+  it("renumbers correctly when a row next to a hidden row is deleted", () => {
+    const data = dataWith(
+      { id: "a" },
+      { id: "b", hidden: true },
+      { id: "c", stereo: true },
+      { id: "d" },
+    );
+    const removed = removeChannelRow(data, "a");
+    expect(numberChannelRows(removed)).toEqual([
+      { id: "b", label: "" },
+      { id: "c", label: "1–2" },
+      { id: "d", label: "3" },
+    ]);
+  });
+
+  it("numbers everything again once a row is unhidden", () => {
+    const data = dataWith({ id: "a" }, { id: "b", hidden: true }, { id: "c" });
+    const shown = updateChannelRow(data, "b", { hidden: false });
+    expect(numberChannelRows(shown).map((n) => n.label)).toEqual([
+      "1",
+      "2",
+      "3",
+    ]);
   });
 });
 

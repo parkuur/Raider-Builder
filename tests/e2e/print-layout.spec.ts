@@ -54,7 +54,7 @@ test.describe("print layout", () => {
         "Two dedicated 20A circuits, isolated from lighting, run to stage left and stage right.",
       );
 
-    await addSection(page, "Equipment");
+    await addSection(page, "Equipment (split)");
     await page
       .getByRole("button", { name: "+ Add item", exact: true })
       .first()
@@ -80,6 +80,36 @@ test.describe("print layout", () => {
     await page.getByRole("button", { name: "+ Add Topic" }).click();
     await page.getByRole("menuitem", { name: "Table", exact: true }).click();
 
+    await addSection(page, "Setlist (split)");
+    await page.getByRole("button", { name: "+ Add Song" }).click();
+    await page
+      .locator(".setlist__song-input")
+      .fill("A Very Long Song Title That Has To Wrap In A Narrow Column");
+
+    await addSection(page, "RF Allocation");
+    await page.getByRole("button", { name: "+ Add Wireless Unit" }).click();
+    await page
+      .locator(".rf-allocation__device-input")
+      .fill("Lead Vocal Handheld Transmitter");
+    await page.locator(".rf-allocation__frequency-input").fill("606.125");
+
+    await addSection(page, "Packing List");
+    await page.getByRole("button", { name: "+ Add group" }).click();
+    await page
+      .getByRole("textbox", { name: "Group heading" })
+      .fill("Audio case");
+    await page.getByRole("button", { name: "Add item to group" }).click();
+    await page
+      .locator(".packing-list__item-input")
+      .fill("XLR cables, assorted lengths, plus two spare");
+
+    await addSection(page, "Schedule");
+    await page.getByRole("button", { name: "+ Add slot" }).click();
+    await page.locator(".schedule__start-input").fill("17:00");
+    await page.getByRole("button", { name: "+ Add row" }).click();
+    await page.locator(".schedule__title-input").nth(0).fill("Soundcheck");
+    await page.locator(".schedule__title-input").nth(1).fill("Line check");
+
     await page.emulateMedia({ media: "print" });
 
     const checks: Array<[string, Locator]> = [
@@ -91,6 +121,10 @@ test.describe("print layout", () => {
       ["equipment section", page.locator(".equipment-section")],
       ["contacts section", page.locator(".contacts-section")],
       ["quicklook section", page.locator(".quicklook-section")],
+      ["setlist table", page.locator(".setlist")],
+      ["rf allocation table", page.locator(".rf-allocation")],
+      ["packing list table", page.locator(".packing-list")],
+      ["schedule table", page.locator(".schedule")],
     ];
 
     for (const [, locator] of checks) {
@@ -158,4 +192,31 @@ test.describe("print layout", () => {
     await page.emulateMedia({ media: "print" });
     await expect(row).toBeHidden();
   });
+});
+
+test("list rows print compactly, one text line each", async ({ page }) => {
+  await page.goto("/");
+  await addFirstSection(page, "Channel List");
+  await page.getByRole("button", { name: "+ Add Channel" }).click();
+  await page.locator(".channel-list__name-input").fill("Kick");
+  await addSection(page, "Setlist (split)");
+  await page.getByRole("button", { name: "+ Add Song" }).click();
+  await page.locator(".setlist__song-input").fill("Opener");
+  await addSection(page, "Equipment (split)");
+  await page.getByRole("button", { name: "+ Add item", exact: true }).click();
+  await page.locator(".equipment-section__item-name").fill("PA");
+
+  await page.emulateMedia({ media: "print" });
+
+  // 13px text at the shared list line-height, with no per-row padding to
+  // speak of — guards against spacing creeping back and costing rows per
+  // page.
+  for (const selector of [
+    ".channel-list tbody tr",
+    ".setlist tbody tr",
+    ".equipment-section__item",
+  ]) {
+    const box = (await page.locator(selector).first().boundingBox())!;
+    expect(box.height, selector).toBeLessThanOrEqual(22);
+  }
 });

@@ -93,7 +93,9 @@ test("lifting a full-width row and dropping it on another full-width row swaps t
   await page.getByRole("button", { name: "+ Add your first section" }).click();
   await page.getByRole("button", { name: "Requirements", exact: true }).click();
   await page.getByRole("button", { name: "Add Section" }).last().click();
-  await page.getByRole("button", { name: "Equipment", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Equipment (split)", exact: true })
+    .click();
 
   const rows = page.locator(".row-view");
   await expect(rows.nth(0).locator(".requirements-section")).toHaveCount(1);

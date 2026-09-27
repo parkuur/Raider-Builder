@@ -1,68 +1,68 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Equipment content-fit columns", () => {
-  test("Count widens to its longest value within a list; a long item name is absorbed by the stretch column", async ({
+  test("Count widens to its longest value; a long item name is absorbed by the stretch column", async ({
     page,
   }) => {
     await page.goto("/");
     await page
       .getByRole("button", { name: "+ Add your first section" })
       .click();
-    await page.getByRole("button", { name: "Equipment", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Equipment (split)", exact: true })
+      .click();
 
-    const addButtons = page.getByRole("button", { name: "+ Add item" });
-    await addButtons.nth(0).click();
-    await addButtons.nth(0).click();
+    const addItem = page.getByRole("button", { name: "+ Add item" });
+    await addItem.click();
+    await addItem.click();
 
-    const bandItems = page
-      .locator(".equipment-section__list")
-      .nth(0)
-      .locator(".equipment-section__item");
-    await bandItems
-      .nth(0)
-      .locator(".equipment-section__item-name")
-      .fill("Snake");
-    await bandItems.nth(0).locator(".equipment-section__item-count").fill("1");
-    await bandItems
+    const items = page.locator(".equipment-section__item");
+    await items.nth(0).locator(".equipment-section__item-name").fill("Snake");
+    await items.nth(0).locator(".equipment-section__item-count").fill("1");
+    await items
       .nth(1)
       .locator(".equipment-section__item-count")
       .fill("100 feet of XLR cable");
 
-    const countCells = bandItems.locator(".equipment-section__item-count");
+    const countCells = items.locator(".equipment-section__item-count");
     const w0 = (await countCells.nth(0).boundingBox())!.width;
     const w1 = (await countCells.nth(1).boundingBox())!.width;
     expect(w0).toBeCloseTo(w1, 0);
     expect(w0).toBeGreaterThan(100);
   });
 
-  test("a long Count value in one list does not affect the other list's Count width", async ({
+  test("a long Count value in one Equipment section does not affect another's Count width", async ({
     page,
   }) => {
     await page.goto("/");
     await page
       .getByRole("button", { name: "+ Add your first section" })
       .click();
-    await page.getByRole("button", { name: "Equipment", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Equipment (split)", exact: true })
+      .click();
+    await page.locator(".split-edge-slot__button").click();
+    await page
+      .getByRole("button", { name: "Equipment (split)", exact: true })
+      .click();
 
-    const addButtons = page.getByRole("button", { name: "+ Add item" });
-    await addButtons.nth(0).click();
-    await addButtons.nth(1).click();
-
-    const lists = page.locator(".equipment-section__list");
-    await lists
+    const sections = page.locator(".equipment-section");
+    await sections.nth(0).getByRole("button", { name: "+ Add item" }).click();
+    await sections.nth(1).getByRole("button", { name: "+ Add item" }).click();
+    await sections
       .nth(0)
       .locator(".equipment-section__item-count")
       .fill("a very long quantity description");
-    await lists.nth(1).locator(".equipment-section__item-count").fill("2");
+    await sections.nth(1).locator(".equipment-section__item-count").fill("2");
 
-    const bandCountWidth = (await lists
+    const first = (await sections
       .nth(0)
       .locator(".equipment-section__item-count")
       .boundingBox())!.width;
-    const venueCountWidth = (await lists
+    const second = (await sections
       .nth(1)
       .locator(".equipment-section__item-count")
       .boundingBox())!.width;
-    expect(venueCountWidth).toBeLessThan(bandCountWidth);
+    expect(second).toBeLessThan(first);
   });
 });

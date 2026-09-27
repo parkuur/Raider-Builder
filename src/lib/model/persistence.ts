@@ -3,6 +3,10 @@ import type { Section } from "./section-types";
 import type { HeaderMetaField } from "./header-meta";
 import { legacyHeaderMetaFields } from "./header-meta";
 import type { HeaderLogo } from "./header-logos";
+import {
+  LEGACY_EQUIPMENT_MIGRATION,
+  migrateLegacyEquipmentRows,
+} from "./migrations/legacy-equipment";
 
 export function deriveFileName(header: Header): string {
   const base = (header.band || header.title || "technical-rider")
@@ -16,8 +20,15 @@ export function serializeDocument(doc: RiderDocument): string {
   return JSON.stringify(doc, null, 2);
 }
 
+/**
+ * `migrated` names each temporary migration (see
+ * docs/backlog/migration-removals.md) that had to convert part of the
+ * document from an older saved format — non-empty means the file on disk
+ * is outdated and the user should save it again.
+ */
 export type ValidationResult =
-  { ok: true; document: RiderDocument } | { ok: false; errors: string[] };
+  | { ok: true; document: RiderDocument; migrated: string[] }
+  | { ok: false; errors: string[] };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -272,7 +283,15 @@ export function validateDocumentShape(
   if (errors.length > 0 || rows.some((r) => r === null)) {
     return { ok: false, errors };
   }
-  return { ok: true, document: { header, rows: rows as Row[] } };
+  const migrated: string[] = [];
+  // TEMPORARY MIGRATION: remove after 2027-09-27 (see docs/backlog/migration-removals.md)
+  const equipment = migrateLegacyEquipmentRows(rows as Row[]);
+  if (equipment.migrated) migrated.push(LEGACY_EQUIPMENT_MIGRATION);
+  return {
+    ok: true,
+    document: { header, rows: equipment.rows },
+    migrated,
+  };
 }
 
 export function parseDocumentJson(

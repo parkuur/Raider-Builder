@@ -24,27 +24,4 @@ test.describe("layout that stacks on a mobile viewport still prints desktop-shap
     await page.emulateMedia({ media: "print" });
     await expect(sections).toHaveCSS("flex-direction", "row");
   });
-
-  test("Equipment stacks to one column on screen but prints two-column", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    await page
-      .getByRole("button", { name: "+ Add your first section" })
-      .click();
-    await page.getByRole("button", { name: "Equipment", exact: true }).click();
-
-    const grid = page.locator(".equipment-section");
-    async function columnCount(): Promise<number> {
-      return grid.evaluate(
-        (el) =>
-          getComputedStyle(el).gridTemplateColumns.trim().split(/\s+/).length,
-      );
-    }
-
-    expect(await columnCount()).toBe(1);
-
-    await page.emulateMedia({ media: "print" });
-    expect(await columnCount()).toBe(2);
-  });
 });

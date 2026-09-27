@@ -1,4 +1,5 @@
 import type { Component } from "svelte";
+import type { SectionCategory } from "../model/registry-grouping";
 import type {
   Section,
   SectionDataMap,
@@ -15,6 +16,10 @@ import ContactsSection from "./contacts/ContactsSection.svelte";
 import QuickLookSection from "./quicklook/QuickLookSection.svelte";
 import PageBreakSection from "./page-break/PageBreakSection.svelte";
 import TextSection from "./text/TextSection.svelte";
+import SetlistSection from "./setlist/SetlistSection.svelte";
+import RfAllocationSection from "./rf-allocation/RfAllocationSection.svelte";
+import PackingListSection from "./packing-list/PackingListSection.svelte";
+import ScheduleSection from "./schedule/ScheduleSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
@@ -25,6 +30,10 @@ import { defaultContactsData } from "../model/contacts";
 import { defaultQuickLookData } from "../model/quicklook";
 import { defaultPageBreakData } from "../model/page-break";
 import { defaultTextData } from "../model/text";
+import { defaultSetlistData } from "../model/setlist";
+import { defaultRfAllocationData } from "../model/rf-allocation";
+import { defaultPackingListData } from "../model/packing-list";
+import { defaultScheduleData } from "../model/schedule";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -35,6 +44,8 @@ export interface SectionRegistryEntry<T extends SectionType = SectionType> {
   type: T;
   label: string;
   split: boolean;
+  /** Which Add Section menu heading this type is listed under. */
+  category: SectionCategory;
   /** Whether this type is offered in the "Add Section" menu. Defaults to true. */
   addable?: boolean;
   /** Suppresses the shared title input for types with nothing to title. */
@@ -50,6 +61,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "placeholder",
     label: "Section",
     split: false,
+    category: "rider",
     addable: false,
     defaultData: () => ({ note: "" }),
     component: PlaceholderSection,
@@ -58,13 +70,15 @@ export const sectionRegistry: SectionRegistry = {
     type: "requirements",
     label: "Requirements",
     split: false,
+    category: "rider",
     defaultData: defaultRequirementsData,
     component: RequirementsSection,
   },
   equipment: {
     type: "equipment",
     label: "Equipment",
-    split: false,
+    split: true,
+    category: "rider",
     defaultData: defaultEquipmentData,
     component: EquipmentSection,
   },
@@ -72,6 +86,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "channel-list",
     label: "Channel List",
     split: false,
+    category: "rider",
     defaultData: defaultChannelListData,
     component: ChannelListSection,
   },
@@ -79,6 +94,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "monitor-list",
     label: "Monitor List",
     split: false,
+    category: "rider",
     defaultData: defaultMonitorListData,
     component: MonitorListSection,
   },
@@ -86,6 +102,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "band-members",
     label: "Band Members",
     split: false,
+    category: "rider",
     defaultData: defaultBandMembersData,
     component: BandMembersSection,
   },
@@ -93,6 +110,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "stage-map",
     label: "Stage Map",
     split: false,
+    category: "rider",
     defaultData: defaultStageMapData,
     component: StageMapSection,
   },
@@ -100,6 +118,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "contacts",
     label: "Contacts",
     split: true,
+    category: "rider",
     defaultData: defaultContactsData,
     component: ContactsSection,
   },
@@ -107,6 +126,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "quicklook",
     label: "Quick Look",
     split: true,
+    category: "rider",
     defaultData: defaultQuickLookData,
     component: QuickLookSection,
   },
@@ -114,6 +134,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "page-break",
     label: "Page Break",
     split: false,
+    category: "rider",
     hideTitle: true,
     defaultData: defaultPageBreakData,
     component: PageBreakSection,
@@ -122,7 +143,40 @@ export const sectionRegistry: SectionRegistry = {
     type: "text",
     label: "Text",
     split: true,
+    category: "rider",
     defaultData: defaultTextData,
     component: TextSection,
+  },
+  setlist: {
+    type: "setlist",
+    label: "Setlist",
+    split: true,
+    category: "planning",
+    defaultData: defaultSetlistData,
+    component: SetlistSection,
+  },
+  "rf-allocation": {
+    type: "rf-allocation",
+    label: "RF Allocation",
+    split: false,
+    category: "planning",
+    defaultData: defaultRfAllocationData,
+    component: RfAllocationSection,
+  },
+  "packing-list": {
+    type: "packing-list",
+    label: "Packing List",
+    split: false,
+    category: "planning",
+    defaultData: defaultPackingListData,
+    component: PackingListSection,
+  },
+  schedule: {
+    type: "schedule",
+    label: "Schedule",
+    split: false,
+    category: "planning",
+    defaultData: defaultScheduleData,
+    component: ScheduleSection,
   },
 };

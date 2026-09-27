@@ -1,4 +1,5 @@
 import { createId } from "./id";
+import { resolveColumnLabels, setColumnLabel } from "./column-labels";
 import { addListRow, reorderListRows } from "./row-list";
 import type { NumberedRow } from "./row-list";
 
@@ -9,6 +10,12 @@ export interface ChannelRow {
   phantom: boolean;
   stereo: boolean;
   notes: string;
+  /**
+   * Hidden rows are dimmed on screen, left out of print and skipped by
+   * `numberChannelRows`. Optional because documents saved before per-row
+   * hiding existed omit it — missing means visible.
+   */
+  hidden?: boolean;
 }
 
 export interface ChannelListColumnLabels {
@@ -38,16 +45,10 @@ export function defaultChannelListData(): ChannelListSectionData {
   return { rows: [] };
 }
 
-/**
- * Missing/partial `columnLabels` (documents saved before this field
- * existed) self-heals here rather than in persistence.ts — matching how
- * every other section's `data` shape is trusted once it passes the
- * generic "is this an object?" check on load, not deep-validated.
- */
 export function channelListColumnLabels(
   data: ChannelListSectionData,
 ): ChannelListColumnLabels {
-  return { ...defaultChannelListColumnLabels(), ...data.columnLabels };
+  return resolveColumnLabels(defaultChannelListColumnLabels(), data);
 }
 
 export function setChannelListColumnLabel(
@@ -55,10 +56,7 @@ export function setChannelListColumnLabel(
   key: keyof ChannelListColumnLabels,
   label: string,
 ): ChannelListSectionData {
-  return {
-    ...data,
-    columnLabels: { ...channelListColumnLabels(data), [key]: label },
-  };
+  return setColumnLabel(data, defaultChannelListColumnLabels(), key, label);
 }
 
 function makeChannelRow(): ChannelRow {
@@ -69,6 +67,7 @@ function makeChannelRow(): ChannelRow {
     phantom: false,
     stereo: false,
     notes: "",
+    hidden: false,
   };
 }
 
@@ -121,12 +120,16 @@ export function reorderChannelRows(
  * A stereo channel is a single row that claims two consecutive numbers
  * (e.g. "3–4") rather than being linked to a second row — there is no
  * partner row whose numbering can drift out of sync on reorder or deletion.
+ * A hidden row gets an empty label and claims no numbers at all, stereo or
+ * not, so the printed list stays contiguous.
  */
 export function numberChannelRows(data: ChannelListSectionData): NumberedRow[] {
   const result: NumberedRow[] = [];
   let counter = 1;
   for (const row of data.rows) {
-    if (row.stereo) {
+    if (row.hidden) {
+      result.push({ id: row.id, label: "" });
+    } else if (row.stereo) {
       result.push({ id: row.id, label: `${counter}–${counter + 1}` });
       counter += 2;
     } else {

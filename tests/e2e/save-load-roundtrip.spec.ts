@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { saveClearAndReload } from "./utils/save-load";
 
 test("save then load round-trips the document unchanged", async ({ page }) => {
   await page.goto("/");
@@ -103,4 +104,55 @@ test("save then load round-trips a split layout with a multi-item column unchang
     page.locator(".row-view__column").nth(1).locator(".section-frame"),
   ).toHaveCount(1);
   await expect(page.locator(".text-section__body")).toHaveValue("Stacked note");
+});
+
+test("save then load round-trips every planning section type together", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "+ Add your first section" }).click();
+  await page
+    .getByRole("button", { name: "Setlist (split)", exact: true })
+    .click();
+  await page.getByRole("button", { name: "+ Add Song" }).click();
+  await page.locator(".setlist__song-input").fill("Opener");
+
+  await page.getByRole("button", { name: "Add Section" }).last().click();
+  await page
+    .getByRole("button", { name: "RF Allocation", exact: true })
+    .click();
+  await page.getByRole("button", { name: "+ Add Wireless Unit" }).click();
+  await page.locator(".rf-allocation__frequency-input").fill("606.125");
+
+  await page.getByRole("button", { name: "Add Section" }).last().click();
+  await page.getByRole("button", { name: "Packing List", exact: true }).click();
+  await page.getByRole("button", { name: "+ Add group" }).click();
+  await page.getByRole("textbox", { name: "Group heading" }).fill("Audio case");
+  await page.getByRole("button", { name: "Add item to group" }).click();
+  await page.locator(".packing-list__item-input").fill("DI box");
+
+  await page.getByRole("button", { name: "Add Section" }).last().click();
+  await page.getByRole("button", { name: "Schedule", exact: true }).click();
+  await page.getByRole("button", { name: "+ Add slot" }).click();
+  await page.locator(".schedule__start-input").fill("17:00");
+  await page.locator(".schedule__title-input").fill("Soundcheck");
+
+  await saveClearAndReload(page);
+
+  await expect(page.locator(".section-frame")).toHaveCount(4);
+  await expect(page.locator(".setlist__song-input")).toHaveValue("Opener");
+  await expect(page.locator(".rf-allocation__frequency-input")).toHaveValue(
+    "606.125",
+  );
+  await expect(
+    page.getByRole("textbox", { name: "Group heading" }),
+  ).toHaveValue("Audio case");
+  await expect(page.locator(".packing-list__item-input")).toHaveValue("DI box");
+  await expect(page.locator(".schedule__start-input")).toHaveValue("17:00");
+  await expect(page.locator(".schedule__title-input")).toHaveValue(
+    "Soundcheck",
+  );
+  await expect(
+    page.getByText("This file used an older format and was converted"),
+  ).toHaveCount(0);
 });
