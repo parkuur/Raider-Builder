@@ -1,4 +1,5 @@
 import type { Component } from "svelte";
+import type { SectionCategory } from "../model/registry-grouping";
 import type {
   Section,
   SectionDataMap,
@@ -35,6 +36,8 @@ export interface SectionRegistryEntry<T extends SectionType = SectionType> {
   type: T;
   label: string;
   split: boolean;
+  /** Which Add Section menu heading this type is listed under. */
+  category: SectionCategory;
   /** Whether this type is offered in the "Add Section" menu. Defaults to true. */
   addable?: boolean;
   /** Suppresses the shared title input for types with nothing to title. */
@@ -50,6 +53,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "placeholder",
     label: "Section",
     split: false,
+    category: "rider",
     addable: false,
     defaultData: () => ({ note: "" }),
     component: PlaceholderSection,
@@ -58,6 +62,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "requirements",
     label: "Requirements",
     split: false,
+    category: "rider",
     defaultData: defaultRequirementsData,
     component: RequirementsSection,
   },
@@ -65,6 +70,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "equipment",
     label: "Equipment",
     split: false,
+    category: "rider",
     defaultData: defaultEquipmentData,
     component: EquipmentSection,
   },
@@ -72,6 +78,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "channel-list",
     label: "Channel List",
     split: false,
+    category: "rider",
     defaultData: defaultChannelListData,
     component: ChannelListSection,
   },
@@ -79,6 +86,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "monitor-list",
     label: "Monitor List",
     split: false,
+    category: "rider",
     defaultData: defaultMonitorListData,
     component: MonitorListSection,
   },
@@ -86,6 +94,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "band-members",
     label: "Band Members",
     split: false,
+    category: "rider",
     defaultData: defaultBandMembersData,
     component: BandMembersSection,
   },
@@ -93,6 +102,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "stage-map",
     label: "Stage Map",
     split: false,
+    category: "rider",
     defaultData: defaultStageMapData,
     component: StageMapSection,
   },
@@ -100,6 +110,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "contacts",
     label: "Contacts",
     split: true,
+    category: "rider",
     defaultData: defaultContactsData,
     component: ContactsSection,
   },
@@ -107,6 +118,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "quicklook",
     label: "Quick Look",
     split: true,
+    category: "rider",
     defaultData: defaultQuickLookData,
     component: QuickLookSection,
   },
@@ -114,6 +126,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "page-break",
     label: "Page Break",
     split: false,
+    category: "rider",
     hideTitle: true,
     defaultData: defaultPageBreakData,
     component: PageBreakSection,
@@ -122,6 +135,7 @@ export const sectionRegistry: SectionRegistry = {
     type: "text",
     label: "Text",
     split: true,
+    category: "rider",
     defaultData: defaultTextData,
     component: TextSection,
   },

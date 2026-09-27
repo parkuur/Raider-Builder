@@ -87,4 +87,41 @@ test.describe("add-section flow and empty state", () => {
     );
     await expect(page.locator(".row-view")).toHaveCount(0);
   });
+
+  test("section types are listed under category headings", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    const dialog = page.getByRole("dialog", { name: "Add section" });
+    const rider = dialog.getByRole("region", { name: "Rider" });
+    await expect(rider).toBeVisible();
+    await expect(
+      rider.getByRole("button", { name: "Requirements", exact: true }),
+    ).toBeVisible();
+    await expect(
+      rider.getByRole("button", { name: "Contacts (split)", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("the split-only menu drops categories with no split types", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page
+      .getByRole("button", { name: "+ Add your first section" })
+      .click();
+    await page
+      .getByRole("button", { name: "Contacts (split)", exact: true })
+      .click();
+    await page.locator(".split-edge-slot__button").click();
+    const dialog = page.getByRole("dialog", { name: "Add section" });
+    const rider = dialog.getByRole("region", { name: "Rider" });
+    await expect(
+      rider.getByRole("button", { name: "Quick Look (split)", exact: true }),
+    ).toBeVisible();
+    await expect(
+      rider.getByRole("button", { name: "Requirements", exact: true }),
+    ).toHaveCount(0);
+  });
 });
