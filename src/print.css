@@ -11,6 +11,12 @@
 }
 
 @media print {
+  :root {
+    --list-cell-pad-y: 0px;
+    --list-field-pad-y: 1px;
+    --list-block-pad-y: 3px;
+  }
+
   .no-print {
     display: none !important;
   }

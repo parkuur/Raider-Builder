@@ -193,3 +193,30 @@ test.describe("print layout", () => {
     await expect(row).toBeHidden();
   });
 });
+
+test("list rows print compactly, one text line each", async ({ page }) => {
+  await page.goto("/");
+  await addFirstSection(page, "Channel List");
+  await page.getByRole("button", { name: "+ Add Channel" }).click();
+  await page.locator(".channel-list__name-input").fill("Kick");
+  await addSection(page, "Setlist (split)");
+  await page.getByRole("button", { name: "+ Add Song" }).click();
+  await page.locator(".setlist__song-input").fill("Opener");
+  await addSection(page, "Equipment (split)");
+  await page.getByRole("button", { name: "+ Add item", exact: true }).click();
+  await page.locator(".equipment-section__item-name").fill("PA");
+
+  await page.emulateMedia({ media: "print" });
+
+  // 13px text at the shared list line-height, with no per-row padding to
+  // speak of — guards against spacing creeping back and costing rows per
+  // page.
+  for (const selector of [
+    ".channel-list tbody tr",
+    ".setlist tbody tr",
+    ".equipment-section__item",
+  ]) {
+    const box = (await page.locator(selector).first().boundingBox())!;
+    expect(box.height, selector).toBeLessThanOrEqual(22);
+  }
+});

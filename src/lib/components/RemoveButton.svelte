@@ -20,11 +20,19 @@
     cursor: pointer;
     font-size: var(--font-size-body);
     line-height: 1;
-    padding: 4px;
+    padding: 2px 4px;
   }
 
   .remove-button:hover,
   .remove-button:focus-visible {
     color: var(--color-danger);
+  }
+
+  /* Compact on desktop to keep list rows short; a full-size hit target on
+   * touch screens. */
+  @media (pointer: coarse) {
+    .remove-button {
+      padding: 4px;
+    }
   }
 </style>

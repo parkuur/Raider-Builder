@@ -142,14 +142,13 @@
   .contacts-section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
   }
 
   .contacts-section__row {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-1) 0;
+    padding: var(--list-block-pad-y) 0;
     border-bottom: 1px solid var(--color-border);
   }
 
@@ -165,7 +164,7 @@
   .contacts-section__identity {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     flex: 1;
     min-width: 0;
   }
@@ -177,7 +176,8 @@
     font-family: var(--font-heading);
     font-weight: 600;
     font-size: var(--font-size-body);
-    padding: 3px var(--space-2);
+    padding: var(--list-field-pad-y) var(--space-2);
+    line-height: var(--list-line-height);
   }
 
   .contacts-section__role {
@@ -185,13 +185,14 @@
     background: transparent;
     color: var(--color-text-muted);
     font-size: 9px;
-    padding: 3px var(--space-2);
+    padding: var(--list-field-pad-y) var(--space-2);
+    line-height: var(--list-line-height);
   }
 
   .contacts-section__values {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     flex: 1;
     min-width: 0;
   }
@@ -210,7 +211,8 @@
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
-    padding: 3px var(--space-2);
+    padding: var(--list-field-pad-y) var(--space-2);
+    line-height: var(--list-line-height);
   }
 
   .contacts-section__add-value {

@@ -99,7 +99,7 @@
   }
 
   .requirements-section__group {
-    padding: var(--space-2) 0;
+    padding: var(--list-block-pad-y) 0;
     border-bottom: 1px solid var(--color-border);
   }
 
@@ -117,7 +117,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    margin-bottom: var(--space-1);
+    margin-bottom: 2px;
   }
 
   .requirements-section__heading {
@@ -141,7 +141,7 @@
   .requirements-section__text {
     display: block;
     width: 100%;
-    min-height: 56px;
+    min-height: 44px;
     resize: none;
     overflow: hidden;
     border: 1px solid var(--color-border);
@@ -149,7 +149,8 @@
     color: var(--color-text);
     font-family: var(--font-body);
     font-size: var(--font-size-body);
-    padding: var(--space-2);
+    line-height: var(--list-line-height);
+    padding: var(--space-1) var(--space-2);
     box-sizing: border-box;
     /* See the comment on .channel-list textarea (ChannelListSection.svelte). */
     field-sizing: content;
@@ -166,5 +167,15 @@
     font-family: var(--font-heading);
     font-weight: 600;
     letter-spacing: 0.02em;
+  }
+
+  /* The empty-box min-height is an on-screen editing affordance; printed,
+   * the details take only the lines they actually have. */
+  @media print {
+    .requirements-section__text {
+      min-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
   }
 </style>

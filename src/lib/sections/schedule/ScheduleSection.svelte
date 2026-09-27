@@ -236,7 +236,8 @@
    * baseline as the row's text. */
   .schedule__time-print {
     display: none;
-    padding: 3px var(--space-1);
+    padding: var(--list-field-pad-y) var(--space-1);
+    line-height: var(--list-line-height);
     font-family: var(--font-heading);
     font-weight: 600;
     font-size: var(--font-size-body);

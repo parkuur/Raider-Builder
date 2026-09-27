@@ -24,6 +24,17 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+
+  /*
+   * List density — shared by every list/table row (Channel/Monitor List,
+   * Equipment, the planning tables, Contacts, Requirements, Quick Look) so
+   * rows stay compact and consistent. print.css tightens these further,
+   * since print has no borders or hit targets to leave room for.
+   */
+  --list-cell-pad-y: 1px;
+  --list-field-pad-y: 2px;
+  --list-line-height: 1.25;
+  --list-block-pad-y: var(--space-1);
 }
 
 * {

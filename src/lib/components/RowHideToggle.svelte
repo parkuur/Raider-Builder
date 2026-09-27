@@ -40,12 +40,20 @@
     background: transparent;
     color: var(--color-text-muted);
     cursor: pointer;
-    padding: 4px;
+    padding: 2px 4px;
   }
 
   .row-hide-toggle:hover,
   .row-hide-toggle:focus-visible,
   .row-hide-toggle--hidden {
     color: var(--color-accent);
+  }
+
+  /* Compact on desktop to keep list rows short; a full-size hit target on
+   * touch screens. */
+  @media (pointer: coarse) {
+    .row-hide-toggle {
+      padding: 4px;
+    }
   }
 </style>

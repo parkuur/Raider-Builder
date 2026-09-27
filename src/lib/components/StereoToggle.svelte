@@ -25,7 +25,7 @@
     background: transparent;
     color: var(--color-text-muted);
     font-size: var(--font-size-label);
-    padding: 3px 6px;
+    padding: 1px 6px;
     cursor: pointer;
   }
 

@@ -35,7 +35,15 @@
     width: 20px;
     cursor: grab;
     opacity: 0.35;
-    padding: 4px;
+    padding: 2px 4px;
     touch-action: none;
+  }
+
+  /* Compact on desktop to keep list rows short; a full-size hit target on
+   * touch screens. */
+  @media (pointer: coarse) {
+    .drag-handle {
+      padding: 4px;
+    }
   }
 </style>

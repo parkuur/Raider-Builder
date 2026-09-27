@@ -310,7 +310,7 @@
   }
 
   .channel-list td {
-    padding: 2px var(--space-1);
+    padding: var(--list-cell-pad-y) var(--space-1);
     vertical-align: middle;
   }
 
@@ -389,7 +389,8 @@
     color: var(--color-text);
     font-family: inherit;
     font-size: var(--font-size-body);
-    padding: 3px var(--space-1);
+    padding: var(--list-field-pad-y) var(--space-1);
+    line-height: var(--list-line-height);
     box-sizing: border-box;
   }
 

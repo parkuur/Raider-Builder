@@ -97,7 +97,7 @@
   .equipment-section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--list-cell-pad-y);
   }
 
   .equipment-section__item {
@@ -129,7 +129,8 @@
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
-    padding: 4px var(--space-2);
+    padding: var(--list-field-pad-y) var(--space-2);
+    line-height: var(--list-line-height);
   }
 
   .equipment-section__item-count {
@@ -139,7 +140,8 @@
     background: transparent;
     color: var(--color-text);
     font-size: var(--font-size-body);
-    padding: 4px;
+    padding: var(--list-field-pad-y) 4px;
+    line-height: var(--list-line-height);
   }
 
   .equipment-section__add {
