@@ -6,7 +6,8 @@ Repo rules and development practices for the Technical Rider Editor. Read this b
 
 A client-side editor for band technical riders: a document made of a header plus a vertical stack of
 draggable sections (Channel List, Monitor List, Band Members, Stage Map, Requirements, Equipment,
-Contacts, Quick Look). Users add/reorder/edit sections, save/load the document as a local JSON file,
+Contacts, Quick Look), plus band-internal gig-planning sections (Packing List, Schedule, RF
+Allocation, Setlist) grouped separately in the Add Section menu. Users add/reorder/edit sections, save/load the document as a local JSON file,
 and print/export to PDF via the browser.
 
 A prior design-tool prototype exists at
@@ -35,8 +36,9 @@ src/
   lib/
     components/   shared presentational components (buttons, icon picker, drag handles, ...)
     sections/     one folder per section type (channels/, monitors/, members/, stagemap/,
-                   requirements/, equipment/, contacts/, quicklook/) — each holds its Svelte
-                   component(s) plus any section-specific view logic
+                   requirements/, equipment/, contacts/, quicklook/, packing-list/, schedule/,
+                   rf-allocation/, setlist/) — each holds its Svelte component(s) plus any
+                   section-specific view logic
     state/         the document store (Svelte store/runes) and mutation actions
     model/         types + pure functions: document/section/row shapes, numbering, pairing,
                    balanced-grid layout, z-order — framework-independent and unit-testable
@@ -75,6 +77,20 @@ came from logic embedded in per-render closures inside a 900-line view-model bui
 that logic was unit-testable or reusable, so it was rebuilt-by-hand-in-place in a way that dropped
 edge cases silently. Pulling this logic out into named, pure, unit-tested functions is how §6's
 invariants stay enforced as the app grows.
+
+### 5.1 Temporary data migrations
+
+Code that exists only so documents saved in an older format still load is temporary, and must be
+tracked so it doesn't live forever:
+
+- Keep it in its own clearly named function (e.g. under `src/lib/model/migrations/`), marked with
+  `// TEMPORARY MIGRATION: remove after YYYY-MM-DD (see docs/backlog/migration-removals.md)`.
+- Add a row to `docs/backlog/migration-removals.md` in the same commit, with a "remove after" date
+  about one year after it lands.
+- Once that date has passed, remove the migration, its tests and its ledger row in a `chore:`
+  commit.
+- Optional-field self-healing (e.g. missing `columnLabels` defaulting) is a permanent part of the
+  schema, not a migration, and isn't tracked here.
 
 ## 6. Data-model invariants (lessons from the prototype)
 
