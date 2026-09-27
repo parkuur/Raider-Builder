@@ -102,9 +102,17 @@ test.describe("add-section flow and empty state", () => {
     await expect(
       rider.getByRole("button", { name: "Contacts (split)", exact: true }),
     ).toBeVisible();
+
+    const planning = dialog.getByRole("region", { name: "Planning" });
+    await expect(
+      planning.getByRole("button", { name: "Setlist (split)", exact: true }),
+    ).toBeVisible();
+    await expect(
+      rider.getByRole("button", { name: "Setlist (split)", exact: true }),
+    ).toHaveCount(0);
   });
 
-  test("the split-only menu drops categories with no split types", async ({
+  test("the split-only menu lists only split types, under their categories", async ({
     page,
   }) => {
     await page.goto("/");
@@ -123,5 +131,10 @@ test.describe("add-section flow and empty state", () => {
     await expect(
       rider.getByRole("button", { name: "Requirements", exact: true }),
     ).toHaveCount(0);
+    await expect(
+      dialog
+        .getByRole("region", { name: "Planning" })
+        .getByRole("button", { name: "Setlist (split)", exact: true }),
+    ).toBeVisible();
   });
 });

@@ -6,6 +6,7 @@ import type { MonitorListSectionData } from "./monitor-list";
 import type { PageBreakSectionData } from "./page-break";
 import type { QuickLookSectionData } from "./quicklook";
 import type { RequirementsSectionData } from "./requirements";
+import type { SetlistSectionData } from "./setlist";
 import type { StageMapSectionData } from "./stage-map";
 import type { TextSectionData } from "./text";
 
@@ -25,6 +26,7 @@ export interface SectionDataMap {
   quicklook: QuickLookSectionData;
   "page-break": PageBreakSectionData;
   text: TextSectionData;
+  setlist: SetlistSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;

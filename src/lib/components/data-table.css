@@ -1,0 +1,119 @@
+/*
+ * Shared look for the table-style sections added in epic 13 (Setlist, RF
+ * Allocation, Packing List, Schedule), so each doesn't carry its own copy of
+ * the same ~100 lines. Channel List and Monitor List predate this and keep
+ * their own scoped styles. Loaded globally from main.ts; everything is
+ * namespaced under `.data-table`.
+ */
+
+/* Contains a wide table's overflow on a phone so a long row never forces
+ * the whole page to scroll horizontally. */
+@media screen and (max-width: 640px) {
+  .data-table-scroll {
+    overflow-x: auto;
+  }
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  font-size: var(--font-size-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: 4px var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table td {
+  padding: 2px var(--space-1);
+  vertical-align: middle;
+}
+
+.data-table .data-table__num {
+  width: 40px;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+.data-table .data-table__drag {
+  width: 20px;
+  text-align: center;
+}
+
+/* Shrink-to-fit trick: without it the auto-layout table hands this column
+ * a share of the leftover width alongside the stretch column. Must sit on
+ * a plain table-cell, not a flex container (see ChannelListSection). */
+.data-table .data-table__actions-cell {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.data-table__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.data-table__row--drag-over {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* Hidden rows stay editable on screen, just visibly set apart; print drops
+ * them via the global `.hidden-from-print` rule. */
+.data-table__row--hidden {
+  opacity: 0.45;
+}
+
+.data-table__row--hidden input,
+.data-table__row--hidden textarea {
+  font-style: italic;
+}
+
+.data-table td input,
+.data-table td textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  padding: 3px var(--space-1);
+  box-sizing: border-box;
+}
+
+.data-table td textarea {
+  display: block;
+  resize: none;
+  overflow: hidden;
+  /* See the identical comment in ChannelListSection.svelte. */
+  field-sizing: content;
+}
+
+.data-table__add {
+  margin-top: var(--space-2);
+  padding: 4px var(--space-2);
+  border: 1px dashed var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--font-size-label);
+  color: var(--color-accent);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media print {
+  /* A rule under every row that has a later printed row — not
+   * `:not(:last-child)`, which leaves a stray rule under the last visible
+   * row whenever rows after it are hidden. */
+  .data-table tbody tr:has(~ tr:not(.hidden-from-print):not(.no-print)) td {
+    border-bottom: 1px solid var(--color-border);
+  }
+}

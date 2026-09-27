@@ -16,6 +16,7 @@ import ContactsSection from "./contacts/ContactsSection.svelte";
 import QuickLookSection from "./quicklook/QuickLookSection.svelte";
 import PageBreakSection from "./page-break/PageBreakSection.svelte";
 import TextSection from "./text/TextSection.svelte";
+import SetlistSection from "./setlist/SetlistSection.svelte";
 import { defaultRequirementsData } from "../model/requirements";
 import { defaultEquipmentData } from "../model/equipment";
 import { defaultChannelListData } from "../model/channel-list";
@@ -26,6 +27,7 @@ import { defaultContactsData } from "../model/contacts";
 import { defaultQuickLookData } from "../model/quicklook";
 import { defaultPageBreakData } from "../model/page-break";
 import { defaultTextData } from "../model/text";
+import { defaultSetlistData } from "../model/setlist";
 
 export interface SectionComponentProps<T extends SectionType = SectionType> {
   rowId: string;
@@ -138,5 +140,13 @@ export const sectionRegistry: SectionRegistry = {
     category: "rider",
     defaultData: defaultTextData,
     component: TextSection,
+  },
+  setlist: {
+    type: "setlist",
+    label: "Setlist",
+    split: true,
+    category: "planning",
+    defaultData: defaultSetlistData,
+    component: SetlistSection,
   },
 };
