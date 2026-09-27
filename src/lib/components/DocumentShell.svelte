@@ -45,9 +45,12 @@
     top: 0;
     z-index: 40;
     display: flex;
+    /* Lets SaveLoadControls' notice/error banners drop onto their own
+     * full-width line below the buttons instead of squeezing them. */
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-4);
+    gap: var(--space-2) var(--space-4);
     padding: var(--space-2) var(--space-5);
     background: var(--color-background);
     border-bottom: 1px solid var(--color-border);

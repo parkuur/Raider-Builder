@@ -464,3 +464,46 @@ describe("validateDocumentShape rejection cases", () => {
     expect(result.ok).toBe(false);
   });
 });
+
+describe("migrated", () => {
+  it("is empty for a current-format document", () => {
+    const doc: RiderDocument = {
+      header: createEmptyHeader(),
+      rows: [{ id: "r1", kind: "full", section: makeSection("s1") }],
+    };
+    const result = parseDocumentJson(serializeDocument(doc), KNOWN_TYPES);
+    expect(result.ok && result.migrated).toEqual([]);
+  });
+
+  it("reports the legacy Equipment conversion and returns the converted rows", () => {
+    const legacy = {
+      header: createEmptyHeader(),
+      rows: [
+        {
+          id: "r1",
+          kind: "full",
+          section: {
+            id: "s1",
+            type: "equipment",
+            title: "Equipment",
+            hidden: false,
+            data: {
+              lists: [
+                { id: "l1", title: "Band Provides", items: [] },
+                { id: "l2", title: "Venue Provides", items: [] },
+              ],
+            },
+          },
+        },
+      ],
+    };
+    const result = parseDocumentJson(JSON.stringify(legacy), [
+      ...KNOWN_TYPES,
+      "equipment",
+    ]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.migrated).toEqual(["legacy-equipment-two-lists"]);
+    expect(result.document.rows[0]!.kind).toBe("split");
+  });
+});

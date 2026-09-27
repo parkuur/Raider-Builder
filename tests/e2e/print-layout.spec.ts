@@ -54,7 +54,7 @@ test.describe("print layout", () => {
         "Two dedicated 20A circuits, isolated from lighting, run to stage left and stage right.",
       );
 
-    await addSection(page, "Equipment");
+    await addSection(page, "Equipment (split)");
     await page
       .getByRole("button", { name: "+ Add item", exact: true })
       .first()

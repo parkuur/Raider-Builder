@@ -53,7 +53,7 @@ test.describe("promoting a solo section into a split layout", () => {
     const row = page.locator(".row-view").first();
     await clickEdgeSlot(page, row);
     await expect(
-      page.getByRole("button", { name: "Equipment", exact: true }),
+      page.getByRole("button", { name: "Requirements", exact: true }),
     ).toHaveCount(0); // menu filtered to split types only
     await page
       .getByRole("button", { name: "Quick Look (split)", exact: true })
@@ -408,7 +408,7 @@ test.describe("document-wide swap", () => {
     await page
       .getByRole("button", { name: "Quick Look (split)", exact: true })
       .click();
-    await addSection(page, "Equipment");
+    await addSection(page, "Channel List");
 
     await page
       .locator(".row-view")

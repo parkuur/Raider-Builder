@@ -42,7 +42,7 @@ test.describe("no horizontal overflow at a 360px viewport", () => {
     await addSection(page, "Requirements");
     await page.getByRole("button", { name: "+ Add Item" }).click();
 
-    await addSection(page, "Equipment");
+    await addSection(page, "Equipment (split)");
     await page
       .getByRole("button", { name: "+ Add item", exact: true })
       .first()

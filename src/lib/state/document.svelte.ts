@@ -18,10 +18,18 @@ import type { ContactsSectionData } from "../model/contacts";
 import type { QuickLookSectionData } from "../model/quicklook";
 import type { TextSectionData } from "../model/text";
 
-let state = $state<RiderDocument>(
-  loadDocumentFromLocalStorage(Object.keys(sectionRegistry)) ??
-    createEmptyDocument(),
-);
+const restored = loadDocumentFromLocalStorage(Object.keys(sectionRegistry));
+
+let state = $state<RiderDocument>(restored?.document ?? createEmptyDocument());
+
+/**
+ * Whether the most recently loaded document (file or restored autosave)
+ * had to be converted from an older saved format — drives the "save it
+ * again" notice. The autosave rewrites localStorage in the new format on
+ * its own, but a `.json` file the user keeps on disk stays outdated until
+ * they save it again.
+ */
+let convertedOnLoad = $state((restored?.migrated.length ?? 0) > 0);
 
 $effect.root(() => {
   $effect(() => {
@@ -37,6 +45,18 @@ export function getDocument(): RiderDocument {
 
 export function setDocument(next: RiderDocument): void {
   state = next;
+}
+
+export function isConvertedOnLoad(): boolean {
+  return convertedOnLoad;
+}
+
+export function setConvertedOnLoad(migrated: readonly string[]): void {
+  convertedOnLoad = migrated.length > 0;
+}
+
+export function dismissConvertedNotice(): void {
+  convertedOnLoad = false;
 }
 
 function buildSection(type: SectionType): Section {

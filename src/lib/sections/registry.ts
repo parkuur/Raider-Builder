@@ -69,7 +69,7 @@ export const sectionRegistry: SectionRegistry = {
   equipment: {
     type: "equipment",
     label: "Equipment",
-    split: false,
+    split: true,
     category: "rider",
     defaultData: defaultEquipmentData,
     component: EquipmentSection,

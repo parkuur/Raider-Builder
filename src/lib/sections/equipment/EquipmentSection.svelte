@@ -4,7 +4,6 @@
     addEquipmentItem,
     removeEquipmentItem,
     reorderEquipmentItem,
-    setEquipmentListTitle,
     updateEquipmentItem,
   } from "../../model/equipment";
   import { fitColumnChars } from "../../model/column-fit";
@@ -24,125 +23,81 @@
     setEquipmentData(rowId, section.id, data);
   }
 
-  const dragByList = [new DragReorderState(), new DragReorderState()] as const;
+  const drag = new DragReorderState();
+  const countChars = $derived(
+    fitColumnChars(
+      section.data.items.map((i) => i.count),
+      "Qty",
+    ),
+  );
 </script>
 
 <div class="equipment-section">
-  {#each section.data.lists as list, listIndex (list.id)}
-    {@const idx = listIndex as 0 | 1}
-    {@const drag = dragByList[idx]}
-    {@const countChars = fitColumnChars(
-      list.items.map((i) => i.count),
-      "Qty",
-    )}
-    <div class="equipment-section__list">
+  {#if section.data.items.length === 0}
+    <SectionEmptyHint text="No items yet — add one below." />
+  {/if}
+  {#each section.data.items as item (item.id)}
+    <div
+      class="equipment-section__item"
+      data-reorder-item={item.id}
+      class:equipment-section__item--drag-over={drag.isOver(item.id)}
+    >
+      <DragHandle
+        onStart={() => drag.start(item.id)}
+        onOver={(id) => drag.over(id)}
+        onDrop={(id) => {
+          const move = drag.resolveDrop(
+            section.data.items.map((i) => i.id),
+            id,
+          );
+          if (move)
+            commit(reorderEquipmentItem(section.data, move[0], move[1]));
+        }}
+        onEnd={() => drag.end()}
+      />
       <input
-        class="equipment-section__title"
-        value={list.title}
+        class="equipment-section__item-name"
+        value={item.name}
+        placeholder="Item"
         oninput={(e) =>
           commit(
-            setEquipmentListTitle(section.data, idx, e.currentTarget.value),
+            updateEquipmentItem(section.data, item.id, {
+              name: e.currentTarget.value,
+            }),
           )}
       />
-      {#if list.items.length === 0}
-        <SectionEmptyHint text="No items yet — add one below." />
-      {/if}
-      {#each list.items as item (item.id)}
-        <div
-          class="equipment-section__item"
-          data-reorder-item={item.id}
-          class:equipment-section__item--drag-over={drag.isOver(item.id)}
-        >
-          <DragHandle
-            onStart={() => drag.start(item.id)}
-            onOver={(id) => drag.over(id)}
-            onDrop={(id) => {
-              const move = drag.resolveDrop(
-                list.items.map((i) => i.id),
-                id,
-              );
-              if (move)
-                commit(
-                  reorderEquipmentItem(section.data, idx, move[0], move[1]),
-                );
-            }}
-            onEnd={() => drag.end()}
-          />
-          <input
-            class="equipment-section__item-name"
-            value={item.name}
-            placeholder="Item"
-            oninput={(e) =>
-              commit(
-                updateEquipmentItem(section.data, idx, item.id, {
-                  name: e.currentTarget.value,
-                }),
-              )}
-          />
-          <input
-            class="equipment-section__item-count"
-            style:width="{countChars}ch"
-            value={item.count}
-            placeholder="Qty"
-            oninput={(e) =>
-              commit(
-                updateEquipmentItem(section.data, idx, item.id, {
-                  count: e.currentTarget.value,
-                }),
-              )}
-          />
-          <RemoveButton
-            label="Remove item"
-            onclick={() =>
-              commit(
-                removeEquipmentItem(section.data, listIndex as 0 | 1, item.id),
-              )}
-          />
-        </div>
-      {/each}
-      <button
-        type="button"
-        class="equipment-section__add no-print"
-        onclick={() =>
-          commit(addEquipmentItem(section.data, listIndex as 0 | 1))}
-      >
-        + Add item
-      </button>
+      <input
+        class="equipment-section__item-count"
+        style:width="{countChars}ch"
+        value={item.count}
+        placeholder="Qty"
+        oninput={(e) =>
+          commit(
+            updateEquipmentItem(section.data, item.id, {
+              count: e.currentTarget.value,
+            }),
+          )}
+      />
+      <RemoveButton
+        label="Remove item"
+        onclick={() => commit(removeEquipmentItem(section.data, item.id))}
+      />
     </div>
   {/each}
+  <button
+    type="button"
+    class="equipment-section__add no-print"
+    onclick={() => commit(addEquipmentItem(section.data))}
+  >
+    + Add item
+  </button>
 </div>
 
 <style>
   .equipment-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-4);
-  }
-
-  /* See RowView.svelte for why `screen` (not just the width condition) is
-   * what keeps this out of print — print always gets the two-column layout
-   * regardless of the originating device's viewport (see print.css). */
-  @media screen and (max-width: 640px) {
-    .equipment-section {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .equipment-section__list {
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
-  }
-
-  .equipment-section__title {
-    border: none;
-    background: transparent;
-    font-family: var(--font-heading);
-    font-weight: 600;
-    font-size: var(--font-size-body);
-    color: var(--color-text);
-    padding: 2px 0;
-    margin-bottom: var(--space-1);
   }
 
   .equipment-section__item {
@@ -159,7 +114,7 @@
   @media print {
     /*
      * :last-of-type (not :last-child) because the "+ Add item" button
-     * trails the item divs in the same list container — it would
+     * trails the item divs in the same container — it would
      * otherwise be the true last-child, making every item match.
      */
     .equipment-section__item:not(:last-of-type) {

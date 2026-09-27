@@ -47,7 +47,36 @@ describe("saveDocumentToLocalStorage / loadDocumentFromLocalStorage", () => {
 
     saveDocumentToLocalStorage(doc);
 
-    expect(loadDocumentFromLocalStorage(KNOWN_TYPES)).toEqual(doc);
+    expect(loadDocumentFromLocalStorage(KNOWN_TYPES)).toEqual({
+      document: doc,
+      migrated: [],
+    });
+  });
+
+  it("reports a migration when the stored document is in an older format", () => {
+    localStorage.setItem(
+      "raiderbuilder:document",
+      JSON.stringify({
+        ...createEmptyDocument(),
+        rows: [
+          {
+            id: "row-1",
+            kind: "full",
+            section: {
+              id: "s1",
+              type: "equipment",
+              title: "Equipment",
+              hidden: false,
+              data: { lists: [] },
+            },
+          },
+        ],
+      }),
+    );
+
+    const loaded = loadDocumentFromLocalStorage([...KNOWN_TYPES, "equipment"]);
+    expect(loaded?.migrated).toEqual(["legacy-equipment-two-lists"]);
+    expect(loaded?.document.rows[0]!.kind).toBe("split");
   });
 
   it("returns null when nothing is stored", () => {
