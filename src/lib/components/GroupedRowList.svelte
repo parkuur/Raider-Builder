@@ -331,8 +331,10 @@
       border-bottom: 1px solid var(--color-border);
     }
 
-    .grouped-table__group-title {
-      border-bottom-color: var(--color-text);
+    /* Print strips input borders, so the heading's underline moves onto
+     * its cell. */
+    .grouped-table__group-header td:not(.no-print) {
+      border-bottom: 1px solid var(--color-text);
     }
   }
 </style>

@@ -19,6 +19,7 @@ import type { QuickLookSectionData } from "../model/quicklook";
 import type { TextSectionData } from "../model/text";
 import type { SetlistSectionData } from "../model/setlist";
 import type { RfAllocationSectionData } from "../model/rf-allocation";
+import type { PackingListSectionData } from "../model/packing-list";
 
 const restored = loadDocumentFromLocalStorage(Object.keys(sectionRegistry));
 
@@ -337,6 +338,20 @@ export function setRfAllocationData(
     rowId,
     sectionId,
     "rf-allocation",
+    data,
+  );
+}
+
+export function setPackingListData(
+  rowId: string,
+  sectionId: string,
+  data: PackingListSectionData,
+): void {
+  state = mutations.setSectionData(
+    state,
+    rowId,
+    sectionId,
+    "packing-list",
     data,
   );
 }

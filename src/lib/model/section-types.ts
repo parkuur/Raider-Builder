@@ -3,6 +3,7 @@ import type { ChannelListSectionData } from "./channel-list";
 import type { ContactsSectionData } from "./contacts";
 import type { EquipmentSectionData } from "./equipment";
 import type { MonitorListSectionData } from "./monitor-list";
+import type { PackingListSectionData } from "./packing-list";
 import type { PageBreakSectionData } from "./page-break";
 import type { QuickLookSectionData } from "./quicklook";
 import type { RequirementsSectionData } from "./requirements";
@@ -29,6 +30,7 @@ export interface SectionDataMap {
   text: TextSectionData;
   setlist: SetlistSectionData;
   "rf-allocation": RfAllocationSectionData;
+  "packing-list": PackingListSectionData;
 }
 
 export type SectionType = keyof SectionDataMap;
